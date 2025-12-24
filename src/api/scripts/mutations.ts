@@ -9,18 +9,27 @@ import type {
 } from "./types";
 
 // Create script
-export function useCreateScript(projectId: string) {
+export function useCreateScript() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateScriptRequest) => {
+    mutationFn: async ({
+      organizationId,
+      projectId,
+      ...data
+    }: CreateScriptRequest & { organizationId: string; projectId: string }) => {
+      const payload = {
+        name: data.name,
+        text: data.text,
+        meta: (data as any).metadata,
+      };
       const response = await api.post<Script>(
-        `/projects/${projectId}/scripts`,
-        data
+        `/organizations/${organizationId}/projects/${projectId}/scripts`,
+        payload
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scripts", projectId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["scripts", variables?.projectId] });
     },
   });
 }
@@ -36,7 +45,13 @@ export function useUpdateScript() {
       id: string;
       data: UpdateScriptRequest;
     }) => {
-      const response = await api.patch<Script>(`/scripts/${id}`, data);
+      // Convert to snake_case
+      const payload = {
+        name: data.name,
+        text: data.text,
+        metadata: (data as any).metadata,
+      };
+      const response = await api.patch<Script>(`/scripts/${id}`, payload);
       return response.data;
     },
     onSuccess: (_data, variables) => {

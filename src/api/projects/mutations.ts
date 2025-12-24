@@ -13,9 +13,15 @@ export function useCreateProject(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateProjectRequest) => {
+      // Convert to snake_case
+      const payload = {
+        name: data.name,
+        description: (data as any).description,
+        metadata: (data as any).metadata,
+      };
       const response = await api.post<Project>(
         `/organizations/${organizationId}/projects`,
-        data
+        payload
       );
       return response.data;
     },
@@ -36,7 +42,13 @@ export function useUpdateProject() {
       id: string;
       data: UpdateProjectRequest;
     }) => {
-      const response = await api.patch<Project>(`/projects/${id}`, data);
+      // Convert to snake_case
+      const payload = {
+        name: data.name,
+        description: (data as any).description,
+        metadata: (data as any).metadata,
+      };
+      const response = await api.patch<Project>(`/projects/${id}`, payload);
       return response.data;
     },
     onSuccess: (_data, variables) => {

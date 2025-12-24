@@ -19,7 +19,7 @@ export function useProjects(organizationId: string, params?: { page?: number; li
   });
 }
 
-// Fetch a single project by ID
+// Fetch a single project by ID (legacy, not used for nested route)
 export function useProject(id: string) {
   return useQuery<Project>({
     queryKey: ["project", id],
@@ -28,5 +28,17 @@ export function useProject(id: string) {
       return response.data;
     },
     enabled: !!id,
+  });
+}
+
+// Fetch a single project by orgId and projectId (correct for backend)
+export function useProjectByOrg(orgId: string, projectId: string) {
+  return useQuery<Project>({
+    queryKey: ["project", orgId, projectId],
+    queryFn: async () => {
+      const response = await api.get<Project>(`/organizations/${orgId}/projects/${projectId}`);
+      return response.data;
+    },
+    enabled: !!orgId && !!projectId,
   });
 }

@@ -9,18 +9,26 @@ import type {
 } from "./types";
 
 // Create visual
-export function useCreateVisual(visualSetId: string) {
+export function useCreateVisual() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateVisualRequest) => {
+    mutationFn: async ({
+      visualSetId,
+      ...data
+    }: CreateVisualRequest & { visualSetId: string }) => {
+      const payload = {
+        segment_id: data.segmentId,
+        content: data.content,
+        meta: (data as any).metadata,
+      };
       const response = await api.post<Visual>(
         `/visual-sets/${visualSetId}/visuals`,
-        data
+        payload
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["visuals", visualSetId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["visuals", variables?.visualSetId] });
     },
   });
 }
@@ -36,7 +44,12 @@ export function useUpdateVisual() {
       id: string;
       data: UpdateVisualRequest;
     }) => {
-      const response = await api.patch<Visual>(`/visuals/${id}`, data);
+      // Convert to snake_case
+      const payload = {
+        content: data.content,
+        metadata: (data as any).metadata,
+      };
+      const response = await api.patch<Visual>(`/visuals/${id}`, payload);
       return response.data;
     },
     onSuccess: (_data, variables) => {

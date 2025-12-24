@@ -14,8 +14,20 @@ import type {
 // Register
 export function useRegister() {
   return useMutation({
-    mutationFn: async (data: RegisterRequest) => {
-      const response = await api.post<RegisterResponse>("/auth/register", data);
+    mutationFn: async (data: RegisterRequest & { organization_name?: string }) => {
+      // Convert all fields to snake_case for backend compatibility
+      const payload = {
+        email: data.email,
+        password: data.password,
+        first_name: (data as any).first_name || data.firstName,
+        last_name: (data as any).last_name || data.lastName,
+        organization_name:
+          (data as any).organization_name ||
+          (data as any).organizationName ||
+          (data as any).organizationId ||
+          "",
+      };
+      const response = await api.post<RegisterResponse>("/auth/register", payload);
       return response.data;
     },
   });

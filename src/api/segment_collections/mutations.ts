@@ -9,18 +9,25 @@ import type {
 } from "./types";
 
 // Create segment collection
-export function useCreateSegmentCollection(scriptId: string) {
+export function useCreateSegmentCollection() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateSegmentCollectionRequest) => {
+    mutationFn: async ({
+      scriptId,
+      ...data
+    }: CreateSegmentCollectionRequest & { scriptId: string }) => {
+      const payload = {
+        name: data.name,
+        metadata: (data as any).metadata,
+      };
       const response = await api.post<SegmentCollection>(
         `/scripts/${scriptId}/segment-collections`,
-        data
+        payload
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["segmentCollections", scriptId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["segmentCollections", variables?.scriptId] });
     },
   });
 }
@@ -36,7 +43,12 @@ export function useUpdateSegmentCollection() {
       id: string;
       data: UpdateSegmentCollectionRequest;
     }) => {
-      const response = await api.patch<SegmentCollection>(`/segment-collections/${id}`, data);
+      // Convert to snake_case
+      const payload = {
+        name: data.name,
+        metadata: (data as any).metadata,
+      };
+      const response = await api.patch<SegmentCollection>(`/segment-collections/${id}`, payload);
       return response.data;
     },
     onSuccess: (_data, variables) => {

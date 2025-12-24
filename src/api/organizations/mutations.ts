@@ -9,11 +9,15 @@ import type {
 } from "./types";
 
 // Create organization
+import { v4 as uuidv4 } from "uuid";
+
 export function useCreateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateOrganizationRequest) => {
-      const response = await api.post<Organization>("/organizations", data);
+      // Always send id and name
+      const payload = { id: uuidv4(), ...data };
+      const response = await api.post<Organization>("/organizations", payload);
       return response.data;
     },
     onSuccess: () => {

@@ -5,7 +5,8 @@ export interface RegisterRequest {
   password: string;
   firstName: string;
   lastName: string;
-  organizationId: string;
+  organizationId?: string;
+  organization_name?: string;
 }
 
 export interface RegisterResponse {

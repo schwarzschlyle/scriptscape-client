@@ -9,18 +9,26 @@ import type {
 } from "./types";
 
 // Create visual set
-export function useCreateVisualSet(collectionId: string) {
+export function useCreateVisualSet() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateVisualSetRequest) => {
+    mutationFn: async ({
+      collectionId,
+      ...data
+    }: CreateVisualSetRequest & { collectionId: string }) => {
+      const payload = {
+        name: data.name,
+        description: (data as any).description,
+        metadata: (data as any).metadata,
+      };
       const response = await api.post<VisualSet>(
-        `/segment-collections/${collectionId}/visuals`,
-        data
+        `/segment-collections/${collectionId}/visual-sets`,
+        payload
       );
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["visualSets", collectionId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["visualSets", variables?.collectionId] });
     },
   });
 }
@@ -36,7 +44,13 @@ export function useUpdateVisualSet() {
       id: string;
       data: UpdateVisualSetRequest;
     }) => {
-      const response = await api.patch<VisualSet>(`/visual-sets/${id}`, data);
+      // Convert to snake_case
+      const payload = {
+        name: data.name,
+        description: (data as any).description,
+        metadata: (data as any).metadata,
+      };
+      const response = await api.patch<VisualSet>(`/visual-sets/${id}`, payload);
       return response.data;
     },
     onSuccess: (_data, variables) => {
