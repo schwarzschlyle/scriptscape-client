@@ -1,4 +1,3 @@
-import React from "react";
 import E2EWorkflowTest from "./molecules/E2EWorkflowTest";
 
 export default function TestE2EPage() {
