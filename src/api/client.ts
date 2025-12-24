@@ -12,14 +12,14 @@ const api = axios.create({
 });
 
 // Attach JWT token if available (customize as needed)
-import type { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
 api.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem("accessToken");
     if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+      // Axios v1+ uses AxiosHeaders, which supports set()
+      config.headers.set?.("Authorization", `Bearer ${token}`);
     }
     return config;
   },
