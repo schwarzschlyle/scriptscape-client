@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { Project, ProjectsListResponse } from "./types";
 
-// Fetch all projects for an organization
 export function useProjects(organizationId: string, params?: { page?: number; limit?: number }) {
   return useQuery<ProjectsListResponse>({
     queryKey: ["projects", organizationId, params],
@@ -19,7 +18,6 @@ export function useProjects(organizationId: string, params?: { page?: number; li
   });
 }
 
-// Fetch a single project by ID (legacy, not used for nested route)
 export function useProject(id: string) {
   return useQuery<Project>({
     queryKey: ["project", id],
@@ -31,7 +29,6 @@ export function useProject(id: string) {
   });
 }
 
-// Fetch a single project by orgId and projectId (correct for backend)
 export function useProjectByOrg(orgId: string, projectId: string) {
   return useQuery<Project>({
     queryKey: ["project", orgId, projectId],

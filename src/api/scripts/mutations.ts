@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/scripts/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,7 +6,6 @@ import type {
   UpdateScriptRequest,
 } from "./types";
 
-// Create script
 export function useCreateScript() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,7 +31,6 @@ export function useCreateScript() {
   });
 }
 
-// Update script
 export function useUpdateScript() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -45,7 +41,7 @@ export function useUpdateScript() {
       id: string;
       data: UpdateScriptRequest;
     }) => {
-      // Convert to snake_case
+  
       const payload = {
         name: data.name,
         text: data.text,
@@ -61,7 +57,7 @@ export function useUpdateScript() {
   });
 }
 
-// Delete script
+
 export function useDeleteScript() {
   const queryClient = useQueryClient();
   return useMutation({

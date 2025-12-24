@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/segment_collections/types.ts
-
 export interface SegmentCollection {
   id: string;
   name: string;

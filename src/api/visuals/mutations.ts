@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/visuals/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,7 +6,6 @@ import type {
   UpdateVisualRequest,
 } from "./types";
 
-// Create visual
 export function useCreateVisual() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -33,7 +30,6 @@ export function useCreateVisual() {
   });
 }
 
-// Update visual
 export function useUpdateVisual() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -44,7 +40,7 @@ export function useUpdateVisual() {
       id: string;
       data: UpdateVisualRequest;
     }) => {
-      // Convert to snake_case
+   
       const payload = {
         content: data.content,
         metadata: (data as any).metadata,
@@ -59,7 +55,6 @@ export function useUpdateVisual() {
   });
 }
 
-// Delete visual
 export function useDeleteVisual() {
   const queryClient = useQueryClient();
   return useMutation({

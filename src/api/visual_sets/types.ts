@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/visual_sets/types.ts
-
 export interface VisualSet {
   id: string;
   name: string;

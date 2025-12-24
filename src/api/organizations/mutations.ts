@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/organizations/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,14 +6,12 @@ import type {
   UpdateOrganizationRequest,
 } from "./types";
 
-// Create organization
 import { v4 as uuidv4 } from "uuid";
 
 export function useCreateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateOrganizationRequest) => {
-      // Always send id and name
       const payload = { id: uuidv4(), ...data };
       const response = await api.post<Organization>("/organizations", payload);
       return response.data;
@@ -26,7 +22,6 @@ export function useCreateOrganization() {
   });
 }
 
-// Update organization
 export function useUpdateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -47,7 +42,6 @@ export function useUpdateOrganization() {
   });
 }
 
-// Delete organization
 export function useDeleteOrganization() {
   const queryClient = useQueryClient();
   return useMutation({

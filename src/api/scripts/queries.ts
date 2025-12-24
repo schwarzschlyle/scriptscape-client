@@ -19,14 +19,16 @@ export function useScripts(projectId: string, params?: { page?: number; limit?: 
   });
 }
 
-// Fetch a single script by ID
-export function useScript(id: string) {
+// Fetch a single script by org, project, and script ID
+export function useScript(orgId: string, projectId: string, scriptId: string) {
   return useQuery<Script>({
-    queryKey: ["script", id],
+    queryKey: ["script", orgId, projectId, scriptId],
     queryFn: async () => {
-      const response = await api.get<Script>(`/scripts/${id}`);
+      const response = await api.get<Script>(
+        `/organizations/${orgId}/projects/${projectId}/scripts/${scriptId}`
+      );
       return response.data;
     },
-    enabled: !!id,
+    enabled: !!orgId && !!projectId && !!scriptId,
   });
 }

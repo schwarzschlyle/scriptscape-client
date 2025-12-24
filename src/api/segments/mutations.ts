@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/segments/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,7 +6,6 @@ import type {
   UpdateSegmentRequest,
 } from "./types";
 
-// Create segment
 export function useCreateSegment() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -44,7 +41,7 @@ export function useUpdateSegment() {
       id: string;
       data: UpdateSegmentRequest;
     }) => {
-      // Convert to snake_case
+
       const payload = {
         segment_index: data.segmentIndex,
         text: data.text,
@@ -60,7 +57,6 @@ export function useUpdateSegment() {
   });
 }
 
-// Delete segment
 export function useDeleteSegment() {
   const queryClient = useQueryClient();
   return useMutation({

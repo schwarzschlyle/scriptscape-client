@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/client.ts
-
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/v1";
@@ -11,14 +9,12 @@ const api = axios.create({
   },
 });
 
-// Attach JWT token if available (customize as needed)
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem("accessToken");
     if (token) {
-      // Axios v1+ uses AxiosHeaders, which supports set()
       config.headers.set?.("Authorization", `Bearer ${token}`);
     }
     return config;
@@ -26,7 +22,6 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// Global error handling (optional)
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {

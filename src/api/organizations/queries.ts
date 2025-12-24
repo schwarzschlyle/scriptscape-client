@@ -1,10 +1,7 @@
-// scriptscape-client/src/api/organizations/queries.ts
-
 import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { Organization, OrganizationsListResponse } from "./types";
 
-// Fetch all organizations
 export function useOrganizations(params?: { page?: number; limit?: number }) {
   return useQuery<OrganizationsListResponse>({
     queryKey: ["organizations", params],
@@ -15,7 +12,6 @@ export function useOrganizations(params?: { page?: number; limit?: number }) {
   });
 }
 
-// Fetch a single organization by ID
 export function useOrganization(id: string) {
   return useQuery<Organization>({
     queryKey: ["organization", id],

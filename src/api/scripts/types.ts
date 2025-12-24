@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/scripts/types.ts
-
 export interface Script {
   id: string;
   name: string;

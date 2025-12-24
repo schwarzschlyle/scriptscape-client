@@ -1,10 +1,7 @@
-// scriptscape-client/src/api/segment_collections/queries.ts
-
 import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { SegmentCollection, SegmentCollectionsListResponse } from "./types";
 
-// Fetch all segment collections for a script
 export function useSegmentCollections(scriptId: string, params?: { page?: number; limit?: number }) {
   return useQuery<SegmentCollectionsListResponse>({
     queryKey: ["segmentCollections", scriptId, params],
@@ -19,7 +16,6 @@ export function useSegmentCollections(scriptId: string, params?: { page?: number
   });
 }
 
-// Fetch a single segment collection by ID
 export function useSegmentCollection(id: string) {
   return useQuery<SegmentCollection>({
     queryKey: ["segmentCollection", id],

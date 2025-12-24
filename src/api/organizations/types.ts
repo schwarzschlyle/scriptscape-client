@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/organizations/types.ts
-
 export interface Organization {
   id: string;
   name: string;

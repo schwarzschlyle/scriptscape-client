@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   useCreateOrganization,
   useRegister,
@@ -141,27 +141,24 @@ export default function E2EWorkflowTest() {
 
       // 7. Create Segment Collection
       appendLog("Creating segment collection...");
-      setScriptId(scriptResp.id); // ensure state is updated
-      // Wait for state update before calling mutateAsync (next tick)
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (!scriptId) throw new Error("Missing scriptId for segment collection creation");
+      localScriptId = scriptResp.id;
+      setScriptId(localScriptId);
+
       const segColResp = await createSegCol.mutateAsync({
-        scriptId: scriptId,
+        scriptId: localScriptId,
         name: "Manual Scene Breakdown",
       });
       if (!segColResp.id) throw new Error("Segment collection creation failed");
-      setSegColId(segColResp.id);
+      localSegColId = segColResp.id;
+      setSegColId(localSegColId);
       setResults((r: any) => ({ ...r, segmentCollection: segColResp }));
       appendLog("✔ Segment collection created: " + segColResp.name);
 
       // 8. Create Segment
       appendLog("Creating segment...");
-      setSegColId(segColResp.id); // ensure state is updated
-      // Wait for state update before calling mutateAsync (next tick)
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (!segColId) throw new Error("Missing segColId for segment creation");
+      if (!localSegColId) throw new Error("Missing segColId for segment creation");
       const segmentResp = await createSegment.mutateAsync({
-        collectionId: segColId,
+        collectionId: localSegColId,
         segmentIndex: 0,
         text: "INT. COFFEE SHOP - DAY\nSARAH enters, looking tired...",
       });
@@ -171,28 +168,22 @@ export default function E2EWorkflowTest() {
 
       // 9. Create Visual Set
       appendLog("Creating visual set...");
-      setSegColId(segColResp.id); // ensure state is updated
-      // Wait for state update before calling mutateAsync (next tick)
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (!segColId) throw new Error("Missing segColId for visual set creation");
       const visualSetResp = await createVisualSet.mutateAsync({
-        collectionId: segColId,
+        collectionId: localSegColId,
         name: "Production Guide v1",
         description: "E2E Visual Set",
       });
       if (!visualSetResp.id) throw new Error("Visual set creation failed");
-      setVisualSetId(visualSetResp.id);
+      localVisualSetId = visualSetResp.id;
+      setVisualSetId(localVisualSetId);
       setResults((r: any) => ({ ...r, visualSet: visualSetResp }));
       appendLog("✔ Visual set created: " + visualSetResp.name);
 
       // 10. Create Visual
       appendLog("Creating visual...");
-      setVisualSetId(visualSetResp.id); // ensure state is updated
-      // Wait for state update before calling mutateAsync (next tick)
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (!visualSetId) throw new Error("Missing visualSetId for visual creation");
+      if (!localVisualSetId) throw new Error("Missing visualSetId for visual creation");
       const visualResp = await createVisual.mutateAsync({
-        visualSetId: visualSetResp.id,
+        visualSetId: localVisualSetId,
         segmentId: segmentResp.id,
         content:
           "SEGMENT 1: Coffee Shop Entrance\n\nSCENE DESCRIPTION:\nSarah enters the coffee shop, looking tired from her commute.\nKEYFRAMES:\n- Wide shot of the coffee shop\n- Close-up of Sarah's face\nCAMERA:\n- Establishing shot, then follow Sarah\nASSETS NEEDED:\n- Coffee shop, Sarah, extras\nLIGHTING/MOOD:\n- Warm, inviting\nEDITING NOTES:\n- Slow pace, ambient sound",
@@ -224,6 +215,8 @@ export default function E2EWorkflowTest() {
       // Script
       if (scriptId) {
         try {
+          // Wait briefly to ensure DB commit
+          await new Promise((resolve) => setTimeout(resolve, 100));
           const scriptRes = await fetch(`/api/scripts/${scriptId}`).then(r => r.json());
           queries.script = scriptRes;
         } catch {}
@@ -297,7 +290,6 @@ export default function E2EWorkflowTest() {
 
 import {
   useOrganization,
-  useProject,
   useProjectByOrg,
   useScript,
   useSegmentCollection,
@@ -306,7 +298,6 @@ import {
   useVisual,
 } from "./api";
 
-// QueryResults component using TanStack Query hooks
 function QueryResults({
   orgId,
   projectId,
@@ -324,10 +315,9 @@ function QueryResults({
   visualSetId?: string;
   visualId?: string;
 }) {
-  // Always call hooks in the same order, passing undefined if ID is not set
   const orgQ = useOrganization(orgId || "");
   const projQ = useProjectByOrg(orgId || "", projectId || "");
-  const scriptQ = useScript(scriptId || "");
+  const scriptQ = useScript(orgId || "", projectId || "", scriptId || "");
   const segColQ = useSegmentCollection(segColId || "");
   const segmentQ = useSegment(segmentId || "");
   const visualSetQ = useVisualSet(visualSetId || "");
@@ -340,7 +330,7 @@ function QueryResults({
       <h4>Project Query</h4>
       {projectId ? <pre>{JSON.stringify(projQ.data, null, 2)}</pre> : <em>Not queried</em>}
       <h4>Script Query</h4>
-      {scriptId ? <pre>{JSON.stringify(scriptQ.data, null, 2)}</pre> : <em>Not queried</em>}
+      {orgId && projectId && scriptId ? <pre>{JSON.stringify(scriptQ.data, null, 2)}</pre> : <em>Not queried</em>}
       <h4>Segment Collection Query</h4>
       {segColId ? <pre>{JSON.stringify(segColQ.data, null, 2)}</pre> : <em>Not queried</em>}
       <h4>Segment Query</h4>

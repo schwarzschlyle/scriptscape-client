@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/projects/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,12 +6,11 @@ import type {
   UpdateProjectRequest,
 } from "./types";
 
-// Create project
 export function useCreateProject(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CreateProjectRequest) => {
-      // Convert to snake_case
+
       const payload = {
         name: data.name,
         description: (data as any).description,
@@ -31,7 +28,6 @@ export function useCreateProject(organizationId: string) {
   });
 }
 
-// Update project
 export function useUpdateProject() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -42,7 +38,7 @@ export function useUpdateProject() {
       id: string;
       data: UpdateProjectRequest;
     }) => {
-      // Convert to snake_case
+
       const payload = {
         name: data.name,
         description: (data as any).description,
@@ -58,7 +54,6 @@ export function useUpdateProject() {
   });
 }
 
-// Delete project
 export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({

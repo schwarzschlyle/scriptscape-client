@@ -1,10 +1,7 @@
-// scriptscape-client/src/api/visuals/queries.ts
-
 import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { Visual, VisualsListResponse } from "./types";
 
-// Fetch all visuals for a visual set
 export function useVisuals(visualSetId: string) {
   return useQuery<VisualsListResponse>({
     queryKey: ["visuals", visualSetId],
@@ -18,7 +15,6 @@ export function useVisuals(visualSetId: string) {
   });
 }
 
-// Fetch a single visual by ID
 export function useVisual(id: string) {
   return useQuery<Visual>({
     queryKey: ["visual", id],

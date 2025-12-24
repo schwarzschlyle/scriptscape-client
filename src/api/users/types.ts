@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/users/types.ts
-
 export type UserRole = "admin" | "editor" | "viewer";
 
 export interface User {

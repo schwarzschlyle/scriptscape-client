@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/segment_collections/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type {
@@ -8,7 +6,6 @@ import type {
   UpdateSegmentCollectionRequest,
 } from "./types";
 
-// Create segment collection
 export function useCreateSegmentCollection() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -32,7 +29,6 @@ export function useCreateSegmentCollection() {
   });
 }
 
-// Update segment collection
 export function useUpdateSegmentCollection() {
   const queryClient = useQueryClient();
   return useMutation({

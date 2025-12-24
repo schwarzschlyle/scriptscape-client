@@ -1,10 +1,7 @@
-// scriptscape-client/src/api/users/mutations.ts
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../client";
 import type { User } from "./types";
 
-// Update user
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -25,7 +22,6 @@ export function useUpdateUser() {
   });
 }
 
-// Delete user
 export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
