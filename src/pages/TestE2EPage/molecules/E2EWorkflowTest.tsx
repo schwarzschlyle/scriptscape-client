@@ -10,7 +10,7 @@ import {
   useCreateSegment,
   useCreateVisualSet,
   useCreateVisual,
-} from "./api";
+  } from "@api";
 
 function randomString() {
   return Math.random().toString(36).substring(2, 10);
@@ -296,7 +296,7 @@ import {
   useSegment,
   useVisualSet,
   useVisual,
-} from "./api";
+} from "@api";
 
 function QueryResults({
   orgId,

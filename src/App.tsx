@@ -1,13 +1,9 @@
 import './App.css'
-import E2EWorkflowTest from "./E2EWorkflowTest";
+import { RouterProvider } from "react-router-dom";
+import { router } from "@routes/index";
 
 function App() {
-
-  return (
-    <>
-      <E2EWorkflowTest />
-    </>
-  )
+  return <RouterProvider router={router} />;
 }
 
 export default App
