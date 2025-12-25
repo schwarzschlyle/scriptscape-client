@@ -2,20 +2,23 @@
 
 import { useQuery } from "@tanstack/react-query";
 import api from "../client";
-import type { Script, ScriptsListResponse } from "./types";
+import type { Script } from "./types";
 
-// Fetch all scripts for a project
-export function useScripts(projectId: string, params?: { page?: number; limit?: number }) {
-  return useQuery<ScriptsListResponse>({
-    queryKey: ["scripts", projectId, params],
+/**
+ * Fetch all scripts for a project (requires orgId and projectId)
+ * Returns: Script[]
+ */
+export function useScripts(orgId: string, projectId: string, params?: { page?: number; limit?: number }) {
+  return useQuery<Script[]>({
+    queryKey: ["scripts", orgId, projectId, params],
     queryFn: async () => {
-      const response = await api.get<ScriptsListResponse>(
-        `/projects/${projectId}/scripts`,
+      const response = await api.get<Script[]>(
+        `/organizations/${orgId}/projects/${projectId}/scripts`,
         { params }
       );
       return response.data;
     },
-    enabled: !!projectId,
+    enabled: !!orgId && !!projectId,
   });
 }
 

@@ -4,14 +4,18 @@ import CanvasTitle from "../atoms/CanvasTitle";
 import OrgName from "../atoms/OrgName";
 import ProjectName from "../atoms/ProjectName";
 import LogoutButton from "../atoms/LogoutButton";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 interface CanvasHeaderProps {
   orgName?: string;
   projectName?: string;
   onLogout: () => void;
+  syncing?: boolean;
 }
 
-const CanvasHeader = ({ orgName, projectName, onLogout }: CanvasHeaderProps) => (
+const SPINNER_WIDTH = 40; // just spinner, no label
+
+const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderProps) => (
   <Box
     sx={{
       position: "fixed",
@@ -21,11 +25,16 @@ const CanvasHeader = ({ orgName, projectName, onLogout }: CanvasHeaderProps) => 
       zIndex: 1100,
       px: { xs: 1, sm: 2 },
       py: { xs: 1, sm: 2 },
-      pr: {xs: 4, sm: 8 },
-      pl: {xs: 4, sm: 8 },
+      pr: { xs: 4, sm: 8 },
+      pl: { xs: 4, sm: 8 },
       bgcolor: "background.paper",
       borderBottom: "1px solid #eee",
       boxShadow: 1,
+      minHeight: 64,
+      maxHeight: 64,
+      height: 64,
+      display: "flex",
+      alignItems: "center",
     }}
   >
     <Stack
@@ -33,6 +42,7 @@ const CanvasHeader = ({ orgName, projectName, onLogout }: CanvasHeaderProps) => 
       alignItems="center"
       justifyContent="space-between"
       spacing={2}
+      sx={{ width: "100%" }}
     >
       <Stack
         direction="row"
@@ -50,7 +60,24 @@ const CanvasHeader = ({ orgName, projectName, onLogout }: CanvasHeaderProps) => 
         <OrgName name={orgName} />
         <ProjectName name={projectName} />
       </Stack>
-      <Box sx={{ flexShrink: 0 }}>
+      <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 2 }}>
+        <Box
+          sx={{
+            width: SPINNER_WIDTH,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            transition: "opacity 0.2s",
+          }}
+        >
+          {syncing ? (
+            <LoadingSpinner size={20} label="" />
+          ) : (
+            // Empty box to reserve space and prevent layout shift
+            <Box sx={{ width: 20, height: 20 }} />
+          )}
+        </Box>
         <LogoutButton onClick={onLogout} />
       </Box>
     </Stack>

@@ -7,7 +7,8 @@ import { useCanvasAuth } from "@hooks/useCanvasAuth";
 import { useLogout } from "@hooks/useLogout";
 
 import CanvasHeader from "./components/molecules/CanvasHeader";
-// import CanvasArea from "./components/molecules/CanvasArea";
+import CanvasArea from "./components/molecules/CanvasArea";
+import { useState, useCallback } from "react";
 
 export default function CanvasPage() {
   const { organizationId = "", projectId = "" } = useParams();
@@ -32,6 +33,10 @@ export default function CanvasPage() {
 
   const logout = useLogout();
 
+  // Syncing state for CanvasHeader spinner
+  const [syncing, setSyncing] = useState(false);
+  const handleSyncChange = useCallback((sync: boolean) => setSyncing(sync), []);
+
   if (userLoading || orgLoading || projectLoading) {
     return <LoadingSpinner label="Accessing Canvas..." />;
   }
@@ -50,8 +55,13 @@ export default function CanvasPage() {
         orgName={org?.name}
         projectName={project?.name}
         onLogout={logout}
+        syncing={syncing}
       />
-      {/* <CanvasArea organizationId={organizationId} projectId={projectId} /> */}
+      <CanvasArea
+        organizationId={organizationId}
+        projectId={projectId}
+        onSyncChange={handleSyncChange}
+      />
     </Box>
   );
 }
