@@ -13,7 +13,7 @@ interface CanvasHeaderProps {
   syncing?: boolean;
 }
 
-const SPINNER_WIDTH = 40; // just spinner, no label
+const SPINNER_WIDTH = 40;
 
 const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderProps) => (
   <Box
@@ -74,7 +74,6 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
           {syncing ? (
             <LoadingSpinner size={20} label="" />
           ) : (
-            // Empty box to reserve space and prevent layout shift
             <Box sx={{ width: 20, height: 20 }} />
           )}
         </Box>

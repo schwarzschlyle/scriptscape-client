@@ -14,7 +14,7 @@ const AddScriptButton: React.FC<AddScriptButtonProps> = ({ onClick }) => (
       bottom: 32,
       right: 32,
       zIndex: 1200,
-      pointerEvents: "none", // allow FAB to float above content but not block interactions
+      pointerEvents: "none",
     }}
   >
     <Fab
@@ -22,7 +22,7 @@ const AddScriptButton: React.FC<AddScriptButtonProps> = ({ onClick }) => (
       aria-label="add"
       onClick={onClick}
       sx={{
-        pointerEvents: "auto", // enable click
+        pointerEvents: "auto",
         boxShadow: 4,
       }}
     >

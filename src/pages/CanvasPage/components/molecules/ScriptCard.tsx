@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
@@ -12,9 +12,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CircularProgress from "@mui/material/CircularProgress";
-import { useCreateScript } from "@hooks/useCreateScript";
-import { useUpdateScript } from "@hooks/useUpdateScript";
-import { useDeleteScript } from "@hooks/useDeleteScript";
+import { useScriptSaveHandler } from "@hooks/useScriptSaveHandler";
+import { useScriptDeleteHandler } from "@hooks/useScriptDeleteHandler";
 import type { Script } from "@api/scripts/types";
 
 interface ScriptCardProps {
@@ -43,93 +42,29 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   const [text, setText] = useState(script?.text || "");
   const [name, setName] = useState(script?.name || "");
   const [editing, setEditing] = useState(isNew);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const createScript = useCreateScript();
-  const updateScript = useUpdateScript();
-  const deleteScript = useDeleteScript();
+  const {
+    save,
+    saving,
+    error,
+  } = useScriptSaveHandler({
+    script,
+    organizationId,
+    projectId,
+    isNew,
+    onSavedOrCancel,
+    onEditOptimistic,
+    onSyncChange,
+  });
 
-  const isSyncingRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      if (isSyncingRef.current && onSyncChange) {
-        onSyncChange(false);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleSave = () => {
-    setSaving(true);
-    setError(null);
-    if (isNew) {
-      if (onSyncChange) onSyncChange(true);
-      isSyncingRef.current = true;
-      createScript.mutate(
-        {
-          organizationId,
-          projectId,
-          name: name || "Untitled Script",
-          text,
-        },
-        {
-          onSettled: () => {
-            setSaving(false);
-            if (onSyncChange) onSyncChange(false);
-            isSyncingRef.current = false;
-            if (onSavedOrCancel) onSavedOrCancel();
-          },
-        }
-      );
-    } else if (script) {
-      if (onEditOptimistic) onEditOptimistic(script.id, name, text);
-      if (onSyncChange) onSyncChange(true);
-      isSyncingRef.current = true;
-      setEditing(false);
-      updateScript.mutate(
-        {
-          id: script.id,
-          organizationId,
-          projectId,
-          data: { name, text },
-        },
-        {
-          onSettled: () => {
-            setSaving(false);
-            if (onSyncChange) onSyncChange(false);
-            isSyncingRef.current = false;
-          },
-        }
-      );
-    }
-  };
-
-
-  const handleDelete = () => {
-    if (!script) return;
-    setDeleting(true);
-    if (onDeleteOptimistic) onDeleteOptimistic(script.id);
-    if (onSyncChange) onSyncChange(true);
-    isSyncingRef.current = true;
-    deleteScript.mutate(
-      {
-        id: script.id,
-        organizationId,
-        projectId,
-      },
-      {
-        onSettled: () => {
-          setDeleting(false);
-          if (onSyncChange) onSyncChange(false);
-          isSyncingRef.current = false;
-          if (onSavedOrCancel) onSavedOrCancel();
-        },
-      }
-    );
-  };
+  const { deleteHandler, deleting } = useScriptDeleteHandler({
+    script,
+    organizationId,
+    projectId,
+    onDeleteOptimistic,
+    onSavedOrCancel,
+    onSyncChange,
+  });
 
   if (editing) {
     return (
@@ -169,7 +104,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               color="primary"
               variant="contained"
               startIcon={<SaveIcon />}
-              onClick={handleSave}
+              onClick={() => save(name, text)}
               disabled={saving || !text.trim()}
             >
               {saving ? <CircularProgress size={18} /> : "Save"}
@@ -226,7 +161,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               <IconButton size="small" onClick={() => setEditing(true)} disabled={deleting}>
                 <EditIcon fontSize="small" />
               </IconButton>
-              <IconButton size="small" onClick={handleDelete} disabled={deleting}>
+              <IconButton size="small" onClick={deleteHandler} disabled={deleting}>
                 {deleting ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
               </IconButton>
             </Box>
