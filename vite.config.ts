@@ -9,7 +9,8 @@ export default defineConfig({
       { find: '@api', replacement: '/src/api' },
       { find: '@pages', replacement: '/src/pages' },
       { find: '@routes', replacement: '/src/routes' },
-      { find: '@components', replacement: '/src/components' }
+      { find: '@components', replacement: '/src/components' },
+      { find: '@hooks', replacement: '/src/hooks' }
     ]
   }
 })

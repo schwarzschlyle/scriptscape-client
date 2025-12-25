@@ -1,9 +1,9 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import CanvasTitle from "@components/atoms/CanvasTitle";
-import OrgName from "@components/atoms/OrgName";
-import ProjectName from "@components/atoms/ProjectName";
-import LogoutButton from "@components/atoms/LogoutButton";
+import CanvasTitle from "../atoms/CanvasTitle";
+import OrgName from "../atoms/OrgName";
+import ProjectName from "../atoms/ProjectName";
+import LogoutButton from "../atoms/LogoutButton";
 
 interface CanvasHeaderProps {
   orgName?: string;
