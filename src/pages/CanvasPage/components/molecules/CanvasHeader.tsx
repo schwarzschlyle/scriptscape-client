@@ -1,7 +1,5 @@
 import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
 import CanvasTitle from "../atoms/CanvasTitle";
-import OrgName from "../atoms/OrgName";
 import ProjectName from "../atoms/ProjectName";
 import LogoutButton from "../atoms/LogoutButton";
 import LoadingSpinner from "@components/LoadingSpinner";
@@ -37,49 +35,67 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
       alignItems: "center",
     }}
   >
-    <Stack
-      direction="row"
-      alignItems="center"
-      justifyContent="space-between"
-      spacing={2}
-      sx={{ width: "100%" }}
+    <Box
+      sx={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+      }}
     >
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
+
+      <Box sx={{ flex: "0 0 auto", minWidth: 0 }}>
+        <CanvasTitle sx={{ mb: 0 }}>{orgName}</CanvasTitle>
+      </Box>
+
+      <Box
         sx={{
-          minWidth: 0,
-          overflow: "hidden",
-          flexShrink: 1,
-          whiteSpace: "nowrap",
-          textOverflow: "ellipsis",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: { xs: "60%", sm: "40%" },
+          pointerEvents: "none",
         }}
       >
-        <CanvasTitle>ScriptScape Canvas</CanvasTitle>
-        <OrgName name={orgName} />
         <ProjectName name={projectName} />
-      </Stack>
-      <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 2 }}>
+      </Box>
+
+      <Box
+        sx={{
+          flex: "0 0 auto",
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
         <Box
           sx={{
             width: SPINNER_WIDTH,
-            height: 32,
+            height: 64,
+            minHeight: 64,
+            maxHeight: 64,
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-start",
+            justifyContent: "center",
             transition: "opacity 0.2s",
           }}
         >
           {syncing ? (
-            <LoadingSpinner size={20} label="" />
+            <LoadingSpinner
+              size={20}
+              label=""
+              sx={{ minHeight: 0, width: "auto", py: 0, alignSelf: "center" }}
+            />
           ) : (
-            <Box sx={{ width: 20, height: 20 }} />
+            <Box sx={{ width: 20, height: 20, alignSelf: "center" }} />
           )}
         </Box>
         <LogoutButton onClick={onLogout} />
       </Box>
-    </Stack>
+    </Box>
   </Box>
 );
 

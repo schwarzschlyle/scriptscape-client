@@ -1,13 +1,15 @@
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
+import type { SxProps } from "@mui/material/styles";
 
 interface LoadingSpinnerProps {
   label?: string;
   size?: number;
+  sx?: SxProps;
 }
 
-const LoadingSpinner = ({ label = "Loading...", size = 48 }: LoadingSpinnerProps) => (
+const LoadingSpinner = ({ label = "Loading...", size = 48, sx }: LoadingSpinnerProps) => (
   <Box
     display="flex"
     flexDirection="column"
@@ -15,12 +17,14 @@ const LoadingSpinner = ({ label = "Loading...", size = 48 }: LoadingSpinnerProps
     justifyContent="center"
     minHeight="30vh"
     width="100%"
-    sx={{ py: 4 }}
+    sx={{ py: 4, ...sx }}
   >
     <CircularProgress size={size} color="secondary" />
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-      {label}
-    </Typography>
+    {label && label.trim() !== "" && (
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+        {label}
+      </Typography>
+    )}
   </Box>
 );
 
