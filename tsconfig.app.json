@@ -14,7 +14,8 @@
       "@api": ["api/index.ts"],
       "@api/*": ["api/*"],
       "@routes/*": ["routes/*"],
-      "@pages/*": ["pages/*"]
+      "@pages/*": ["pages/*"],
+      "@components/*": ["components/*"]
     },
 
     /* Bundler mode */

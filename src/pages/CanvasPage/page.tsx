@@ -1,4 +1,7 @@
 import { useEffect } from "react";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import CanvasHeader from "@components/molecules/CanvasHeader";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurrentUser, useOrganization, useProjectByOrg } from "@api";
 import { ROUTES } from "@routes/routes.config";
@@ -11,22 +14,24 @@ export default function CanvasPage() {
   const { data: org, isLoading: orgLoading, isError: orgError } = useOrganization(organizationId);
   const { data: project, isLoading: projectLoading, isError: projectError } = useProjectByOrg(organizationId, projectId);
 
+
+  // Canvas Authentication Logic
+  // Verify user is logged in
+  // Verify organization and project access
+  
   useEffect(() => {
     if (userLoading || orgLoading || projectLoading) return;
 
-    // Not authenticated
     if (!user) {
       navigate(ROUTES.LOGIN, { replace: true });
       return;
     }
 
-    // Org not found, forbidden, or user not in org
     if (orgError || !org || (user.organizationId && user.organizationId !== organizationId)) {
       navigate(ROUTES.LOGIN, { replace: true });
       return;
     }
 
-    // Project not found, forbidden, or not in org
     if (projectError || !project || project.organizationId !== organizationId) {
       navigate(ROUTES.LOGIN, { replace: true });
       return;
@@ -34,14 +39,21 @@ export default function CanvasPage() {
   }, [user, org, project, userLoading, orgLoading, projectLoading, orgError, projectError, organizationId, projectId, navigate]);
 
   if (userLoading || orgLoading || projectLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Typography variant="body1" align="center" sx={{ mt: 4 }}>
+        Loading...
+      </Typography>
+    );
   }
 
   if (orgError || projectError) {
-    return <div style={{ color: "red" }}>Access Denied</div>;
+    return (
+      <Typography color="error" align="center" sx={{ mt: 4, fontWeight: 600 }}>
+        Access Denied
+      </Typography>
+    );
   }
 
-  // If checks pass, render the canvas
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -49,14 +61,17 @@ export default function CanvasPage() {
   };
 
   return (
-    <div>
-      <h2>Canvas Page</h2>
-      <div>Organization: {org?.name}</div>
-      <div>Project: {project?.name}</div>
-      <button onClick={handleLogout} style={{ marginTop: 16 }}>
-        Log Out
-      </button>
-      {/* Canvas content goes here */}
-    </div>
+    <Box display="flex" flexDirection="column" minHeight="100vh">
+      <CanvasHeader
+        orgName={org?.name}
+        projectName={project?.name}
+        onLogout={handleLogout}
+      />
+      <Box sx={{ flex: 1, pt: { xs: "56px", sm: "64px" } }}>
+
+
+
+      </Box>
+    </Box>
   );
 }

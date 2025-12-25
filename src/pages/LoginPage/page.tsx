@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import CustomButton from "@components/CustomButton";
+import CustomForm from "@components/CustomForm";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useLogin } from "@api";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
@@ -33,36 +37,52 @@ export default function LoginPage() {
 
   return (
     <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 12 }}>
+
+      <Typography variant="h5" component="h2" align="center" sx={{ mb: 2 }}>
+        Login
+      </Typography>
+
+      <CustomForm onSubmit={handleSubmit}>
+
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+          defaultValue="musketeer@scriptscape.com"
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
+        
+        <CustomButton
+          type="submit"
+          disabled={loading}
+        >
           {loading ? "Processing..." : "Login"}
-        </button>
-        {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-      </form>
-      <div style={{ marginTop: 16 }}>
-        Don't have an account? <a href={ROUTES.REGISTER || "/register"}>Register</a>
-      </div>
+        </CustomButton>
+
+        {error && (
+          <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
+            {error}
+          </Typography>
+        )}
+        
+      </CustomForm>
+
+      <Typography sx={{ mt: 2 }} align="center" variant="body2">
+        Don't have an account?{" "}
+        <a href={ROUTES.REGISTER || "/register"}>Register</a>
+      </Typography>
+
     </div>
   );
 }

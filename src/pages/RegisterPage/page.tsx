@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import CustomButton from "@components/CustomButton";
+import CustomForm from "@components/CustomForm";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useRegister, useLogin, useCreateOrganization, useCreateProject } from "@api";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
@@ -65,66 +69,74 @@ export default function RegisterPage() {
 
   return (
     <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>First Name</label>
-          <input
-            type="text"
-            value={firstName}
-            onChange={e => setFirstName(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <div>
-          <label>Organization Name</label>
-          <input
-            type="text"
-            value={orgName}
-            onChange={e => setOrgName(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <div>
-          <label>Project Name</label>
-          <input
-            type="text"
-            value={projectName}
-            onChange={e => setProjectName(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-        </div>
-        <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 12 }}>
+
+      <Typography variant="h5" component="h2" align="center" sx={{ mb: 2 }}>
+        Register
+      </Typography>
+
+      <CustomForm onSubmit={handleSubmit}>
+
+        <TextField
+          label="First Name"
+          type="text"
+          value={firstName}
+          onChange={e => setFirstName(e.target.value)}
+          required
+        />
+
+        <TextField
+          label="Organization Name"
+          type="text"
+          value={orgName}
+          onChange={e => setOrgName(e.target.value)}
+          required
+        />
+
+        <TextField
+          label="Project Name"
+          type="text"
+          value={projectName}
+          onChange={e => setProjectName(e.target.value)}
+          required
+        />
+
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          autoComplete="new-password"
+        />
+        
+        <CustomButton
+          type="submit"
+          disabled={loading}
+        >
           {loading ? "Processing..." : "Register"}
-        </button>
-        {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-      </form>
-      <div style={{ marginTop: 16 }}>
+        </CustomButton>
+
+        {error && (
+          <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
+            {error}
+          </Typography>
+        )}
+
+      </CustomForm>
+
+      <Typography sx={{ mt: 2 }} align="center" variant="body2">
         Already have an account? <a href={ROUTES.LOGIN}>Login</a>
-      </div>
+      </Typography>
+      
     </div>
   );
 }
