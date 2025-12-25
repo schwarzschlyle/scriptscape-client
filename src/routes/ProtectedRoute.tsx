@@ -1,12 +1,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useCurrentUser } from "@api/users/queries";
 import { ROUTES } from "@routes/routes.config";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 export const ProtectedRoute = () => {
   const { data: user, isLoading } = useCurrentUser();
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   if (!user) {

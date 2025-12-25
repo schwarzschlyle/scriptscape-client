@@ -33,14 +33,24 @@ const CanvasHeader = ({ orgName, projectName, onLogout }: CanvasHeaderProps) => 
       alignItems="center"
       justifyContent="space-between"
       spacing={2}
-      flexWrap="wrap"
     >
-      <Stack direction="row" alignItems="center" spacing={2}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          minWidth: 0,
+          overflow: "hidden",
+          flexShrink: 1,
+          whiteSpace: "nowrap",
+          textOverflow: "ellipsis",
+        }}
+      >
         <CanvasTitle>ScriptScape Canvas</CanvasTitle>
         <OrgName name={orgName} />
         <ProjectName name={projectName} />
       </Stack>
-      <Box>
+      <Box sx={{ flexShrink: 0 }}>
         <LogoutButton onClick={onLogout} />
       </Box>
     </Stack>

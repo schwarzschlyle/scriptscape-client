@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import CanvasHeader from "@components/molecules/CanvasHeader";
+import LoadingSpinner from "@components/LoadingSpinner";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurrentUser, useOrganization, useProjectByOrg } from "@api";
 import { ROUTES } from "@routes/routes.config";
@@ -39,11 +40,7 @@ export default function CanvasPage() {
   }, [user, org, project, userLoading, orgLoading, projectLoading, orgError, projectError, organizationId, projectId, navigate]);
 
   if (userLoading || orgLoading || projectLoading) {
-    return (
-      <Typography variant="body1" align="center" sx={{ mt: 4 }}>
-        Loading...
-      </Typography>
-    );
+    return <LoadingSpinner label="Accessing Canvas..." />;
   }
 
   if (orgError || projectError) {
