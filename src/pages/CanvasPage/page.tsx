@@ -6,6 +6,7 @@ import LoadingSpinner from "@components/LoadingSpinner";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCurrentUser, useOrganization, useProjectByOrg } from "@api";
 import { ROUTES } from "@routes/routes.config";
+import queryClient from "@api/queryClient";
 
 export default function CanvasPage() {
   const { organizationId = "", projectId = "" } = useParams();
@@ -52,8 +53,11 @@ export default function CanvasPage() {
   }
 
   const handleLogout = () => {
+    // Remove persisted tokens and query cache
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("reactQueryCache");
+    queryClient.clear();
     navigate(ROUTES.LOGIN, { replace: true });
   };
 
