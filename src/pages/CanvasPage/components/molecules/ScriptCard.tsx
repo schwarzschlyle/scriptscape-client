@@ -12,6 +12,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CircularProgress from "@mui/material/CircularProgress";
+import Divider from "@mui/material/Divider";
 import { useScriptSaveHandler } from "@hooks/useScriptSaveHandler";
 import { useScriptDeleteHandler } from "@hooks/useScriptDeleteHandler";
 import type { Script } from "@api/scripts/types";
@@ -153,25 +154,26 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
     <Box sx={{ position: "relative" }}>
       <Card sx={{ minHeight: 220, display: "flex", flexDirection: "column", opacity: deleting ? 0.5 : 1 }}>
         <CardContent sx={{ flex: 1 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" gutterBottom noWrap>
+          <Box sx={{ width: "100%", textAlign: "center" }}>
+            <Typography variant="subtitle2" gutterBottom noWrap>
               {name || "Untitled Script"}
             </Typography>
-            <Box>
-              <IconButton size="small" onClick={() => setEditing(true)} disabled={deleting}>
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" onClick={deleteHandler} disabled={deleting}>
-                {deleting ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
-              </IconButton>
-            </Box>
+          </Box>
+          <Divider sx={{ mb: 1 }} />
+          <Box display="flex" alignItems="center" justifyContent="flex-end" sx={{ mb: 1 }}>
+            <IconButton size="small" onClick={() => setEditing(true)} disabled={deleting}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={deleteHandler} disabled={deleting}>
+              {deleting ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
+            </IconButton>
           </Box>
           <Box
             sx={{
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               fontFamily: "monospace",
-              fontSize: 14,
+              fontSize: 12,
               color: "text.secondary",
             }}
           >
