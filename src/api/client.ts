@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
