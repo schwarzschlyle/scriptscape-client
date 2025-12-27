@@ -57,7 +57,7 @@ function DraggableScriptCard({
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: 1,
+        zIndex: active ? 100 : 1,
         boxShadow: 2,
         bgcolor: "background.paper",
         display: "flex",

@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import SaveIcon from "@mui/icons-material/Save";
-import CancelIcon from "@mui/icons-material/Cancel";
-import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import type { Script } from "@api/scripts/types";
 import ScriptCardHeader from "./ScriptCardHeader";
@@ -41,23 +34,37 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
-  const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState({ name: script.name || "", text: script.text || "" });
+  const [editingBody, setEditingBody] = useState(false);
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    setEditing(false);
-    try {
-      await onSave(name, text);
-    } catch (e: any) {
-      setError(e?.message || "Failed to save script.");
-    } finally {
-      setSaving(false);
+  // Exit body editing on card deactivation
+  React.useEffect(() => {
+    if (!active && editingBody) {
+      setEditingBody(false);
     }
-  };
+  }, [active, editingBody]);
+
+  // Save on deactivate (when active goes from true to false)
+  React.useEffect(() => {
+    if (!active && (name !== lastSaved.name || text !== lastSaved.text)) {
+      (async () => {
+        setSaving(true);
+        setError(null);
+        try {
+          await onSave(name, text);
+          setLastSaved({ name, text });
+        } catch (e: any) {
+          setError(e?.message || "Failed to save script.");
+        } finally {
+          setSaving(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -70,79 +77,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
       setDeleting(false);
     }
   };
-
-  if (editing) {
-    return (
-      <Box sx={{ position: "relative" }}>
-        <Card
-          sx={{
-            minHeight: 220,
-            display: "flex",
-            flexDirection: "column",
-            opacity: saving ? 0.7 : 1,
-            outline: active ? "2.5px solid #abf43e" : "none",
-            outlineOffset: "0px",
-            borderRadius: 2,
-          }}
-        >
-          <CardContent sx={{ flex: 1 }}>
-            <TextField
-              label="Script Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              fullWidth
-              margin="dense"
-              size="small"
-              sx={{ mb: 1 }}
-              disabled={saving}
-            />
-            <TextField
-              label="Script"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              fullWidth
-              multiline
-              minRows={4}
-              margin="dense"
-              size="small"
-              disabled={saving}
-            />
-            {error && (
-              <Box sx={{ mt: 1 }}>
-                <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-              </Box>
-            )}
-          </CardContent>
-          <CardActions>
-            <Button
-              size="small"
-              color="primary"
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSave}
-              disabled={saving || !text.trim()}
-            >
-              {saving ? <CircularProgress size={18} /> : "Save"}
-            </Button>
-            <Button
-              size="small"
-              color="secondary"
-              startIcon={<CancelIcon />}
-              onClick={() => {
-                setEditing(false);
-                setName(script.name || "");
-                setText(script.text || "");
-                if (isNew && onSavedOrCancel) onSavedOrCancel();
-              }}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-          </CardActions>
-        </Card>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -163,17 +97,23 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
       >
         <ScriptCardHeader
           name={name}
-          editing={editing}
+          onNameChange={setName}
           deleting={deleting}
-          onEdit={() => setEditing(true)}
           onDelete={handleDelete}
           dragAttributes={dragAttributes}
           dragListeners={dragListeners}
           active={active}
+          editable={!saving && !deleting}
         />
         <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
-          <ScriptCardBody text={text} />
+          <ScriptCardBody
+            text={text}
+            onTextChange={setText}
+            editable={editingBody && !saving && !deleting}
+            onRequestEditBody={() => setEditingBody(true)}
+            onBodyBlur={() => setEditingBody(false)}
+          />
           {error && (
             <Box sx={{ mt: 1, px: 2 }}>
               <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
