@@ -9,6 +9,7 @@ export interface UseCanvasAreaLogicProps {
 }
 
 type ScriptsState = Script[];
+type PositionsState = { [id: string]: { x: number; y: number } };
 
 const getCacheKey = (organizationId: string, projectId: string) =>
   `scripts-cache-${organizationId}-${projectId}`;
@@ -19,6 +20,7 @@ export function useCanvasAreaLogic({
   onSyncChange,
 }: UseCanvasAreaLogicProps) {
   const [scripts, setScripts] = useState<ScriptsState>([]);
+  const [positions, setPositions] = useState<PositionsState>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,12 +66,23 @@ export function useCanvasAreaLogic({
     };
   }, [organizationId, projectId]);
 
+  // Always assign a position for every script in scripts
+  useEffect(() => {
+    setPositions((prev) => {
+      const next: PositionsState = {};
+      scripts.forEach((s, i) => {
+        next[s.id] = prev[s.id] || { x: 40 + (i % 5) * 60, y: 40 + Math.floor(i / 5) * 120 };
+      });
+      return next;
+    });
+  }, [scripts]);
+
   // Syncing indicator for CanvasHeader
   useEffect(() => {
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // Optimistic Create
+  // CREATE (truly optimistic)
   const handleAddScript = useCallback(() => {
     const tempId = `temp-${Date.now()}`;
     const newScript: Script = {
@@ -121,7 +134,7 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // Optimistic Update
+  // EDIT (truly optimistic)
   const handleEditScript = useCallback(
     async (id: string, name: string, text: string) => {
       setScripts((prev) => {
@@ -160,7 +173,7 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // Optimistic Delete
+  // DELETE (already optimistic)
   const handleDeleteScript = useCallback(
     async (id: string) => {
       setScripts((prev) => {
@@ -205,11 +218,20 @@ export function useCanvasAreaLogic({
     });
   }, [organizationId, projectId]);
 
+  // Update position of a script card
+  const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
+    setPositions((prev) => ({
+      ...prev,
+      [id]: { x, y },
+    }));
+  }, []);
+
   // Clear error
   const clearError = useCallback(() => setError(null), []);
 
   return {
     scripts,
+    positions,
     loading,
     error,
     syncing,
@@ -218,6 +240,7 @@ export function useCanvasAreaLogic({
     handleEditScript,
     handleDeleteScript,
     handleRemoveNewScript,
+    handleCardPositionChange,
     clearError,
   };
 }

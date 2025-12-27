@@ -3,8 +3,11 @@ import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
 import AddScriptButton from "./AddScriptButton";
 import LoadingSpinner from "@components/LoadingSpinner";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import type { Script } from "@api/scripts/types";
 import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
+import { DndContext, useDraggable } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -13,10 +16,96 @@ interface CanvasAreaProps {
 }
 
 const CARD_WIDTH = 340;
+const CANVAS_SIZE = 10000; // px
+
+function DraggableScriptCard({
+  script,
+  position,
+  onPositionChange,
+  ...props
+}: {
+  script: Script;
+  position: { x: number; y: number };
+  onPositionChange: (id: string, x: number, y: number) => void;
+  organizationId: string;
+  projectId: string;
+  isNew: boolean;
+  onSavedOrCancel: () => void;
+  onSave: (name: string, text: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: script.id,
+  });
+
+  // Calculate the current position (drag offset + base position)
+  const x = position.x + (transform?.x ?? 0);
+  const y = position.y + (transform?.y ?? 0);
+
+  return (
+    <Box
+      ref={setNodeRef}
+      sx={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: CARD_WIDTH,
+        minWidth: 0,
+        m: 0,
+        flex: "0 1 auto",
+        zIndex: 1,
+        boxShadow: 2,
+        bgcolor: "background.paper",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        tabIndex={0}
+        title="Drag to move"
+        aria-label="Drag to move"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "grab",
+          color: "#1976d2",
+          fontSize: 28,
+          background: "#e3f2fd",
+          borderRadius: 6,
+          padding: 8,
+          outline: "none",
+          width: 40,
+          height: 40,
+          marginLeft: "auto",
+          marginRight: 8,
+          marginTop: 8,
+          marginBottom: 0,
+          border: "2px solid #90caf9",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        }}
+      >
+        <DragIndicatorIcon fontSize="large" />
+      </button>
+      <ScriptCard
+        script={script}
+        organizationId={props.organizationId}
+        projectId={props.projectId}
+        isNew={props.isNew}
+        onSavedOrCancel={props.onSavedOrCancel}
+        onSave={props.onSave}
+        onDelete={props.onDelete}
+      />
+    </Box>
+  );
+}
 
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
   const {
     scripts,
+    positions,
     loading,
     error,
     syncing,
@@ -25,40 +114,51 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleEditScript,
     handleDeleteScript,
     handleRemoveNewScript,
+    handleCardPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+
+  // Handle drag end to update position
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, delta } = event;
+    const id = active.id as string;
+    const pos = positions[id];
+    if (!pos) return;
+    // Update position by adding delta
+    handleCardPositionChange(id, pos.x + delta.x, pos.y + delta.y);
+  };
 
   return (
     <Box
       sx={{
-        position: "relative",
-        flex: 1,
-        width: "100%",
-        minHeight: "calc(100vh - 64px)",
-        bgcolor: "background.default",
-        p: 3,
-        pt: 8,
-        overflow: "auto",
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        bgcolor: "#f0f4fa",
+        p: 0,
+        m: 0,
+        overflow: "scroll",
       }}
     >
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        gap={2}
-        alignItems="flex-start"
-        justifyContent="flex-start"
-      >
-        {scripts.map((script: Script) => (
-          <Box
-            key={script.id}
-            sx={{
-              width: CARD_WIDTH,
-              minWidth: 0,
-              m: 1,
-              flex: "0 1 auto",
-            }}
-          >
-            <ScriptCard
+      <DndContext onDragEnd={handleDragEnd}>
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: `${CANVAS_SIZE}px`,
+            height: `${CANVAS_SIZE}px`,
+            border: "2px dashed #90caf9",
+            bgcolor: "#e3f2fd",
+            cursor: "default",
+          }}
+        >
+          {scripts.map((script: Script) => (
+            <DraggableScriptCard
+              key={script.id}
               script={script}
+              position={positions[script.id] || { x: 200, y: 200 }}
+              onPositionChange={handleCardPositionChange}
               organizationId={organizationId}
               projectId={projectId}
               isNew={script.id.startsWith("temp-")}
@@ -70,9 +170,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               }
               onDelete={() => handleDeleteScript(script.id)}
             />
-          </Box>
-        ))}
-      </Box>
+          ))}
+        </Box>
+      </DndContext>
       <AddScriptButton onClick={handleAddScript} />
       {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
