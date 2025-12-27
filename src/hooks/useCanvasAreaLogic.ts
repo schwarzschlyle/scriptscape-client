@@ -581,16 +581,18 @@ export function useCanvasAreaLogic({
           },
         };
       });
+      setSyncing(true);
+      if (onSyncChange) onSyncChange(true);
       try {
         await updateSegmentMutation.mutateAsync({ id: segmentId, data: { text: newText } });
         setSegmentCollections((prev) => {
           const col = prev[colId];
           if (!col) return prev;
-        const updatedSegments = col.segments.map((seg, i) =>
-          (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
-            ? { ...seg, text: newText, isSaving: false, error: null }
-            : seg
-        );
+          const updatedSegments = col.segments.map((seg, i) =>
+            (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
+              ? { ...seg, text: newText, isSaving: false, error: null }
+              : seg
+          );
           return {
             ...prev,
             [colId]: {
@@ -605,11 +607,11 @@ export function useCanvasAreaLogic({
         setSegmentCollections((prev) => {
           const col = prev[colId];
           if (!col) return prev;
-        const updatedSegments = col.segments.map((seg, i) =>
-          (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
-            ? { ...seg, isSaving: false, error: e?.message || "Failed to update segment." }
-            : seg
-        );
+          const updatedSegments = col.segments.map((seg, i) =>
+            (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
+              ? { ...seg, isSaving: false, error: e?.message || "Failed to update segment." }
+              : seg
+          );
           return {
             ...prev,
             [colId]: {
@@ -620,6 +622,9 @@ export function useCanvasAreaLogic({
             },
           };
         });
+      } finally {
+        setSyncing(false);
+        if (onSyncChange) onSyncChange(false);
       }
     },
     [updateSegmentMutation]

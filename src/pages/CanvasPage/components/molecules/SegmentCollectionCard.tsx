@@ -156,9 +156,8 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             <Box key={segments[idx]?.id || segments[idx]?.tempId || idx} sx={{ mb: 2 }}>
               {editingSegmentIndex === idx ? (
                 <textarea
-                  value={isNew ? localSegments[idx].text : segments[idx].text}
+                  value={localSegments[idx].text}
                   onChange={e => {
-                    // Always update local state for immediate UI feedback
                     setLocalSegments(ls =>
                       ls.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
                     );
