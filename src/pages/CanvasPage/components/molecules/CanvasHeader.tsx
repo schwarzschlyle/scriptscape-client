@@ -36,6 +36,7 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
       height: 64,
       display: "flex",
       alignItems: "center",
+      transform: "none !important",
     }}
   >
     <Box

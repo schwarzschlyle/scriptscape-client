@@ -15,6 +15,7 @@ const AddScriptButton: React.FC<AddScriptButtonProps> = ({ onClick }) => (
       right: 32,
       zIndex: 1200,
       pointerEvents: "none",
+      transform: "none !important",
     }}
   >
     <Fab

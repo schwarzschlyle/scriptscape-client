@@ -8,6 +8,7 @@ import type { Script } from "@api/scripts/types";
 import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
 import { DndContext, useDraggable } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
+import ZoomControls from "./ZoomControls";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -95,6 +96,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleCardPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
+  // Canvas zoom state (1.0 = 100%)
+  const [zoom, setZoom] = React.useState(1.0);
+
   // Active card state
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
@@ -146,6 +150,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               "radial-gradient(#646564 1.5px, transparent 1.5px)",
             backgroundSize: "32px 32px",
             cursor: "default",
+            transform: `scale(${zoom})`,
+            transformOrigin: "top left",
+            transition: "transform 0.2s",
           }}
         >
           {scripts.map((script: Script) => (
@@ -171,6 +178,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         </Box>
       </DndContext>
       <AddScriptButton onClick={handleAddScript} />
+      <ZoomControls zoom={zoom} setZoom={setZoom} />
       {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
           <LoadingSpinner size={32} label="" />
