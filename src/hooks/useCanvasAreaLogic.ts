@@ -690,7 +690,7 @@ export function useCanvasAreaLogic({
   // Optimistic Create
   const handleAddScript = useCallback(() => {
     const tempId = `temp-${Date.now()}`;
-    const newScript: Script = {
+    const newScript: Script & { isSaving?: boolean; deleting?: boolean } = {
       id: tempId,
       name: "",
       text: "",
@@ -698,6 +698,8 @@ export function useCanvasAreaLogic({
       version: 1,
       createdAt: "",
       updatedAt: "",
+      isSaving: false,
+      deleting: false,
     };
     setScripts((prev) => {
       const updated = [newScript, ...prev];
@@ -710,7 +712,7 @@ export function useCanvasAreaLogic({
     async (tempId: string, name: string, text: string) => {
       setScripts((prev) => {
         const updated = prev.map((s) =>
-          s.id === tempId ? { ...s, name, text } : s
+          s.id === tempId ? { ...s, name, text, isSaving: true } : s
         );
         updateCache(updated);
         return updated;
@@ -720,7 +722,7 @@ export function useCanvasAreaLogic({
         const created = await createScript(organizationId, projectId, { name, text });
         setScripts((prev) => {
           const updated = prev.map((s) =>
-            s.id === tempId ? { ...created } : s
+            s.id === tempId ? { ...created, isSaving: false, deleting: false } : s
           );
           updateCache(updated);
           return updated;
@@ -743,6 +745,11 @@ export function useCanvasAreaLogic({
         });
         setError("Failed to create script.");
       } finally {
+        setScripts((prev) =>
+          prev.map((s) =>
+            s.id === tempId ? { ...s, isSaving: false } : s
+          )
+        );
         setSyncing(false);
       }
     },
@@ -754,7 +761,7 @@ export function useCanvasAreaLogic({
     async (id: string, name: string, text: string) => {
       setScripts((prev) => {
         const updated = prev.map((s) =>
-          s.id === id ? { ...s, name, text } : s
+          s.id === id ? { ...s, name, text, isSaving: true } : s
         );
         updateCache(updated);
         return updated;
@@ -762,6 +769,11 @@ export function useCanvasAreaLogic({
       setSyncing(true);
       try {
         await updateScript(organizationId, projectId, id, { name, text });
+        setScripts((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, isSaving: false } : s
+          )
+        );
       } catch (e) {
         setScripts((prev) => {
           const cacheKey = getCacheKey(organizationId, projectId);
@@ -776,7 +788,9 @@ export function useCanvasAreaLogic({
             } catch {}
           }
           updateCache(fallback);
-          return fallback;
+          return fallback.map((s) =>
+            s.id === id ? { ...s, isSaving: false } : s
+          );
         });
         setError("Failed to update script.");
       } finally {
@@ -789,15 +803,43 @@ export function useCanvasAreaLogic({
   // Optimistic Delete
   const handleDeleteScript = useCallback(
     async (id: string) => {
-      setScripts((prev) => {
-        const updated = prev.filter((s) => s.id !== id);
-        updateCache(updated);
+      // Find all child segment collections
+      const childCollectionIds = Object.values(segmentCollections)
+        .filter(col => col.parentScriptId === id)
+        .map(col => col.id);
+
+      // Optimistically remove child segment collections from state and localStorage
+      setSegmentCollections((prev) => {
+        const updated = { ...prev };
+        childCollectionIds.forEach(colId => {
+          delete updated[colId];
+        });
+        localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(updated));
         return updated;
       });
+      setSegColPositions((prev) => {
+        const updated = { ...prev };
+        childCollectionIds.forEach(colId => {
+          delete updated[colId];
+        });
+        localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(updated));
+        return updated;
+      });
+
+      // Optimistically remove the script from the UI immediately
+      setScripts((prev) => prev.filter((s) => s.id !== id));
+
       setSyncing(true);
       try {
+        // Delete all child segment collections in the backend
+        for (const colId of childCollectionIds) {
+          if (colId) {
+            await deleteCollectionMutation.mutateAsync(colId);
+          }
+        }
         await deleteScript(organizationId, projectId, id);
       } catch (e) {
+        // If deletion fails, reload scripts from cache (fallback)
         setScripts((prev) => {
           const cacheKey = getCacheKey(organizationId, projectId);
           const cached = localStorage.getItem(cacheKey);
@@ -818,7 +860,7 @@ export function useCanvasAreaLogic({
         setSyncing(false);
       }
     },
-    [organizationId, projectId]
+    [organizationId, projectId, segmentCollections, deleteCollectionMutation]
   );
 
   // Remove new script (cancel)

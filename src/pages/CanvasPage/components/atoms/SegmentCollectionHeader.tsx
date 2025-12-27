@@ -5,6 +5,7 @@ interface SegmentCollectionHeaderProps {
   name: string;
   onNameChange?: (value: string) => void;
   deleting?: boolean;
+  isSaving?: boolean;
   onDelete?: () => void;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
@@ -16,6 +17,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
   name,
   onNameChange,
   deleting,
+  isSaving = false,
   onDelete,
   dragAttributes,
   dragListeners,
@@ -93,6 +95,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
         onEditStart={() => setEditing(true)}
         onEditEnd={() => setEditing(false)}
         deleting={deleting}
+        isSaving={isSaving}
         onDelete={onDelete}
         dragAttributes={dragAttributes}
         dragListeners={dragListeners}
@@ -105,9 +108,14 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                background: active ? "#abf43e" : "#6a6967",
+                background: isSaving
+                  ? "#ff9800"
+                  : active
+                  ? "#abf43e"
+                  : "#6a6967",
                 marginRight: 8,
                 border: "1.5px solid #232523",
+                transition: "background 0.2s",
               }}
             />
           </div>

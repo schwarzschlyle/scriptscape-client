@@ -30,6 +30,7 @@ interface SegmentCollectionCardProps {
   isNew?: boolean;
   onSavedOrCancel?: () => void;
   onSave?: (name: string, segments: { text: string }[]) => Promise<void>;
+  syncing?: boolean;
 }
 
 const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
@@ -51,6 +52,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   isNew = false,
   onSavedOrCancel,
   onSave,
+  syncing = false,
 }) => {
   // Local state for editing name and segments in "new" mode
   const [localName, setLocalName] = useState(name || "");
@@ -143,6 +145,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           name={isNew ? localName : name}
           onNameChange={isNew ? setLocalName : onNameChange}
           deleting={deleting}
+          isSaving={isSaving}
           onDelete={onDelete}
           dragAttributes={dragAttributes}
           dragListeners={dragListeners}

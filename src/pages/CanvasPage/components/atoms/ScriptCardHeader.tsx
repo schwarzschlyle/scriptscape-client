@@ -10,6 +10,7 @@ interface ScriptCardHeaderProps {
   name: string;
   onNameChange?: (value: string) => void;
   deleting: boolean;
+  isSaving?: boolean;
   onDelete: () => void;
   // Drag handle props from dnd-kit
   dragAttributes?: React.HTMLAttributes<any>;
@@ -97,20 +98,25 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
             }}
           />
         }
-        actions={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, marginLeft: "auto" }}>
-            <Box
-              sx={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: props.active ? "#abf43e" : "#6a6967",
-                marginRight: 1,
-                border: "1.5px solid #232523",
-              }}
-            />
-          </Box>
-        }
+      actions={
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, marginLeft: "auto" }}>
+          <Box
+            sx={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: props.isSaving
+                ? "#ff9800"
+                : props.active
+                ? "#abf43e"
+                : "#6a6967",
+              marginRight: 1,
+              border: "1.5px solid #232523",
+              transition: "background 0.2s",
+            }}
+          />
+        </Box>
+      }
         editable={props.editable}
         editing={editing}
         onEditStart={() => setEditing(true)}

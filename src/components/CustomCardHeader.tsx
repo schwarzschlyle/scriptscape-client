@@ -14,6 +14,7 @@ export interface CustomCardHeaderProps {
   onEditEnd?: () => void;
   onTitleChange?: (value: string) => void;
   deleting?: boolean;
+  isSaving?: boolean;
   onDelete?: () => void;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
@@ -33,6 +34,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
   onEditEnd,
   onTitleChange,
   deleting = false,
+  isSaving = false,
   onDelete,
   dragAttributes,
   dragListeners,
@@ -150,10 +152,13 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         {onDelete && (
           <IconButton
             size="small"
-            onClick={onDelete}
-            disabled={deleting}
+            onClick={deleting || isSaving ? undefined : onDelete}
+            disabled={deleting || isSaving}
             aria-label="Delete"
-            sx={{ color: "#e53935" }}
+            sx={{
+              color: deleting || isSaving ? "#bdbdbd" : "#e53935",
+              cursor: deleting || isSaving ? "not-allowed" : "pointer",
+            }}
             style={{ display: "inline-flex" }}
           >
             {deleting ? <CircularProgress size={18} /> : <span>&times;</span>}

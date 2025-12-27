@@ -21,6 +21,8 @@ interface ScriptCardProps {
   active?: boolean;
   onClick?: () => void;
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
+  isSaving?: boolean;
+  deleting?: boolean;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
@@ -32,11 +34,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   active = false,
   onClick,
   onAddSegmentCollection,
+  isSaving = false,
+  deleting = false,
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  // Remove local saving/deleting state, use props only
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState({ name: script.name || "", text: script.text || "" });
   const [editingBody, setEditingBody] = useState(false);
@@ -64,15 +67,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   React.useEffect(() => {
     if (!active && (name !== lastSaved.name || text !== lastSaved.text)) {
       (async () => {
-        setSaving(true);
         setError(null);
         try {
           await onSave(name, text);
           setLastSaved({ name, text });
         } catch (e: any) {
           setError(e?.message || "Failed to save script.");
-        } finally {
-          setSaving(false);
         }
       })();
     }
@@ -80,14 +80,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   }, [active]);
 
   const handleDelete = async () => {
-    setDeleting(true);
+    if (isSaving || deleting) return;
     setError(null);
     try {
       await onDelete();
     } catch (e: any) {
       setError(e?.message || "Failed to delete script.");
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -98,11 +96,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           name={name}
           onNameChange={setName}
           deleting={deleting}
+          isSaving={isSaving}
           onDelete={handleDelete}
           dragAttributes={dragAttributes}
           dragListeners={dragListeners}
           active={active}
-          editable={!saving && !deleting}
+          editable={!isSaving && !deleting}
         />
       }
       body={
@@ -110,7 +109,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           <ScriptCardBody
             text={text}
             onTextChange={setText}
-            editable={editingBody && !saving && !deleting}
+            editable={editingBody && !isSaving && !deleting}
             onRequestEditBody={() => setEditingBody(true)}
             onBodyBlur={() => setEditingBody(false)}
           >
@@ -127,16 +126,20 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
                 width: 32,
                 height: 32,
                 borderRadius: "50%",
-                background: "#73a32c",
+                background: isSaving ? "#bdbdbd" : "#73a32c",
                 color: "#fff",
                 border: "none",
                 fontSize: 24,
-                cursor: "pointer",
+                cursor: isSaving ? "not-allowed" : "pointer",
                 boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)",
                 transition: "background 0.2s",
+                opacity: isSaving ? 0.5 : 1,
               }}
-              onClick={() => setShowAddSegmentCollectionModal(true)}
+              onClick={() => {
+                if (!isSaving) setShowAddSegmentCollectionModal(true);
+              }}
               aria-label="Add Segment Collection"
+              disabled={isSaving}
             >
               +
             </button>

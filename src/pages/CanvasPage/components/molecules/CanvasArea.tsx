@@ -26,6 +26,8 @@ function DraggableScriptCard({
   active,
   setActive,
   onAddSegmentCollection,
+  isSaving,
+  deleting,
   ...props
 }: {
   script: Script;
@@ -40,6 +42,8 @@ function DraggableScriptCard({
   active: boolean;
   setActive: (id: string) => void;
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
+  isSaving?: boolean;
+  deleting?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: script.id,
@@ -80,6 +84,8 @@ function DraggableScriptCard({
         active={active}
         onClick={() => setActive(script.id)}
         onAddSegmentCollection={onAddSegmentCollection}
+        isSaving={isSaving}
+        deleting={deleting}
       />
     </Box>
   );
@@ -93,6 +99,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     segColPositions,
     loading,
     error,
+    syncing,
     handleAddScript,
     handleSaveNewScript,
     handleEditScript,
@@ -207,7 +214,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             {links}
           </svg>
           {/* ScriptCards */}
-          {scripts.map((script: Script) => (
+          {scripts.map((script: any) => (
             <DraggableScriptCard
               key={script.id}
               script={script}
@@ -228,10 +235,12 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               onAddSegmentCollection={(name: string, numSegments: number) =>
                 handleAddSegmentCollection(script.id, name, numSegments)
               }
+              isSaving={!!script.isSaving}
+              deleting={!!script.deleting}
             />
           ))}
           {/* SegmentCollectionCards */}
-          {Object.values(segmentCollections).map((col) => {
+          {Object.values(segmentCollections).map((col: any) => {
             const isNew = !!col.tempId && !col.id;
             return (
               <DraggableSegmentCollectionCard
@@ -255,6 +264,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                         handleSaveNewSegmentCollection(col.tempId as string, name, segments)
                     : undefined
                 }
+                isSaving={!!col.isSaving}
+                deleting={!!col.deleting}
               />
             );
           })}
@@ -288,6 +299,8 @@ function DraggableSegmentCollectionCard({
   onDelete,
   onSavedOrCancel,
   onSave,
+  isSaving,
+  deleting,
 }: {
   col: any;
   position: { x: number; y: number };
@@ -299,6 +312,8 @@ function DraggableSegmentCollectionCard({
   onDelete: (colId: string) => void;
   onSavedOrCancel?: () => void;
   onSave?: (name: string, segments: { text: string }[]) => Promise<void>;
+  isSaving?: boolean;
+  deleting?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: col.id || col.tempId,
@@ -330,13 +345,13 @@ function DraggableSegmentCollectionCard({
         tempId={col.tempId}
         name={col.name}
         segments={col.segments}
-        isSaving={col.isSaving}
-        deleting={col.deleting}
+        isSaving={isSaving}
+        deleting={deleting}
         error={col.error}
         dragAttributes={attributes}
         dragListeners={listeners}
         active={active}
-        editable={!col.isSaving && !col.deleting}
+        editable={!isSaving && !deleting}
         onClick={() => setActive(col.id || col.tempId)}
         onNameChange={(newName) => onNameChange(col.id || col.tempId, newName)}
         onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id || col.tempId, segmentId, newText, idx)}
