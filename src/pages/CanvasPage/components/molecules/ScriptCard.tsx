@@ -23,7 +23,6 @@ interface ScriptCardProps {
   onSavedOrCancel?: () => void;
   onSave: (name: string, text: string) => Promise<void>;
   onDelete: () => Promise<void>;
-  syncing?: boolean;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
@@ -32,7 +31,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   onSavedOrCancel,
   onSave,
   onDelete,
-  syncing,
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
@@ -127,24 +125,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             </Button>
           </CardActions>
         </Card>
-        {syncing && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              bgcolor: "rgba(255,255,255,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 2,
-            }}
-          >
-            <CircularProgress size={32} />
-          </Box>
-        )}
+        {/* No global syncing overlay */}
       </Box>
     );
   }
@@ -180,24 +161,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           </Box>
         </CardContent>
       </Card>
-      {syncing && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            bgcolor: "rgba(255,255,255,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-          }}
-        >
-          <CircularProgress size={32} />
-        </Box>
-      )}
+      {/* No global syncing overlay */}
     </Box>
   );
 };
