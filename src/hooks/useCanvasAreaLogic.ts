@@ -333,6 +333,8 @@ export function useCanvasAreaLogic({
       });
 
       // Immediately save to backend
+      setSyncing(true);
+      if (onSyncChange) onSyncChange(true);
       try {
         const segCol = await createSegmentCollectionMutation.mutateAsync({
           scriptId: parentScriptId,
@@ -385,6 +387,9 @@ export function useCanvasAreaLogic({
           return rest;
         });
         setError(e?.message || "Failed to create segment collection.");
+      } finally {
+        setSyncing(false);
+        if (onSyncChange) onSyncChange(false);
       }
     },
     [organizationId, projectId, positions, createSegmentCollectionMutation, createSegmentMutation]
