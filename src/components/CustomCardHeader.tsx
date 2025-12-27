@@ -5,7 +5,7 @@ import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 
 export interface CustomCardHeaderProps {
-  title?: string;
+  title?: React.ReactNode;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
   editable?: boolean;
@@ -104,7 +104,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         {editable && editing && onTitleChange ? (
           <input
             ref={inputRef}
-            value={title}
+            value={typeof title === "string" ? title : ""}
             onChange={e => onTitleChange(e.target.value)}
             onBlur={onEditEnd}
             style={{
