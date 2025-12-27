@@ -59,7 +59,7 @@ function DraggableScriptCard({
         flex: "0 1 auto",
         zIndex: active ? 100 : 1,
         boxShadow: 2,
-        bgcolor: "background.paper",
+        bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
@@ -141,10 +141,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             top: 0,
             width: `${CANVAS_SIZE}px`,
             height: `${CANVAS_SIZE}px`,
-            border: "2px dashed #90caf9",
-            bgcolor: "#fff",
+            bgcolor: "#111211",
             backgroundImage:
-              "radial-gradient(rgba(120,120,120,0.35) 1.5px, transparent 1.5px)",
+              "radial-gradient(#646564 1.5px, transparent 1.5px)",
             backgroundSize: "32px 32px",
             cursor: "default",
           }}

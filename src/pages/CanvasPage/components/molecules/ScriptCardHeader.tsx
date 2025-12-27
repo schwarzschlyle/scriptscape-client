@@ -1,5 +1,6 @@
 import React from "react";
 import Typography from "@mui/material/Typography";
+import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
@@ -61,10 +62,14 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = ({
         px: 1,
         py: 1,
         userSelect: "none",
-        background: "#2f332f",
+        background: "rgba(47,51,47,0.35)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
         borderBottom: "1px solid #1f211f",
+        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 2px 16px 0 rgba(0,0,0,0.08)",
         cursor: !editingName && dragListeners ? "grab" : "default",
       }}
       {...(!editingName ? { ...dragAttributes, ...dragListeners } : {})}
@@ -98,6 +103,17 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = ({
           />
         ) : (
           <>
+            <img
+              src={ScriptIcon}
+              alt="Script Icon"
+              style={{
+                width: 16,
+                height: 16,
+                marginRight: 8,
+                display: "inline-block",
+                verticalAlign: "middle",
+              }}
+            />
             <Typography
               variant="subtitle2"
               noWrap
@@ -105,7 +121,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = ({
                 fontWeight: 600,
                 color: "#73a32c",
                 fontSize: 16,
-                pl: 1,
+                pl: 0,
                 pr: 2,
                 flex: 1,
                 minWidth: 0,
@@ -113,6 +129,8 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = ({
                 cursor: editable ? "default" : "default",
                 userSelect: editable ? "text" : "none",
                 transition: "cursor 0.1s",
+                display: "inline-block",
+                verticalAlign: "middle",
               }}
             >
               {name || "Untitled Script"}

@@ -1,4 +1,5 @@
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import CanvasTitle from "../atoms/CanvasTitle";
 import ProjectName from "../atoms/ProjectName";
 import LogoutButton from "../atoms/LogoutButton";
@@ -25,9 +26,11 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
       py: { xs: 1, sm: 2 },
       pr: { xs: 4, sm: 8 },
       pl: { xs: 4, sm: 8 },
-      bgcolor: "background.paper",
-      borderBottom: "1px solid #eee",
-      boxShadow: 1,
+      background: "rgba(47,51,47,0.35)",
+      backdropFilter: "blur(16px)",
+      WebkitBackdropFilter: "blur(16px)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "0 2px 16px 0 rgba(0,0,0,0.08)",
       minHeight: 64,
       maxHeight: 64,
       height: 64,
@@ -37,35 +40,56 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
   >
     <Box
       sx={{
-        position: "relative",
         width: "100%",
         height: "100%",
         display: "flex",
         alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        gap: 2,
       }}
     >
-
+      {/* Project Name (left) */}
       <Box sx={{ flex: "0 0 auto", minWidth: 0 }}>
-        <CanvasTitle sx={{ mb: 0 }}>{orgName}</CanvasTitle>
-      </Box>
-
-      <Box
-        sx={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: "60%", sm: "40%" },
-          pointerEvents: "none",
-        }}
-      >
         <ProjectName name={projectName} />
       </Box>
 
+      {/* Organization Name (right of project name) */}
+      {orgName && (
+        <Box
+          sx={{
+            ml: 2,
+            px: 2,
+            py: 0.5,
+            bgcolor: "#E5E7EB",
+            borderRadius: 1,
+            display: "flex",
+            alignItems: "center",
+            height: 32,
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            sx={{
+              color: "#4B5563",
+              fontWeight: 700,
+              fontSize: 14,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+            }}
+          >
+            {orgName}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Spacer */}
+      <Box sx={{ flex: 1 }} />
+
+      {/* Spinner and Logout */}
       <Box
         sx={{
           flex: "0 0 auto",
-          marginLeft: "auto",
           display: "flex",
           alignItems: "center",
           gap: 2,

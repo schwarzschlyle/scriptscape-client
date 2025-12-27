@@ -6,7 +6,15 @@ interface LogoutButtonProps {
 }
 
 const LogoutButton = ({ onClick, children }: LogoutButtonProps) => (
-  <CustomButton onClick={onClick} sx={{ minWidth: 100, ml: { xs: 0, sm: 2 } }}>
+  <CustomButton
+    onClick={onClick}
+    sx={{
+      minWidth: 100,
+      ml: { xs: 0, sm: 2 },
+      color: "#fff",
+      borderColor: "#fff",
+    }}
+  >
     {children || "Log Out"}
   </CustomButton>
 );

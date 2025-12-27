@@ -19,7 +19,7 @@ const LoadingSpinner = ({ label = "Loading...", size = 48, sx }: LoadingSpinnerP
     width="100%"
     sx={{ py: 4, ...sx }}
   >
-    <CircularProgress size={size} color="secondary" />
+    <CircularProgress size={size} sx={{ color: "#abf43e" }} />
     {label && label.trim() !== "" && (
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
         {label}

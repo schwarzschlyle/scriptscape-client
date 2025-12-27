@@ -90,7 +90,8 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           outlineOffset: "0px",
           borderRadius: 2,
           transition: "outline 0.15s",
-          background: "#272927",
+          backgroundColor: "#272927",
+          overflow: "hidden",
           p: 0,
         }}
         onClick={onClick}
@@ -106,7 +107,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           editable={!saving && !deleting}
         />
         <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
           <ScriptCardBody
             text={text}
             onTextChange={setText}

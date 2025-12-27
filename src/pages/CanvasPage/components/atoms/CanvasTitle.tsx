@@ -11,7 +11,7 @@ const CanvasTitle = ({ children, sx }: CanvasTitleProps) => (
   <Typography
     variant="h5"
     component="h2"
-    sx={{ mb: { xs: 1, sm: 2 }, ...sx }}
+    sx={{ color: "#fff", mb: { xs: 1, sm: 2 }, ...sx }}
   >
     {children}
   </Typography>

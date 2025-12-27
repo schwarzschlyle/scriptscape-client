@@ -54,7 +54,7 @@ const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
           resize: "vertical",
           fontFamily: "monospace",
           fontSize: 14,
-          padding: 0,
+          padding: "8px",
         }}
         autoFocus
       />

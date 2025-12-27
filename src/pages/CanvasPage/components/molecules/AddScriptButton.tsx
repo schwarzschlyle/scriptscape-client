@@ -18,15 +18,16 @@ const AddScriptButton: React.FC<AddScriptButtonProps> = ({ onClick }) => (
     }}
   >
     <Fab
-      color="primary"
       aria-label="add"
       onClick={onClick}
       sx={{
         pointerEvents: "auto",
         boxShadow: 4,
+        bgcolor: "#272927",
+        "&:hover": { bgcolor: "#272927" },
       }}
     >
-      <AddIcon />
+      <AddIcon sx={{ color: "#abf43e" }} />
     </Fab>
   </Box>
 );
