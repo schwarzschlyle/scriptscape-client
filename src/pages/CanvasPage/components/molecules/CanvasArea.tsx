@@ -22,6 +22,8 @@ function DraggableScriptCard({
   script,
   position,
   onPositionChange,
+  active,
+  setActive,
   ...props
 }: {
   script: Script;
@@ -33,6 +35,8 @@ function DraggableScriptCard({
   onSavedOrCancel: () => void;
   onSave: (name: string, text: string) => Promise<void>;
   onDelete: () => Promise<void>;
+  active: boolean;
+  setActive: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: script.id,
@@ -60,35 +64,6 @@ function DraggableScriptCard({
         flexDirection: "column",
       }}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        tabIndex={0}
-        title="Drag to move"
-        aria-label="Drag to move"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "grab",
-          color: "#1976d2",
-          fontSize: 28,
-          background: "#e3f2fd",
-          borderRadius: 6,
-          padding: 8,
-          outline: "none",
-          width: 40,
-          height: 40,
-          marginLeft: "auto",
-          marginRight: 8,
-          marginTop: 8,
-          marginBottom: 0,
-          border: "2px solid #90caf9",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        }}
-      >
-        <DragIndicatorIcon fontSize="large" />
-      </button>
       <ScriptCard
         script={script}
         organizationId={props.organizationId}
@@ -97,6 +72,10 @@ function DraggableScriptCard({
         onSavedOrCancel={props.onSavedOrCancel}
         onSave={props.onSave}
         onDelete={props.onDelete}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        active={active}
+        onClick={() => setActive(script.id)}
       />
     </Box>
   );
@@ -115,6 +94,15 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleRemoveNewScript,
     handleCardPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+
+  // Active card state
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+
+  // Handle drag start to set active card
+  const handleDragStart = (event: any) => {
+    const id = event.active?.id as string;
+    if (id) setActiveId(id);
+  };
 
   // Handle drag end to update position
   const HEADER_HEIGHT = 64;
@@ -145,7 +133,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         overflow: "scroll",
       }}
     >
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <Box
           sx={{
             position: "absolute",
@@ -177,6 +165,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                   : handleEditScript(script.id, name, text)
               }
               onDelete={() => handleDeleteScript(script.id)}
+              active={activeId === script.id}
+              setActive={setActiveId}
             />
           ))}
         </Box>

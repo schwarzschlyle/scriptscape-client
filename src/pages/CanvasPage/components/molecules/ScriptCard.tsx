@@ -2,18 +2,16 @@ import React, { useState } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
-import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import type { Script } from "@api/scripts/types";
+import ScriptCardHeader from "./ScriptCardHeader";
+import ScriptCardBody from "./ScriptCardBody";
 
 interface ScriptCardProps {
   script: Script;
@@ -23,6 +21,11 @@ interface ScriptCardProps {
   onSavedOrCancel?: () => void;
   onSave: (name: string, text: string) => Promise<void>;
   onDelete: () => Promise<void>;
+  // Drag handle props from dnd-kit
+  dragAttributes?: React.HTMLAttributes<any>;
+  dragListeners?: any;
+  active?: boolean;
+  onClick?: () => void;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
@@ -31,6 +34,10 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   onSavedOrCancel,
   onSave,
   onDelete,
+  dragAttributes,
+  dragListeners,
+  active = false,
+  onClick,
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
@@ -67,7 +74,17 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   if (editing) {
     return (
       <Box sx={{ position: "relative" }}>
-        <Card sx={{ minHeight: 220, display: "flex", flexDirection: "column", opacity: saving ? 0.7 : 1 }}>
+        <Card
+          sx={{
+            minHeight: 220,
+            display: "flex",
+            flexDirection: "column",
+            opacity: saving ? 0.7 : 1,
+            outline: active ? "2.5px solid #abf43e" : "none",
+            outlineOffset: "0px",
+            borderRadius: 2,
+          }}
+        >
           <CardContent sx={{ flex: 1 }}>
             <TextField
               label="Script Name"
@@ -91,9 +108,9 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               disabled={saving}
             />
             {error && (
-              <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                {error}
-              </Typography>
+              <Box sx={{ mt: 1 }}>
+                <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+              </Box>
             )}
           </CardContent>
           <CardActions>
@@ -129,34 +146,40 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
 
   return (
     <Box sx={{ position: "relative" }}>
-      <Card sx={{ minHeight: 220, display: "flex", flexDirection: "column", opacity: deleting ? 0.5 : 1 }}>
-        <CardContent sx={{ flex: 1 }}>
-          <Box sx={{ width: "100%", textAlign: "center" }}>
-            <Typography variant="subtitle2" gutterBottom noWrap>
-              {name || "Untitled Script"}
-            </Typography>
-          </Box>
-          <Divider sx={{ mb: 1 }} />
-          <Box display="flex" alignItems="center" justifyContent="flex-end" sx={{ mb: 1 }}>
-            <IconButton size="small" onClick={() => setEditing(true)} disabled={deleting}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" onClick={handleDelete} disabled={deleting}>
-              {deleting ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
-            </IconButton>
-          </Box>
-          <Box
-            sx={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              fontFamily: "monospace",
-              fontSize: 12,
-              color: "text.secondary",
-            }}
-          >
-            {text}
-          </Box>
-        </CardContent>
+      <Card
+        sx={{
+          minHeight: 220,
+          display: "flex",
+          flexDirection: "column",
+          opacity: deleting ? 0.5 : 1,
+          outline: active ? "2.5px solid #abf43e" : "none",
+          outlineOffset: "0px",
+          borderRadius: 2,
+          transition: "outline 0.15s",
+          background: "#272927",
+          p: 0,
+        }}
+        onClick={onClick}
+      >
+        <ScriptCardHeader
+          name={name}
+          editing={editing}
+          deleting={deleting}
+          onEdit={() => setEditing(true)}
+          onDelete={handleDelete}
+          dragAttributes={dragAttributes}
+          dragListeners={dragListeners}
+          active={active}
+        />
+        <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
+          <ScriptCardBody text={text} />
+          {error && (
+            <Box sx={{ mt: 1, px: 2 }}>
+              <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+            </Box>
+          )}
+        </Box>
       </Card>
     </Box>
   );
