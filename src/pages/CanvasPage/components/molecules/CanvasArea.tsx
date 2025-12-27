@@ -2,6 +2,7 @@ import React from "react";
 import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
 import AddScriptButton from "./AddScriptButton";
+import LoadingSpinner from "@components/LoadingSpinner";
 import type { Script } from "@api/scripts/types";
 import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
 
@@ -75,7 +76,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       <AddScriptButton onClick={handleAddScript} />
       {loading && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
-          Loading scripts...
+          <LoadingSpinner size={32} label="" />
         </Box>
       )}
       {error && (
