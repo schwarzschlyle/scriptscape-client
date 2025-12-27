@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useScripts } from "@api/scripts/queries";
+import { getScripts, createScript, updateScript, deleteScript } from "@api/scripts/queries";
 import type { Script } from "@api/scripts/types";
-
-export interface PendingCreate {
-  id: number;
-  name: string;
-  text: string;
-  syncing: boolean;
-}
 
 export interface UseCanvasAreaLogicProps {
   organizationId: string;
@@ -15,112 +8,146 @@ export interface UseCanvasAreaLogicProps {
   onSyncChange?: (syncing: boolean) => void;
 }
 
+type ScriptsState = Script[];
+
 export function useCanvasAreaLogic({
   organizationId,
   projectId,
   onSyncChange,
 }: UseCanvasAreaLogicProps) {
-  const [pendingCreates, setPendingCreates] = useState<PendingCreate[]>([]);
-  const [optimisticScripts, setOptimisticScripts] = useState<Record<string, Script | null>>({});
-  const [optimisticDeletes, setOptimisticDeletes] = useState<{ [id: string]: boolean }>({});
-  const [syncCount, setSyncCount] = useState(0);
+  const [scripts, setScripts] = useState<ScriptsState>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const syncing = syncCount > 0;
+  // Initial load
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    getScripts(organizationId, projectId)
+      .then((data) => {
+        if (mounted) setScripts(data || []);
+      })
+      .catch(() => {
+        if (mounted) setError("Failed to load scripts.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [organizationId, projectId]);
 
-  const { data, isLoading, error } = useScripts(organizationId, projectId);
-
+  // Syncing indicator for CanvasHeader
   useEffect(() => {
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
+  // CREATE (truly optimistic)
   const handleAddScript = useCallback(() => {
-    setPendingCreates((prev) => [
-      ...prev,
-      { id: Date.now(), name: "", text: "", syncing: false },
-    ]);
+    const tempId = `temp-${Date.now()}`;
+    const newScript: Script = {
+      id: tempId,
+      name: "",
+      text: "",
+      projectId,
+      version: 1,
+      createdAt: "",
+      updatedAt: "",
+    };
+    setScripts((prev) => [newScript, ...prev]);
+  }, [projectId]);
+
+  const handleSaveNewScript = useCallback(
+    async (tempId: string, name: string, text: string) => {
+      // Optimistically update the card immediately
+      setScripts((prev) =>
+        prev.map((s) =>
+          s.id === tempId ? { ...s, name, text } : s
+        )
+      );
+      setSyncing(true);
+      try {
+        const created = await createScript(organizationId, projectId, { name, text });
+        // Replace tempId with real id from backend
+        setScripts((prev) =>
+          prev.map((s) =>
+            s.id === tempId ? { ...created } : s
+          )
+        );
+      } catch (e) {
+        // Remove the card if creation fails
+        setScripts((prev) => prev.filter((s) => s.id !== tempId));
+        setError("Failed to create script.");
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [organizationId, projectId]
+  );
+
+  // EDIT (truly optimistic)
+  const handleEditScript = useCallback(
+    async (id: string, name: string, text: string) => {
+      // Optimistically update the card immediately
+      const prevScripts = [...scripts];
+      setScripts((prev) =>
+        prev.map((s) =>
+          s.id === id ? { ...s, name, text } : s
+        )
+      );
+      setSyncing(true);
+      try {
+        await updateScript(organizationId, projectId, id, { name, text });
+        // Optionally, update with backend response if needed
+      } catch (e) {
+        // Revert to previous state if update fails
+        setScripts(prevScripts);
+        setError("Failed to update script.");
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [organizationId, projectId, scripts]
+  );
+
+  // DELETE (already optimistic)
+  const handleDeleteScript = useCallback(
+    async (id: string) => {
+      const prevScripts = [...scripts];
+      setScripts((prev) => prev.filter((s) => s.id !== id));
+      setSyncing(true);
+      try {
+        await deleteScript(organizationId, projectId, id);
+      } catch (e) {
+        setScripts(prevScripts);
+        setError("Failed to delete script.");
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [organizationId, projectId, scripts]
+  );
+
+  // Remove new script (cancel)
+  const handleRemoveNewScript = useCallback((tempId: string) => {
+    setScripts((prev) => prev.filter((s) => s.id !== tempId));
   }, []);
 
-  const handlePendingCreateChange = useCallback((id: number, name: string, text: string) => {
-    setPendingCreates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, name, text } : c))
-    );
-  }, []);
-
-  const handleRemoveNewScript = useCallback((id: number) => {
-    setPendingCreates((prev) => prev.filter((c) => c.id !== id));
-  }, []);
-
-  const handleCreateSyncStart = useCallback((id: number) => {
-    setPendingCreates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, syncing: true } : c))
-    );
-    setSyncCount((prev) => prev + 1);
-  }, []);
-
-  const handleCreateSyncFinish = useCallback((id: number) => {
-    setPendingCreates((prev) => prev.filter((c) => c.id !== id));
-    setSyncCount((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const handleDeleteOptimistic = useCallback((id: string) => {
-    setOptimisticDeletes((prev) => ({ ...prev, [id]: true }));
-    setSyncCount((prev) => prev + 1);
-  }, []);
-
-  const handleDeleteSyncFinish = useCallback((id: string) => {
-    setOptimisticDeletes((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    setOptimisticScripts((prev) => ({ ...prev, [id]: null }));
-    setSyncCount((prev) => Math.max(0, prev - 1));
-  }, []);
-
-  const handleEditOptimistic = useCallback((id: string, name: string, text: string) => {
-    setOptimisticScripts((prev) => {
-      const original = data?.find((s) => s.id === id);
-      if (!original) return prev;
-      return {
-        ...prev,
-        [id]: {
-          id,
-          name,
-          text,
-          projectId: original.projectId,
-          version: original.version,
-          metadata: original.metadata,
-          createdAt: original.createdAt,
-          updatedAt: original.updatedAt,
-        },
-      };
-    });
-  }, [data]);
-
-  const handleSyncChange = useCallback((sync: boolean) => {
-    setSyncCount((prev) => (sync ? prev + 1 : Math.max(0, prev - 1)));
-  }, []);
-
-  const scriptsToShow = (data || [])
-    .filter((script) => optimisticScripts[script.id] !== null)
-    .map((script) => optimisticScripts[script.id] ? optimisticScripts[script.id]! : script);
+  // Clear error
+  const clearError = useCallback(() => setError(null), []);
 
   return {
-    pendingCreates,
-    optimisticScripts,
-    optimisticDeletes,
-    syncing,
-    isLoading,
+    scripts,
+    loading,
     error,
-    scriptsToShow,
+    syncing,
     handleAddScript,
-    handlePendingCreateChange,
+    handleSaveNewScript,
+    handleEditScript,
+    handleDeleteScript,
     handleRemoveNewScript,
-    handleCreateSyncStart,
-    handleCreateSyncFinish,
-    handleDeleteOptimistic,
-    handleDeleteSyncFinish,
-    handleEditOptimistic,
-    handleSyncChange,
+    clearError,
   };
 }

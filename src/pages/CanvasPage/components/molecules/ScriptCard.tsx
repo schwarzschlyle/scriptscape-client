@@ -13,59 +13,60 @@ import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
-import { useScriptSaveHandler } from "@hooks/useScriptSaveHandler";
-import { useScriptDeleteHandler } from "@hooks/useScriptDeleteHandler";
 import type { Script } from "@api/scripts/types";
 
 interface ScriptCardProps {
-  script?: Script;
+  script: Script;
   organizationId: string;
   projectId: string;
   isNew?: boolean;
   onSavedOrCancel?: () => void;
-  onDeleteOptimistic?: (id: string) => void;
-  onEditOptimistic?: (id: string, name: string, text: string) => void;
-  onSyncChange?: (syncing: boolean) => void;
+  onSave: (name: string, text: string) => Promise<void>;
+  onDelete: () => Promise<void>;
   syncing?: boolean;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
   script,
-  organizationId,
-  projectId,
   isNew = false,
   onSavedOrCancel,
-  onDeleteOptimistic,
-  onEditOptimistic,
-  onSyncChange,
+  onSave,
+  onDelete,
   syncing,
 }) => {
-  const [text, setText] = useState(script?.text || "");
-  const [name, setName] = useState(script?.name || "");
+  const [text, setText] = useState(script.text || "");
+  const [name, setName] = useState(script.name || "");
   const [editing, setEditing] = useState(isNew);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const {
-    save,
-    saving,
-    error,
-  } = useScriptSaveHandler({
-    script,
-    organizationId,
-    projectId,
-    isNew,
-    onSavedOrCancel,
-    onEditOptimistic,
-    onSyncChange,
-  });
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    // Immediately exit editing mode for true optimistic UX
+    setEditing(false);
+    try {
+      await onSave(name, text);
+    } catch (e: any) {
+      setError(e?.message || "Failed to save script.");
+      // For new cards, if save fails, let parent remove the card
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  const { deleteHandler, deleting } = useScriptDeleteHandler({
-    script,
-    organizationId,
-    projectId,
-    onDeleteOptimistic,
-    onSavedOrCancel,
-    onSyncChange,
-  });
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete();
+    } catch (e: any) {
+      setError(e?.message || "Failed to delete script.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (editing) {
     return (
@@ -105,7 +106,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               color="primary"
               variant="contained"
               startIcon={<SaveIcon />}
-              onClick={() => save(name, text)}
+              onClick={handleSave}
               disabled={saving || !text.trim()}
             >
               {saving ? <CircularProgress size={18} /> : "Save"}
@@ -116,8 +117,8 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               startIcon={<CancelIcon />}
               onClick={() => {
                 setEditing(false);
-                setName(script?.name || "");
-                setText(script?.text || "");
+                setName(script.name || "");
+                setText(script.text || "");
                 if (isNew && onSavedOrCancel) onSavedOrCancel();
               }}
               disabled={saving}
@@ -126,7 +127,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             </Button>
           </CardActions>
         </Card>
-
         {syncing && (
           <Box
             sx={{
@@ -149,7 +149,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
     );
   }
 
-
   return (
     <Box sx={{ position: "relative" }}>
       <Card sx={{ minHeight: 220, display: "flex", flexDirection: "column", opacity: deleting ? 0.5 : 1 }}>
@@ -164,7 +163,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             <IconButton size="small" onClick={() => setEditing(true)} disabled={deleting}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={deleteHandler} disabled={deleting}>
+            <IconButton size="small" onClick={handleDelete} disabled={deleting}>
               {deleting ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
             </IconButton>
           </Box>
@@ -181,7 +180,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           </Box>
         </CardContent>
       </Card>
-
       {syncing && (
         <Box
           sx={{

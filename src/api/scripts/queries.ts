@@ -4,6 +4,50 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { Script } from "./types";
 
+// Direct API functions for optimistic updates
+
+export async function getScripts(orgId: string, projectId: string): Promise<Script[]> {
+  const response = await api.get<Script[]>(
+    `/organizations/${orgId}/projects/${projectId}/scripts`
+  );
+  return response.data;
+}
+
+export async function createScript(
+  orgId: string,
+  projectId: string,
+  data: { name: string; text: string }
+): Promise<Script> {
+  const response = await api.post<Script>(
+    `/organizations/${orgId}/projects/${projectId}/scripts`,
+    data
+  );
+  return response.data;
+}
+
+export async function updateScript(
+  orgId: string,
+  projectId: string,
+  scriptId: string,
+  data: { name: string; text: string }
+): Promise<Script> {
+  const response = await api.patch<Script>(
+    `/organizations/${orgId}/projects/${projectId}/scripts/${scriptId}`,
+    data
+  );
+  return response.data;
+}
+
+export async function deleteScript(
+  orgId: string,
+  projectId: string,
+  scriptId: string
+): Promise<void> {
+  await api.delete(
+    `/organizations/${orgId}/projects/${projectId}/scripts/${scriptId}`
+  );
+}
+
 /**
  * Fetch all scripts for a project (requires orgId and projectId)
  * Returns: Script[]

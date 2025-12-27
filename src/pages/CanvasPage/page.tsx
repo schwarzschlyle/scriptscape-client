@@ -17,7 +17,6 @@ export default function CanvasPage() {
   const { data: org, isLoading: orgLoading, isError: orgError } = useOrganization(organizationId);
   const { data: project, isLoading: projectLoading, isError: projectError } = useProjectByOrg(organizationId, projectId);
 
-  // Canvas Authentication Logic
   useCanvasAuth({
     user,
     org,
@@ -33,7 +32,6 @@ export default function CanvasPage() {
 
   const logout = useLogout();
 
-  // Syncing state for CanvasHeader spinner
   const [syncing, setSyncing] = useState(false);
   const handleSyncChange = useCallback((sync: boolean) => setSyncing(sync), []);
 

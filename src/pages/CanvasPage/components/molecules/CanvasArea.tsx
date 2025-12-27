@@ -15,20 +15,15 @@ const CARD_WIDTH = 340;
 
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
   const {
-    pendingCreates,
-    optimisticDeletes,
-    isLoading,
+    scripts,
+    loading,
     error,
-    scriptsToShow,
+    syncing,
     handleAddScript,
-    handlePendingCreateChange,
+    handleSaveNewScript,
+    handleEditScript,
+    handleDeleteScript,
     handleRemoveNewScript,
-    handleCreateSyncStart,
-    handleCreateSyncFinish,
-    handleDeleteOptimistic,
-    handleDeleteSyncFinish,
-    handleEditOptimistic,
-    handleSyncChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   return (
@@ -51,8 +46,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         alignItems="flex-start"
         justifyContent="flex-start"
       >
-        {/* Existing scripts (optimistic) */}
-        {scriptsToShow.map((script: Script) => (
+        {scripts.map((script: Script) => (
           <Box
             key={script.id}
             sx={{
@@ -66,62 +60,27 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               script={script}
               organizationId={organizationId}
               projectId={projectId}
-              isNew={false}
-              onDeleteOptimistic={handleDeleteOptimistic}
-              onEditOptimistic={handleEditOptimistic}
-              onSyncChange={handleSyncChange}
-              syncing={!!optimisticDeletes[script.id]}
-              onSavedOrCancel={() => handleDeleteSyncFinish(script.id)}
-            />
-          </Box>
-        ))}
-        {/* Pending create script cards */}
-        {pendingCreates.map((pending) => (
-          <Box
-            key={pending.id}
-            sx={{
-              width: CARD_WIDTH,
-              minWidth: 0,
-              m: 1,
-              flex: "0 1 auto",
-            }}
-          >
-            <ScriptCard
-              organizationId={organizationId}
-              projectId={projectId}
-              isNew
-              onSavedOrCancel={() => handleRemoveNewScript(pending.id)}
-              onSyncChange={(sync) => {
-                if (sync) {
-                  handleCreateSyncStart(pending.id);
-                } else {
-                  handleCreateSyncFinish(pending.id);
-                }
-              }}
-              script={{
-                id: String(pending.id),
-                name: pending.name,
-                text: pending.text,
-                projectId: projectId,
-                version: 1,
-                createdAt: "",
-                updatedAt: "",
-              }}
-              syncing={pending.syncing}
-              onEditOptimistic={(_id, name, text) => handlePendingCreateChange(pending.id, name, text)}
+              isNew={script.id.startsWith("temp-")}
+              onSavedOrCancel={() => handleRemoveNewScript(script.id)}
+              onSave={(name, text) =>
+                script.id.startsWith("temp-")
+                  ? handleSaveNewScript(script.id, name, text)
+                  : handleEditScript(script.id, name, text)
+              }
+              onDelete={() => handleDeleteScript(script.id)}
             />
           </Box>
         ))}
       </Box>
       <AddScriptButton onClick={handleAddScript} />
-      {isLoading && (
+      {loading && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
           Loading scripts...
         </Box>
       )}
       {error && (
         <Box color="error.main" sx={{ mt: 2 }}>
-          Failed to load scripts.
+          {error}
         </Box>
       )}
     </Box>
