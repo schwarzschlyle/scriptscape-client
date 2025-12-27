@@ -108,7 +108,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     positions,
     loading,
     error,
-    syncing,
     handleAddScript,
     handleSaveNewScript,
     handleEditScript,
