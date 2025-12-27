@@ -16,7 +16,7 @@ interface CanvasAreaProps {
 }
 
 const CARD_WIDTH = 340;
-const CANVAS_SIZE = 10000; // px
+const CANVAS_SIZE = 10000;
 
 function DraggableScriptCard({
   script,
@@ -117,13 +117,16 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   // Handle drag end to update position
+  const HEADER_HEIGHT = 64;
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const id = active.id as string;
     const pos = positions[id];
     if (!pos) return;
-    // Update position by adding delta
-    handleCardPositionChange(id, pos.x + delta.x, pos.y + delta.y);
+    // Clamp y so card top does not go above header
+    const newX = pos.x + delta.x;
+    const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
+    handleCardPositionChange(id, newX, newY);
   };
 
   return (
@@ -148,7 +151,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             width: `${CANVAS_SIZE}px`,
             height: `${CANVAS_SIZE}px`,
             border: "2px dashed #90caf9",
-            bgcolor: "#e3f2fd",
+            bgcolor: "#fff",
+            backgroundImage:
+              "radial-gradient(rgba(120,120,120,0.35) 1.5px, transparent 1.5px)",
+            backgroundSize: "32px 32px",
             cursor: "default",
           }}
         >
