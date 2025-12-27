@@ -42,13 +42,11 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    // Immediately exit editing mode for true optimistic UX
     setEditing(false);
     try {
       await onSave(name, text);
     } catch (e: any) {
       setError(e?.message || "Failed to save script.");
-      // For new cards, if save fails, let parent remove the card
     } finally {
       setSaving(false);
     }
@@ -125,7 +123,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             </Button>
           </CardActions>
         </Card>
-        {/* No global syncing overlay */}
       </Box>
     );
   }
@@ -161,7 +158,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           </Box>
         </CardContent>
       </Card>
-      {/* No global syncing overlay */}
     </Box>
   );
 };

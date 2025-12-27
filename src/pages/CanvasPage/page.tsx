@@ -1,3 +1,4 @@
+import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import LoadingSpinner from "@components/LoadingSpinner";
@@ -29,6 +30,15 @@ export default function CanvasPage() {
     organizationId,
     projectId,
   });
+
+
+  React.useEffect(() => {
+    if (project?.name) {
+      document.title = `${project.name} | Canvas`;
+    } else {
+      document.title = "Canvas";
+    }
+  }, [project?.name]);
 
   const logout = useLogout();
 

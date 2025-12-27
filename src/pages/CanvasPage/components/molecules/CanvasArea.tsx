@@ -74,7 +74,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         ))}
       </Box>
       <AddScriptButton onClick={handleAddScript} />
-      {loading && (
+      {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
           <LoadingSpinner size={32} label="" />
         </Box>

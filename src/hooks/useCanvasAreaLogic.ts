@@ -10,6 +10,9 @@ export interface UseCanvasAreaLogicProps {
 
 type ScriptsState = Script[];
 
+const getCacheKey = (organizationId: string, projectId: string) =>
+  `scripts-cache-${organizationId}-${projectId}`;
+
 export function useCanvasAreaLogic({
   organizationId,
   projectId,
@@ -20,13 +23,35 @@ export function useCanvasAreaLogic({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initial load
+  // Helper to update cache after any change
+  function updateCache(scripts: ScriptsState) {
+    const cacheKey = getCacheKey(organizationId, projectId);
+    localStorage.setItem(cacheKey, JSON.stringify(scripts));
+  }
+
+  // Load from cache on mount, then fetch from backend in background
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+
+    const cacheKey = getCacheKey(organizationId, projectId);
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setScripts(parsed);
+          setLoading(false); // Hide spinner if cached scripts are rendered
+        }
+      } catch {}
+    }
+
     getScripts(organizationId, projectId)
       .then((data) => {
-        if (mounted) setScripts(data || []);
+        if (mounted) {
+          setScripts(data || []);
+          localStorage.setItem(cacheKey, JSON.stringify(data || []));
+        }
       })
       .catch(() => {
         if (mounted) setError("Failed to load scripts.");
@@ -44,7 +69,7 @@ export function useCanvasAreaLogic({
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // CREATE (truly optimistic)
+  // Optimistic Create
   const handleAddScript = useCallback(() => {
     const tempId = `temp-${Date.now()}`;
     const newScript: Script = {
@@ -56,29 +81,38 @@ export function useCanvasAreaLogic({
       createdAt: "",
       updatedAt: "",
     };
-    setScripts((prev) => [newScript, ...prev]);
-  }, [projectId]);
+    setScripts((prev) => {
+      const updated = [newScript, ...prev];
+      updateCache(updated);
+      return updated;
+    });
+  }, [projectId, organizationId]);
 
   const handleSaveNewScript = useCallback(
     async (tempId: string, name: string, text: string) => {
-      // Optimistically update the card immediately
-      setScripts((prev) =>
-        prev.map((s) =>
+      setScripts((prev) => {
+        const updated = prev.map((s) =>
           s.id === tempId ? { ...s, name, text } : s
-        )
-      );
+        );
+        updateCache(updated);
+        return updated;
+      });
       setSyncing(true);
       try {
         const created = await createScript(organizationId, projectId, { name, text });
-        // Replace tempId with real id from backend
-        setScripts((prev) =>
-          prev.map((s) =>
+        setScripts((prev) => {
+          const updated = prev.map((s) =>
             s.id === tempId ? { ...created } : s
-          )
-        );
+          );
+          updateCache(updated);
+          return updated;
+        });
       } catch (e) {
-        // Remove the card if creation fails
-        setScripts((prev) => prev.filter((s) => s.id !== tempId));
+        setScripts((prev) => {
+          const updated = prev.filter((s) => s.id !== tempId);
+          updateCache(updated);
+          return updated;
+        });
         setError("Failed to create script.");
       } finally {
         setSyncing(false);
@@ -87,53 +121,89 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // EDIT (truly optimistic)
+  // Optimistic Update
   const handleEditScript = useCallback(
     async (id: string, name: string, text: string) => {
-      // Optimistically update the card immediately
-      const prevScripts = [...scripts];
-      setScripts((prev) =>
-        prev.map((s) =>
+      setScripts((prev) => {
+        const updated = prev.map((s) =>
           s.id === id ? { ...s, name, text } : s
-        )
-      );
+        );
+        updateCache(updated);
+        return updated;
+      });
       setSyncing(true);
       try {
         await updateScript(organizationId, projectId, id, { name, text });
         // Optionally, update with backend response if needed
       } catch (e) {
-        // Revert to previous state if update fails
-        setScripts(prevScripts);
+        setScripts((prev) => {
+          // Revert to previous state if update fails
+          const cacheKey = getCacheKey(organizationId, projectId);
+          const cached = localStorage.getItem(cacheKey);
+          let fallback = prev;
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) {
+                fallback = parsed;
+              }
+            } catch {}
+          }
+          updateCache(fallback);
+          return fallback;
+        });
         setError("Failed to update script.");
       } finally {
         setSyncing(false);
       }
     },
-    [organizationId, projectId, scripts]
+    [organizationId, projectId]
   );
 
-  // DELETE (already optimistic)
+  // Optimistic Delete
   const handleDeleteScript = useCallback(
     async (id: string) => {
-      const prevScripts = [...scripts];
-      setScripts((prev) => prev.filter((s) => s.id !== id));
+      setScripts((prev) => {
+        const updated = prev.filter((s) => s.id !== id);
+        updateCache(updated);
+        return updated;
+      });
       setSyncing(true);
       try {
         await deleteScript(organizationId, projectId, id);
       } catch (e) {
-        setScripts(prevScripts);
+        setScripts((prev) => {
+          // Revert to previous state if delete fails
+          const cacheKey = getCacheKey(organizationId, projectId);
+          const cached = localStorage.getItem(cacheKey);
+          let fallback = prev;
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) {
+                fallback = parsed;
+              }
+            } catch {}
+          }
+          updateCache(fallback);
+          return fallback;
+        });
         setError("Failed to delete script.");
       } finally {
         setSyncing(false);
       }
     },
-    [organizationId, projectId, scripts]
+    [organizationId, projectId]
   );
 
   // Remove new script (cancel)
   const handleRemoveNewScript = useCallback((tempId: string) => {
-    setScripts((prev) => prev.filter((s) => s.id !== tempId));
-  }, []);
+    setScripts((prev) => {
+      const updated = prev.filter((s) => s.id !== tempId);
+      updateCache(updated);
+      return updated;
+    });
+  }, [organizationId, projectId]);
 
   // Clear error
   const clearError = useCallback(() => setError(null), []);
