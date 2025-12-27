@@ -1,6 +1,5 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import CanvasTitle from "../atoms/CanvasTitle";
 import ProjectName from "../atoms/ProjectName";
 import LogoutButton from "../atoms/LogoutButton";
 import LoadingSpinner from "@components/LoadingSpinner";

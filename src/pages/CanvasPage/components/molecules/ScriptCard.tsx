@@ -23,8 +23,6 @@ interface ScriptCardProps {
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
   script,
-  isNew = false,
-  onSavedOrCancel,
   onSave,
   onDelete,
   dragAttributes,

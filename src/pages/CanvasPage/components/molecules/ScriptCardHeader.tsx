@@ -27,7 +27,6 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = ({
   dragAttributes,
   dragListeners,
   active = false,
-  onClick,
   editable = false,
 }) => {
   const [editingName, setEditingName] = React.useState(false);

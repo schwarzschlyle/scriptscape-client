@@ -3,7 +3,6 @@ import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
 import AddScriptButton from "./AddScriptButton";
 import LoadingSpinner from "@components/LoadingSpinner";
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import type { Script } from "@api/scripts/types";
 import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
 import { DndContext, useDraggable } from "@dnd-kit/core";
