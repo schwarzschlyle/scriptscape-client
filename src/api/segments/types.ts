@@ -11,7 +11,10 @@ export interface Segment {
 export interface CreateSegmentRequest {
   segmentIndex: number;
   text: string;
-  metadata?: Record<string, any>;
+  metadata?: any;
+  segmentCollectionId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UpdateSegmentRequest {

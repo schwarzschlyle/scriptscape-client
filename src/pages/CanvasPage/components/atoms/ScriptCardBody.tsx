@@ -1,4 +1,5 @@
 import React from "react";
+import CustomCardBody from "../../../../components/CustomCardBody";
 import Box from "@mui/material/Box";
 
 interface ScriptCardBodyProps {
@@ -7,43 +8,21 @@ interface ScriptCardBodyProps {
   editable?: boolean;
   onRequestEditBody?: () => void;
   onBodyBlur?: () => void;
+  children?: React.ReactNode;
 }
 
-const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
-  text,
-  onTextChange,
-  editable,
-  onRequestEditBody,
-  onBodyBlur,
-}) => (
-  <Box
-    sx={{
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      flex: 1,
-      p: 2,
-      boxSizing: "border-box",
-      background: "#2F312F",
-      border: "1.5px solid #1f211f",
-      borderRadius: 4,
-      minHeight: 60,
-      mt: 2,
-      mb: 2,
-      cursor: editable ? "text" : "pointer",
-      textAlign: !editable ? "center" : "left",
-      alignItems: !editable ? "center" : "stretch",
-      justifyContent: !editable ? "center" : "flex-start",
-    }}
+const ScriptCardBody: React.FC<ScriptCardBodyProps> = (props) => (
+  <CustomCardBody
+    {...props}
     onDoubleClick={() => {
-      if (!editable && onRequestEditBody) onRequestEditBody();
+      if (!props.editable && props.onRequestEditBody) props.onRequestEditBody();
     }}
   >
-    {editable && onTextChange ? (
+    {props.editable && props.onTextChange ? (
       <textarea
-        value={text}
-        onChange={e => onTextChange(e.target.value)}
-        onBlur={onBodyBlur}
+        value={props.text}
+        onChange={e => props.onTextChange!(e.target.value)}
+        onBlur={props.onBodyBlur}
         style={{
           width: "100%",
           minHeight: 60,
@@ -70,10 +49,10 @@ const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
           textAlign: "center",
         }}
       >
-        {text}
+        {props.text}
       </Box>
     )}
-  </Box>
+  </CustomCardBody>
 );
 
 export default ScriptCardBody;

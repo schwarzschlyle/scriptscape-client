@@ -1,6 +1,7 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
+import SegmentCollectionCard from "./SegmentCollectionCard";
 import AddScriptButton from "./AddScriptButton";
 import LoadingSpinner from "@components/LoadingSpinner";
 import type { Script } from "@api/scripts/types";
@@ -24,6 +25,7 @@ function DraggableScriptCard({
   onPositionChange,
   active,
   setActive,
+  onAddSegmentCollection,
   ...props
 }: {
   script: Script;
@@ -37,6 +39,7 @@ function DraggableScriptCard({
   onDelete: () => Promise<void>;
   active: boolean;
   setActive: (id: string) => void;
+  onAddSegmentCollection?: (name: string, numSegments: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: script.id,
@@ -76,6 +79,7 @@ function DraggableScriptCard({
         dragListeners={listeners}
         active={active}
         onClick={() => setActive(script.id)}
+        onAddSegmentCollection={onAddSegmentCollection}
       />
     </Box>
   );
@@ -85,6 +89,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const {
     scripts,
     positions,
+    segmentCollections,
+    segColPositions,
     loading,
     error,
     handleAddScript,
@@ -93,6 +99,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleDeleteScript,
     handleRemoveNewScript,
     handleCardPositionChange,
+    handleAddSegmentCollection,
+    handleSaveNewSegmentCollection,
+    handleRemoveNewSegmentCollection,
+    handleEditSegmentCollectionName,
+    handleEditSegmentText,
+    handleDeleteSegmentCollection,
+    handleSegColPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   // Canvas zoom state (1.0 = 100%)
@@ -112,16 +125,51 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const id = active.id as string;
-    const pos = positions[id];
-    if (!pos) return;
-    // Clamp y so card top does not go above header
-    const newX = pos.x + delta.x;
-    const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
-    handleCardPositionChange(id, newX, newY);
+    if (positions[id]) {
+      // ScriptCard
+      const pos = positions[id];
+      const newX = pos.x + delta.x;
+      const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
+      handleCardPositionChange(id, newX, newY);
+    } else if (segColPositions[id]) {
+      // SegmentCollectionCard
+      const pos = segColPositions[id];
+      const newX = pos.x + delta.x;
+      const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
+      handleSegColPositionChange(id, newX, newY);
+    }
   };
 
-  // Debug: log script IDs and positions
-  console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions);
+  // Debug: log script and segment collection IDs and positions
+  console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions, "segmentCollections", Object.keys(segmentCollections), "segColPositions", segColPositions);
+
+  // Helper to get the center of a card for curve drawing
+  const getCardCenter = (id: string, isScript: boolean) => {
+    const pos = isScript ? positions[id] : segColPositions[id];
+    if (!pos) return { x: 0, y: 0 };
+    return {
+      x: pos.x + CARD_WIDTH / 2,
+      y: pos.y + 90, // Approximate vertical center
+    };
+  };
+
+  // Prepare links: for each segment collection, draw a curve to its parent script
+  const links = Object.values(segmentCollections).map((col) => {
+    if (!col.parentScriptId || !positions[col.parentScriptId] || !segColPositions[col.id || col.tempId || ""]) return null;
+    const from = getCardCenter(col.parentScriptId, true);
+    const to = getCardCenter(col.id || col.tempId || "", false);
+    const midX = (from.x + to.x) / 2;
+    return (
+      <path
+        key={`link-${col.id || col.tempId}`}
+        d={`M${from.x},${from.y} C${midX},${from.y} ${midX},${to.y} ${to.x},${to.y}`}
+        stroke="#73a32c"
+        strokeWidth={2}
+        fill="none"
+        opacity={0.7}
+      />
+    );
+  });
 
   return (
     <Box
@@ -154,6 +202,11 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             transition: "transform 0.2s",
           }}
         >
+          {/* SVG for curves */}
+          <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
+            {links}
+          </svg>
+          {/* ScriptCards */}
           {scripts.map((script: Script) => (
             <DraggableScriptCard
               key={script.id}
@@ -172,8 +225,39 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               onDelete={() => handleDeleteScript(script.id)}
               active={activeId === script.id}
               setActive={setActiveId}
+              onAddSegmentCollection={(name: string, numSegments: number) =>
+                handleAddSegmentCollection(script.id, name, numSegments)
+              }
             />
           ))}
+          {/* SegmentCollectionCards */}
+          {Object.values(segmentCollections).map((col) => {
+            const isNew = !!col.tempId && !col.id;
+            return (
+              <DraggableSegmentCollectionCard
+                key={col.id || col.tempId}
+                col={col}
+                position={segColPositions[col.id || col.tempId || ""] || { x: 600, y: 200 }}
+                onPositionChange={handleSegColPositionChange}
+                active={activeId === (col.id || col.tempId)}
+                setActive={setActiveId}
+                onNameChange={handleEditSegmentCollectionName}
+                onSegmentChange={handleEditSegmentText}
+                onDelete={handleDeleteSegmentCollection}
+                onSavedOrCancel={
+                  isNew && col.tempId
+                    ? () => handleRemoveNewSegmentCollection(col.tempId as string)
+                    : undefined
+                }
+                onSave={
+                  isNew && col.tempId
+                    ? (name, segments) =>
+                        handleSaveNewSegmentCollection(col.tempId as string, name, segments)
+                    : undefined
+                }
+              />
+            );
+          })}
         </Box>
       </DndContext>
       <AddScriptButton onClick={handleAddScript} />
@@ -191,5 +275,78 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     </Box>
   );
 };
+
+/** Draggable wrapper for SegmentCollectionCard */
+function DraggableSegmentCollectionCard({
+  col,
+  position,
+  onPositionChange,
+  active,
+  setActive,
+  onNameChange,
+  onSegmentChange,
+  onDelete,
+  onSavedOrCancel,
+  onSave,
+}: {
+  col: any;
+  position: { x: number; y: number };
+  onPositionChange: (id: string, x: number, y: number) => void;
+  active: boolean;
+  setActive: (id: string) => void;
+  onNameChange: (colId: string, newName: string) => void;
+  onSegmentChange: (colId: string, segmentId: string, newText: string, index: number) => void;
+  onDelete: (colId: string) => void;
+  onSavedOrCancel?: () => void;
+  onSave?: (name: string, segments: { text: string }[]) => Promise<void>;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: col.id || col.tempId,
+  });
+
+  const x = position.x + (transform?.x ?? 0);
+  const y = position.y + (transform?.y ?? 0);
+
+  return (
+    <Box
+      ref={setNodeRef}
+      sx={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: CARD_WIDTH,
+        minWidth: 0,
+        m: 0,
+        flex: "0 1 auto",
+        zIndex: 50,
+        boxShadow: 2,
+        bgcolor: "transparent",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <SegmentCollectionCard
+        id={col.id}
+        tempId={col.tempId}
+        name={col.name}
+        segments={col.segments}
+        isSaving={col.isSaving}
+        deleting={col.deleting}
+        error={col.error}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        active={active}
+        editable={!col.isSaving && !col.deleting}
+        onClick={() => setActive(col.id || col.tempId)}
+        onNameChange={(newName) => onNameChange(col.id || col.tempId, newName)}
+        onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id || col.tempId, segmentId, newText, idx)}
+        onDelete={() => onDelete(col.id || col.tempId)}
+        isNew={!!col.tempId && !col.id}
+        onSavedOrCancel={onSavedOrCancel}
+        onSave={onSave}
+      />
+    </Box>
+  );
+}
 
 export default CanvasArea;
