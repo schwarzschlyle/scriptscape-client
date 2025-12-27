@@ -59,13 +59,46 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         borderBottom: "1px solid #1f211f",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 2px 16px 0 rgba(0,0,0,0.08)",
-        cursor: !editing && dragListeners ? "grab" : "default",
+        cursor: "default",
       }}
-      {...(!editing ? { ...dragAttributes, ...dragListeners } : {})}
       tabIndex={0}
       onDoubleClick={editable && !editing ? onEditStart : undefined}
       {...rest}
     >
+      {/* Dedicated drag handle */}
+      {!editing && dragListeners && (
+        <Box
+          {...dragAttributes}
+          {...dragListeners}
+          sx={{
+            width: 18,
+            height: 18,
+            mr: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "grab",
+            color: "#888",
+            opacity: 0.7,
+            ":hover": { opacity: 1, color: "#73a32c" },
+            userSelect: "none",
+          }}
+          tabIndex={-1}
+          aria-label="Drag handle"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="2" cy="2" r="1.2" />
+            <circle cx="6" cy="2" r="1.2" />
+            <circle cx="10" cy="2" r="1.2" />
+            <circle cx="2" cy="6" r="1.2" />
+            <circle cx="6" cy="6" r="1.2" />
+            <circle cx="10" cy="6" r="1.2" />
+            <circle cx="2" cy="10" r="1.2" />
+            <circle cx="6" cy="10" r="1.2" />
+            <circle cx="10" cy="10" r="1.2" />
+          </svg>
+        </Box>
+      )}
       <Box sx={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
         {icon}
         {editable && editing && onTitleChange ? (
