@@ -129,6 +129,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleCardPositionChange(id, newX, newY);
   };
 
+  // Debug: log script IDs and positions
+  console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions);
+
   return (
     <Box
       sx={{

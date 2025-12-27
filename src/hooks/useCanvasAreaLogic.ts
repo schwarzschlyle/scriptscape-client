@@ -13,6 +13,8 @@ type PositionsState = { [id: string]: { x: number; y: number } };
 
 const getCacheKey = (organizationId: string, projectId: string) =>
   `scripts-cache-${organizationId}-${projectId}`;
+const getPositionsKey = (organizationId: string, projectId: string) =>
+  `canvas-positions-${organizationId}-${projectId}`;
 
 export function useCanvasAreaLogic({
   organizationId,
@@ -21,14 +23,20 @@ export function useCanvasAreaLogic({
 }: UseCanvasAreaLogicProps) {
   const [scripts, setScripts] = useState<ScriptsState>([]);
   const [positions, setPositions] = useState<PositionsState>({});
+  const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to update cache after any change
   function updateCache(scripts: ScriptsState) {
     const cacheKey = getCacheKey(organizationId, projectId);
     localStorage.setItem(cacheKey, JSON.stringify(scripts));
+  }
+
+  function updatePositionsCache(positions: PositionsState) {
+    const positionsKey = getPositionsKey(organizationId, projectId);
+    console.log("Writing positions to localStorage:", positions);
+    localStorage.setItem(positionsKey, JSON.stringify(positions));
   }
 
   // Load from cache on mount, then fetch from backend in background
@@ -48,6 +56,20 @@ export function useCanvasAreaLogic({
       } catch {}
     }
 
+    // Load positions from cache
+    const positionsKey = getPositionsKey(organizationId, projectId);
+    const cachedPositions = localStorage.getItem(positionsKey);
+    if (cachedPositions) {
+      try {
+        const parsed = JSON.parse(cachedPositions);
+        if (parsed && typeof parsed === "object") {
+          console.log("Loaded positions from localStorage (on mount):", parsed);
+          setPositions(parsed);
+        }
+      } catch {}
+    }
+    setPositionsLoaded(true);
+
     getScripts(organizationId, projectId)
       .then((data) => {
         if (mounted) {
@@ -66,23 +88,40 @@ export function useCanvasAreaLogic({
     };
   }, [organizationId, projectId]);
 
-  // Always assign a position for every script in scripts
+  // Only assign default positions for new scripts, never overwrite existing positions
   useEffect(() => {
+    if (!positionsLoaded) return;
     setPositions((prev) => {
-      const next: PositionsState = {};
+      // Only add positions for scripts that do not already have one
+      let changed = false;
+      const next: PositionsState = { ...prev };
       scripts.forEach((s, i) => {
-        next[s.id] = prev[s.id] || { x: 40 + (i % 5) * 60, y: 40 + Math.floor(i / 5) * 120 };
+        if (!next[s.id]) {
+          next[s.id] = { x: 200 + (i % 5) * 60, y: 200 + Math.floor(i / 5) * 120 };
+          changed = true;
+        }
       });
-      return next;
+      // Remove positions for deleted scripts
+      Object.keys(next).forEach((id) => {
+        if (!scripts.find((s) => s.id === id)) {
+          delete next[id];
+          changed = true;
+        }
+      });
+      if (changed) {
+        updatePositionsCache(next);
+        return next;
+      }
+      return prev;
     });
-  }, [scripts]);
+  }, [scripts, organizationId, projectId, positionsLoaded]);
 
   // Syncing indicator for CanvasHeader
   useEffect(() => {
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // CREATE (truly optimistic)
+  // Optimistic Create
   const handleAddScript = useCallback(() => {
     const tempId = `temp-${Date.now()}`;
     const newScript: Script = {
@@ -120,6 +159,16 @@ export function useCanvasAreaLogic({
           updateCache(updated);
           return updated;
         });
+        // Migrate position from tempId to real id
+        setPositions((prev) => {
+          if (prev[tempId]) {
+            const { [tempId]: tempPos, ...rest } = prev;
+            const next = { ...rest, [created.id]: tempPos };
+            updatePositionsCache(next);
+            return next;
+          }
+          return prev;
+        });
       } catch (e) {
         setScripts((prev) => {
           const updated = prev.filter((s) => s.id !== tempId);
@@ -134,7 +183,7 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // EDIT (truly optimistic)
+  // Optimistic Edit
   const handleEditScript = useCallback(
     async (id: string, name: string, text: string) => {
       setScripts((prev) => {
@@ -173,7 +222,7 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // DELETE (already optimistic)
+  // Optimistic Delete
   const handleDeleteScript = useCallback(
     async (id: string) => {
       setScripts((prev) => {
@@ -216,15 +265,26 @@ export function useCanvasAreaLogic({
       updateCache(updated);
       return updated;
     });
+    setPositions((prev) => {
+      if (prev[tempId]) {
+        const { [tempId]: _, ...rest } = prev;
+        updatePositionsCache(rest);
+        return rest;
+      }
+      return prev;
+    });
   }, [organizationId, projectId]);
 
-  // Update position of a script card
+  // Update position of a script card and cache
   const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
-    setPositions((prev) => ({
-      ...prev,
-      [id]: { x, y },
-    }));
-  }, []);
+    console.log("handleCardPositionChange called for", id, "with", { x, y });
+    setPositions((prev) => {
+      const next = { ...prev, [id]: { x, y } };
+      console.log("Updating position for", id, "to", { x, y }, "next positions:", next);
+      updatePositionsCache(next);
+      return next;
+    });
+  }, [organizationId, projectId]);
 
   // Clear error
   const clearError = useCallback(() => setError(null), []);
