@@ -234,11 +234,14 @@ export function useCanvasAreaLogic({
         });
         // Create segments in backend
         const createdSegments: Segment[] = [];
+        function random4Digit() {
+          return Math.floor(1000 + Math.random() * 9000).toString();
+        }
         for (let i = 0; i < numSegments; i++) {
           const seg = await createSegmentMutation.mutateAsync({
             collectionId: segCol.id,
             segmentIndex: i,
-            text: "New Segment",
+            text: `Generated-Segment-${random4Digit()}`,
           });
           createdSegments.push(seg);
         }
