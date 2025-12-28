@@ -330,13 +330,7 @@ export function useCanvasAreaLogic({
   );
 
   // Remove new segment collection (cancel)
-  const handleRemoveNewSegmentCollection = useCallback(
-    (tempId: string) => {
-      // Remove temp segment collection logic (no temp collections)
-      return;
-    },
-    [organizationId, projectId]
-  );
+  // Removed unused handleRemoveNewSegmentCollection (no temp collections)
 
   // Remove handleSaveNewSegmentCollection (no more temp collections)
 
@@ -536,9 +530,6 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
-  // Remove handleSaveNewScript (no temp scripts)
-  const handleSaveNewScript = undefined;
-
   // Optimistic Edit
   const handleEditScript = useCallback(
     async (id: string, name: string, text: string) => {
@@ -646,10 +637,6 @@ export function useCanvasAreaLogic({
     [organizationId, projectId, segmentCollections, deleteCollectionMutation]
   );
 
-  // Remove new script (cancel)
-  // Remove handleRemoveNewScript (no temp scripts)
-  const handleRemoveNewScript = undefined;
-
   // Update position of a script card and cache
   const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
     setPositions((prev) => {
@@ -715,14 +702,11 @@ export function useCanvasAreaLogic({
     handleAddDraftScript,
     handleSaveDraftScript,
     handleRemoveDraftScript,
-    handleSaveNewScript,
     handleEditScript,
     handleDeleteScript,
-    handleRemoveNewScript,
     handleCardPositionChange,
     handleAddSegmentCollection,
     handleSaveNewSegmentCollection,
-    handleRemoveNewSegmentCollection,
     handleEditSegmentCollectionName,
     handleEditSegmentText,
     handleDeleteSegmentCollection,

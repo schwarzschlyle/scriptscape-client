@@ -5,10 +5,9 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 
-interface ScriptAdditionModalProps {
+interface ScriptGenerationModalProps {
   open: boolean;
   onClose: () => void;
-  onCreate: (name: string, text: string) => void;
   onGenerate: () => void;
 }
 
@@ -27,25 +26,22 @@ const style = {
   gap: 2,
 };
 
-const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
+const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
   open,
   onClose,
-  onCreate,
   onGenerate,
 }) => {
-  const [name, setName] = useState("");
-  const [text, setText] = useState("");
+  const [brief, setBrief] = useState("");
+  const [branding, setBranding] = useState("");
+  const [duration, setDuration] = useState("");
 
-  const handleCreate = () => {
-    if (name.trim()) {
-      onCreate(name.trim(), text);
-    }
-  };
+  const canGenerate = brief.trim() && branding.trim() && duration.trim();
 
   React.useEffect(() => {
     if (open) {
-      setName("");
-      setText("");
+      setBrief("");
+      setBranding("");
+      setDuration("");
     }
   }, [open]);
 
@@ -53,24 +49,33 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
     <Modal open={open} onClose={onClose}>
       <Box sx={style}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Create New Script
+          Script Generation
         </Typography>
         <TextField
           type="text"
-          label="Script Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
+          label="Project Brief"
+          value={brief}
+          onChange={e => setBrief(e.target.value)}
           fullWidth
+          required
           sx={{ mb: 2 }}
         />
         <TextField
           type="text"
-          label="Script Text"
-          value={text}
-          onChange={e => setText(e.target.value)}
+          label="Branding"
+          value={branding}
+          onChange={e => setBranding(e.target.value)}
           fullWidth
-          multiline
-          minRows={3}
+          required
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          type="text"
+          label="Duration"
+          value={duration}
+          onChange={e => setDuration(e.target.value)}
+          fullWidth
+          required
           sx={{ mb: 2 }}
         />
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
@@ -81,11 +86,9 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
             onClick={onGenerate}
             variant="contained"
             color="primary"
+            disabled={!canGenerate}
           >
             GENERATE
-          </Button>
-          <Button onClick={handleCreate} variant="contained" color="primary" disabled={!name.trim()}>
-            Create
           </Button>
         </Box>
       </Box>
@@ -93,4 +96,4 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
   );
 };
 
-export default ScriptAdditionModal;
+export default ScriptGenerationModal;

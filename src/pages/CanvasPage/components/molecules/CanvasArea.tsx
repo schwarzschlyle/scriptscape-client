@@ -12,6 +12,7 @@ import type { DragEndEvent, DragStartEvent, DragMoveEvent } from "@dnd-kit/core"
 import ZoomControls from "./ZoomControls";
 import CardConnector from "../../../../components/CardConnector";
 import ScriptAdditionModal from "./ScriptAdditionModal";
+import ScriptGenerationModal from "./ScriptGenerationModal";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -104,10 +105,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     error,
     pendingSegmentCollection,
     handleAddScript,
-    handleSaveNewScript,
     handleEditScript,
     handleDeleteScript,
-    handleRemoveNewScript,
     handleCardPositionChange,
     handleAddSegmentCollection,
     handleEditSegmentCollectionName,
@@ -118,6 +117,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Modal state for adding a script
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
+  const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
 
 
   // Canvas zoom state (1.0 = 100%)
@@ -227,7 +227,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
 
     // Use a cubic Bezier curve with a horizontal midpoint
-    const midX = (fx + tx) / 2;
 
     return (
       <CardConnector
@@ -236,7 +235,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         to={{ x: tx, y: ty }}
         canvasSize={CANVAS_SIZE}
         stroke="#fff"
-        strokeWidth={2}
+        strokeWidth={1}
         opacity={0.92}
         style={{
           filter: "drop-shadow(0 1px 2px #0008)",
@@ -348,6 +347,19 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         onCreate={(name, text) => {
           handleAddScript(name, text);
           setShowAddScriptModal(false);
+        }}
+        onGenerate={() => {
+          setShowAddScriptModal(false);
+          setShowScriptGenerationModal(true);
+        }}
+      />
+      <ScriptGenerationModal
+        open={showScriptGenerationModal}
+        onClose={() => setShowScriptGenerationModal(false)}
+        onGenerate={() => {
+          const id = Math.floor(1000 + Math.random() * 9000).toString();
+          handleAddScript(`Generated-Script-Title-${id}`, `Generated-Script-Text=${id}`);
+          setShowScriptGenerationModal(false);
         }}
       />
       <ZoomControls zoom={zoom} setZoom={setZoom} />
