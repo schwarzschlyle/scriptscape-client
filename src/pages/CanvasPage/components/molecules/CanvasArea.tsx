@@ -10,6 +10,7 @@ import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
 import { DndContext, useDraggable } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent, DragMoveEvent } from "@dnd-kit/core";
 import ZoomControls from "./ZoomControls";
+import CardConnector from "../../../../components/CardConnector";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -187,19 +188,51 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     const scriptPos = positions[parentId];
     const segColPos = segColPositions[segColId];
 
-    if (!parentId || !scriptPos || !segColPos) return null;
+    // Validate positions
+    function isValidPos(pos: any) {
+      return (
+        pos &&
+        typeof pos.x === "number" &&
+        typeof pos.y === "number" &&
+        isFinite(pos.x) &&
+        isFinite(pos.y)
+      );
+    }
+
+    if (!parentId || !isValidPos(scriptPos) || !isValidPos(segColPos)) return null;
 
     const from = getCardCenter(parentId, true);
     const to = getCardCenter(segColId, false);
-    const midX = (from.x + to.x) / 2;
+
+    // If from and to are the same, offset to avoid zero-length curve
+    let adjustedTo = { ...to };
+    if (from.x === to.x && from.y === to.y) {
+      adjustedTo.x += 40;
+      adjustedTo.y += 40;
+    }
+
+    // Clamp coordinates to canvas bounds
+    function clamp(val: number, min: number, max: number) {
+      return Math.max(min, Math.min(max, val));
+    }
+    const CANVAS_MIN = 0;
+    const CANVAS_MAX = CANVAS_SIZE;
+    const fx = clamp(from.x, CANVAS_MIN, CANVAS_MAX);
+    const fy = clamp(from.y, CANVAS_MIN, CANVAS_MAX);
+    const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
+    const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
+
+    // Use a cubic Bezier curve with a horizontal midpoint
+    const midX = (fx + tx) / 2;
 
     return (
-      <path
+      <CardConnector
         key={`link-${segColId}`}
-        d={`M${from.x},${from.y} C${midX},${from.y} ${midX},${to.y} ${to.x},${to.y}`}
+        from={{ x: fx, y: fy }}
+        to={{ x: tx, y: ty }}
+        canvasSize={CANVAS_SIZE}
         stroke="#fff"
         strokeWidth={2}
-        fill="none"
         opacity={0.92}
         style={{
           filter: "drop-shadow(0 1px 2px #0008)",
