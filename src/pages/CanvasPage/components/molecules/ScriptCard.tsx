@@ -6,6 +6,7 @@ import ScriptCardBody from "../atoms/ScriptCardBody";
 import Box from "@mui/material/Box";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
 import SegmentCollectionCard from "./SegmentCollectionCard";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface ScriptCardProps {
   script: Script;
@@ -120,28 +121,36 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             )}
           </ScriptCardBody>
           {/* + Button for adding segment collection */}
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
             <button
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: isSaving ? "#bdbdbd" : "#73a32c",
-                color: "#fff",
+                background: "none",
                 border: "none",
-                fontSize: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: isSaving ? "not-allowed" : "pointer",
-                boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)",
-                transition: "background 0.2s",
                 opacity: isSaving ? 0.5 : 1,
+                padding: 0,
+                margin: 0,
+                outline: "none",
               }}
               onClick={() => {
                 if (!isSaving) setShowAddSegmentCollectionModal(true);
               }}
-              aria-label="Add Segment Collection"
+              aria-label="Generate Segments"
               disabled={isSaving}
             >
-              +
+              <img
+                src={AiPromptIcon}
+                alt="AI Prompt"
+                style={{
+                  width: 22,
+                  height: 22,
+                  display: "block",
+                  filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+                }}
+              />
             </button>
           </Box>
           {/* Modal for adding segment collection */}

@@ -497,6 +497,10 @@ export function useCanvasAreaLogic({
     [organizationId, projectId]
   );
 
+  // Remove handleSaveNewSegmentCollection (no more temp collections)
+
+  // Remove handleRemoveNewSegmentCollection (no more temp collections)
+
   // Edit segment collection name
   const handleEditSegmentCollectionName = useCallback(
     async (colId: string, newName: string) => {

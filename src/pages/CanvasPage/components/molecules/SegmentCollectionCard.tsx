@@ -146,6 +146,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           onNameChange={isNew ? setLocalName : onNameChange}
           deleting={deleting}
           isSaving={isSaving}
+          segmentsCount={segments.length}
           onDelete={onDelete}
           dragAttributes={dragAttributes}
           dragListeners={dragListeners}

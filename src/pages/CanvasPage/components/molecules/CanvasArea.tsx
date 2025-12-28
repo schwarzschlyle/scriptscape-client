@@ -7,7 +7,7 @@ import LoadingSpinner from "@components/LoadingSpinner";
 import type { Script } from "@api/scripts/types";
 import { useCanvasAreaLogic } from "@hooks/useCanvasAreaLogic";
 import { DndContext, useDraggable } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent, DragMoveEvent } from "@dnd-kit/core";
 import ZoomControls from "./ZoomControls";
 
 interface CanvasAreaProps {
@@ -120,14 +120,27 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Active card state
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  // Track drag transforms for all cards
+  const [dragTransforms, setDragTransforms] = React.useState<{ [id: string]: { x: number; y: number } }>({});
 
   // Handle drag start to set active card
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: DragStartEvent) => {
     const id = event.active?.id as string;
     if (id) setActiveId(id);
   };
 
-  // Handle drag end to update position
+  // Handle drag move to update dragTransforms
+  const handleDragMove = (event: DragMoveEvent) => {
+    const id = event.active?.id as string;
+    if (id && event.delta) {
+      setDragTransforms((prev) => ({
+        ...prev,
+        [id]: { x: event.delta.x, y: event.delta.y },
+      }));
+    }
+  };
+
+  // Handle drag end to update position and clear dragTransforms
   const HEADER_HEIGHT = 64;
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
@@ -145,18 +158,24 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
       handleSegColPositionChange(id, newX, newY);
     }
+    setDragTransforms((prev) => {
+      const newTransforms = { ...prev };
+      delete newTransforms[id];
+      return newTransforms;
+    });
   };
 
   // Debug: log script and segment collection IDs and positions
   console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions, "segmentCollections", Object.keys(segmentCollections), "segColPositions", segColPositions);
 
-  // Helper to get the center of a card for curve drawing
+  // Helper to get the center of a card for curve drawing, using dragTransforms if dragging
   const getCardCenter = (id: string, isScript: boolean) => {
-    const pos = isScript ? positions[id] : segColPositions[id];
-    if (!pos) return { x: 0, y: 0 };
+    const basePos = isScript ? positions[id] : segColPositions[id];
+    if (!basePos) return { x: 0, y: 0 };
+    const drag = dragTransforms[id] || { x: 0, y: 0 };
     return {
-      x: pos.x + CARD_WIDTH / 2,
-      y: pos.y + 90, // Approximate vertical center
+      x: basePos.x + drag.x + CARD_WIDTH / 2,
+      y: basePos.y + drag.y + 90, // Approximate vertical center
     };
   };
 
@@ -170,7 +189,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       <path
         key={`link-${col.id || col.tempId}`}
         d={`M${from.x},${from.y} C${midX},${from.y} ${midX},${to.y} ${to.x},${to.y}`}
-        stroke="#73a32c"
+        stroke="#2F312F"
         strokeWidth={2}
         fill="none"
         opacity={0.7}
@@ -191,7 +210,11 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         overflow: "scroll",
       }}
     >
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+      >
         <Box
           sx={{
             position: "absolute",
@@ -201,8 +224,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             height: `${CANVAS_SIZE}px`,
             bgcolor: "#111211",
             backgroundImage:
-              "radial-gradient(#646564 1.5px, transparent 1.5px)",
-            backgroundSize: "32px 32px",
+              "radial-gradient(#646564 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
             cursor: "default",
             transform: `scale(${zoom})`,
             transformOrigin: "top left",
@@ -291,7 +314,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 function DraggableSegmentCollectionCard({
   col,
   position,
-  onPositionChange,
   active,
   setActive,
   onNameChange,

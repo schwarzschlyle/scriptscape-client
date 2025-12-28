@@ -1,11 +1,13 @@
 import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
+import SegmentIcon from "../../../../assets/segment-icon.svg";
 
 interface SegmentCollectionHeaderProps {
   name: string;
   onNameChange?: (value: string) => void;
   deleting?: boolean;
   isSaving?: boolean;
+  segmentsCount?: number;
   onDelete?: () => void;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
@@ -18,6 +20,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
   onNameChange,
   deleting,
   isSaving = false,
+  segmentsCount,
   onDelete,
   dragAttributes,
   dragListeners,
@@ -87,9 +90,30 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                   autoFocus
                 /> as unknown as React.ReactNode
               )
-            : (localName || "Untitled Segment Collection")
+            : (
+                <>
+                  {localName || "Untitled Segment Collection"}
+                  {typeof segmentsCount === "number" && (
+                    <span style={{ color: "#bdbdbd", fontWeight: 400, marginLeft: 8 }}>
+                      ({segmentsCount})
+                    </span>
+                  )}
+                </>
+              )
         }
-        icon={null}
+        icon={
+          <img
+            src={SegmentIcon}
+            alt="Segment Icon"
+            style={{
+              width: 16,
+              height: 16,
+              marginRight: 8,
+              display: "inline-block",
+              verticalAlign: "middle",
+            }}
+          />
+        }
         editable={editable}
         editing={editing}
         onEditStart={() => setEditing(true)}

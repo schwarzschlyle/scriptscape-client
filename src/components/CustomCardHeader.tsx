@@ -51,7 +51,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         alignItems: "center",
         justifyContent: "flex-start",
         px: 1,
-        py: 1,
+        py: 0.5,
         userSelect: "none",
         background: "rgba(47,51,47,0.35)",
         backdropFilter: "blur(16px)",
