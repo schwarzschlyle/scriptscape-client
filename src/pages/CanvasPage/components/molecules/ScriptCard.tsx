@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import Card from "@mui/material/Card";
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
 import type { Script } from "@api/scripts/types";
-import ScriptCardHeader from "./ScriptCardHeader";
-import ScriptCardBody from "./ScriptCardBody";
+import CustomCard from "../../../../components/CustomCard";
+import ScriptCardHeader from "../atoms/ScriptCardHeader";
+import ScriptCardBody from "../atoms/ScriptCardBody";
+import Box from "@mui/material/Box";
+import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface ScriptCardProps {
   script: Script;
@@ -19,6 +20,10 @@ interface ScriptCardProps {
   dragListeners?: any;
   active?: boolean;
   onClick?: () => void;
+  onAddSegmentCollection?: (name: string, numSegments: number) => void;
+  isSaving?: boolean;
+  deleting?: boolean;
+  pendingSegmentCollection?: boolean;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
@@ -29,14 +34,27 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   dragListeners,
   active = false,
   onClick,
+  onAddSegmentCollection,
+  isSaving = false,
+  deleting = false,
+  pendingSegmentCollection = false,
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  // Remove local saving/deleting state, use props only
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState({ name: script.name || "", text: script.text || "" });
   const [editingBody, setEditingBody] = useState(false);
+
+  const [showAddSegmentCollectionModal, setShowAddSegmentCollectionModal] = useState(false);
+
+  // Handler for adding a new segment collection (calls parent handler)
+  const handleAddSegmentCollection = (name: string, numSegments: number) => {
+    setShowAddSegmentCollectionModal(false);
+    if (onAddSegmentCollection) {
+      onAddSegmentCollection(name, numSegments);
+    }
+  };
 
   // Exit body editing on card deactivation
   React.useEffect(() => {
@@ -49,15 +67,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   React.useEffect(() => {
     if (!active && (name !== lastSaved.name || text !== lastSaved.text)) {
       (async () => {
-        setSaving(true);
         setError(null);
         try {
           await onSave(name, text);
           setLastSaved({ name, text });
         } catch (e: any) {
           setError(e?.message || "Failed to save script.");
-        } finally {
-          setSaving(false);
         }
       })();
     }
@@ -65,62 +80,95 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   }, [active]);
 
   const handleDelete = async () => {
-    setDeleting(true);
+    if (isSaving || deleting) return;
     setError(null);
     try {
       await onDelete();
     } catch (e: any) {
       setError(e?.message || "Failed to delete script.");
-    } finally {
-      setDeleting(false);
     }
   };
 
   return (
-    <Box sx={{ position: "relative" }}>
-      <Card
-        sx={{
-          minHeight: 220,
-          display: "flex",
-          flexDirection: "column",
-          opacity: deleting ? 0.5 : 1,
-          outline: active ? "2.5px solid #abf43e" : "none",
-          outlineOffset: "0px",
-          borderRadius: 2,
-          transition: "outline 0.15s",
-          backgroundColor: "#272927",
-          overflow: "hidden",
-          p: 0,
-        }}
-        onClick={onClick}
-      >
-        <ScriptCardHeader
-          name={name}
-          onNameChange={setName}
-          deleting={deleting}
-          onDelete={handleDelete}
-          dragAttributes={dragAttributes}
-          dragListeners={dragListeners}
-          active={active}
-          editable={!saving && !deleting}
-        />
-        <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
+    <CustomCard
+      header={
+      <ScriptCardHeader
+        name={name}
+        onNameChange={setName}
+        deleting={deleting}
+        isSaving={isSaving}
+        onDelete={handleDelete}
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+        active={active}
+        editable={!isSaving && !deleting}
+        pendingSegmentCollection={pendingSegmentCollection}
+      />
+      }
+      body={
+        <>
           <ScriptCardBody
             text={text}
             onTextChange={setText}
-            editable={editingBody && !saving && !deleting}
+            editable={editingBody && !isSaving && !deleting}
             onRequestEditBody={() => setEditingBody(true)}
             onBodyBlur={() => setEditingBody(false)}
-          />
-          {error && (
-            <Box sx={{ mt: 1, px: 2 }}>
-              <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-            </Box>
+          >
+            {error && (
+              <Box sx={{ mt: 1, px: 2 }}>
+                <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+              </Box>
+            )}
+          </ScriptCardBody>
+          {/* + Button for adding segment collection */}
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                opacity: isSaving ? 0.5 : 1,
+                padding: 0,
+                margin: 0,
+                outline: "none",
+              }}
+              onClick={() => {
+                if (!isSaving) setShowAddSegmentCollectionModal(true);
+              }}
+              aria-label="Generate Segments"
+              disabled={isSaving}
+            >
+              <img
+                src={AiPromptIcon}
+                alt="AI Prompt"
+                style={{
+                  width: 22,
+                  height: 22,
+                  display: "block",
+                  filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+                }}
+              />
+            </button>
+          </Box>
+          {/* Modal for adding segment collection */}
+          {showAddSegmentCollectionModal && (
+            <SegmentCollectionAdditionModal
+              open={showAddSegmentCollectionModal}
+              onClose={() => setShowAddSegmentCollectionModal(false)}
+              onGenerate={handleAddSegmentCollection}
+            />
           )}
-        </Box>
-      </Card>
-    </Box>
+          {/* Segment collections are now rendered as top-level cards in CanvasArea */}
+        </>
+      }
+      minHeight={220}
+      active={active}
+      onClick={onClick}
+      style={{ opacity: deleting ? 0.5 : 1 }}
+    />
   );
 };
 
