@@ -120,8 +120,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
 
 
-  // Canvas zoom state (1.0 = 100%)
-  const [zoom, setZoom] = React.useState(1.0);
+  const [zoom, setZoom] = React.useState(0.6);
 
   // Active card state
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -150,17 +149,19 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const id = active.id as string;
+    // Clamp Y to header height, adjusted for zoom
+    const minY = HEADER_HEIGHT / zoom;
     if (positions[id]) {
       // ScriptCard
       const pos = positions[id];
       const newX = pos.x + delta.x;
-      const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
+      const newY = Math.max(minY, pos.y + delta.y);
       handleCardPositionChange(id, newX, newY);
     } else if (segColPositions[id]) {
       // SegmentCollectionCard
       const pos = segColPositions[id];
       const newX = pos.x + delta.x;
-      const newY = Math.max(HEADER_HEIGHT, pos.y + delta.y);
+      const newY = Math.max(minY, pos.y + delta.y);
       handleSegColPositionChange(id, newX, newY);
     }
     setDragTransforms((prev) => {
