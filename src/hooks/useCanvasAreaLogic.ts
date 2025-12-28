@@ -222,6 +222,7 @@ export function useCanvasAreaLogic({
   // Add a new segment collection (non-optimistic: only add after API call succeeds)
   const handleAddSegmentCollection = useCallback(
     async (parentScriptId: string, name: string, numSegments: number) => {
+      console.log("handleAddSegmentCollection parentScriptId:", parentScriptId);
       setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
@@ -514,7 +515,8 @@ export function useCanvasAreaLogic({
   const handleAddScript = useCallback(async () => {
     setSyncing(true);
     try {
-      const created = await createScript(organizationId, projectId, { name: "", text: "" });
+      // Provide a default non-empty text to satisfy backend validation
+      const created = await createScript(organizationId, projectId, { name: "Untitled Script", text: " " });
       setScripts((prev) => {
         const updated = [created, ...prev];
         updateCache(updated);

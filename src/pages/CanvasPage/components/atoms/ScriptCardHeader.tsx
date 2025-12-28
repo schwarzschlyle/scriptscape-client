@@ -21,6 +21,12 @@ interface ScriptCardHeaderProps {
 }
 
 const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
+  // Destructure pendingSegmentCollection so it is NOT spread to CustomCardHeader
+  const {
+    pendingSegmentCollection,
+    ...headerProps
+  } = props;
+
   const {
     value: localName,
     editing,
@@ -56,10 +62,12 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
     />
   );
 
+  console.log("ScriptCardHeader", props.name, "pendingSegmentCollection:", props.pendingSegmentCollection);
+
   return (
     <div onDoubleClick={handleDoubleClick}>
       <CustomCardHeader
-        {...props}
+        {...headerProps}
         title={
           editing ? (
             <input

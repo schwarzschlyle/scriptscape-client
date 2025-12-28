@@ -1,3 +1,4 @@
+
 import React from "react";
 import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
@@ -19,6 +20,7 @@ interface CanvasAreaProps {
 const CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 
+
 function DraggableScriptCard({
   script,
   position,
@@ -28,6 +30,7 @@ function DraggableScriptCard({
   onAddSegmentCollection,
   isSaving,
   deleting,
+  pendingSegmentCollection,
   ...props
 }: {
   script: Script;
@@ -35,8 +38,6 @@ function DraggableScriptCard({
   onPositionChange: (id: string, x: number, y: number) => void;
   organizationId: string;
   projectId: string;
-  isNew: boolean;
-  onSavedOrCancel: () => void;
   onSave: (name: string, text: string) => Promise<void>;
   onDelete: () => Promise<void>;
   active: boolean;
@@ -44,6 +45,7 @@ function DraggableScriptCard({
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
   isSaving?: boolean;
   deleting?: boolean;
+  pendingSegmentCollection?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: script.id,
@@ -75,8 +77,6 @@ function DraggableScriptCard({
         script={script}
         organizationId={props.organizationId}
         projectId={props.projectId}
-        isNew={props.isNew}
-        onSavedOrCancel={props.onSavedOrCancel}
         onSave={props.onSave}
         onDelete={props.onDelete}
         dragAttributes={attributes}
@@ -86,6 +86,7 @@ function DraggableScriptCard({
         onAddSegmentCollection={onAddSegmentCollection}
         isSaving={isSaving}
         deleting={deleting}
+        pendingSegmentCollection={pendingSegmentCollection}
       />
     </Box>
   );
@@ -112,6 +113,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleDeleteSegmentCollection,
     handleSegColPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+
 
   // Canvas zoom state (1.0 = 100%)
   const [zoom, setZoom] = React.useState(1.0);
@@ -180,7 +182,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   // Prepare links: for each segment collection, draw a curve to its parent script
   const links = Object.values(segmentCollections).map((col) => {
     // Robustly resolve IDs and positions
-    const segColId = col.id || col.tempId || "";
+    const segColId = col.id || "";
     const parentId = col.parentScriptId;
     const scriptPos = positions[parentId];
     const segColPos = segColPositions[segColId];
@@ -208,7 +210,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   });
 
   // Handler for clicking the canvas background to deactivate cards
-  const handleCanvasBackgroundClick = (e: React.MouseEvent) => {
+  const handleCanvasBackgroundClick = () => {
     // Only deactivate if there is an active card
     if (activeId !== null) {
       setActiveId(null);
@@ -270,13 +272,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 onPositionChange={handleCardPositionChange}
                 organizationId={organizationId}
                 projectId={projectId}
-                isNew={script.id.startsWith("temp-")}
-                onSavedOrCancel={() => handleRemoveNewScript(script.id)}
-                onSave={(name, text) =>
-                  script.id.startsWith("temp-")
-                    ? handleSaveNewScript(script.id, name, text)
-                    : handleEditScript(script.id, name, text)
-                }
+                onSave={(name, text) => handleEditScript(script.id, name, text)}
                 onDelete={() => handleDeleteScript(script.id)}
                 active={activeId === script.id}
                 setActive={setActiveId}
