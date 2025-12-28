@@ -13,10 +13,9 @@ export interface UseCanvasAreaLogicProps {
 }
 
 type ScriptsState = Script[];
-type Segment = BaseSegment & { tempId?: string }; // Extend Segment to allow tempId for temp segments
+type Segment = BaseSegment;
 type SegmentCollectionsState = {
   [id: string]: SegmentCollection & {
-    tempId?: string;
     parentScriptId: string;
     segments: Segment[];
     isSaving?: boolean;
@@ -48,6 +47,9 @@ export function useCanvasAreaLogic({
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Track pending segment collection creation per script
+  const [pendingSegmentCollection, setPendingSegmentCollection] = useState<{ [scriptId: string]: boolean }>({});
 
   const updateCollectionMutation = useUpdateSegmentCollection();
   const deleteCollectionMutation = useDeleteSegmentCollection();
@@ -110,39 +112,9 @@ export function useCanvasAreaLogic({
       try {
         const scriptsData = await getScripts(organizationId, projectId);
         if (mounted) {
-          // Always merge temp (optimistic) scripts from localStorage with backend scripts
-          const cachedScripts = localStorage.getItem(cacheKey);
-          let mergedScripts: any[] = [];
-          if (Array.isArray(scriptsData)) {
-            mergedScripts = [...scriptsData];
-          }
-          if (cachedScripts) {
-            try {
-              const parsed = JSON.parse(cachedScripts);
-              if (Array.isArray(parsed)) {
-                parsed.forEach((script: any) => {
-                  if (script.id && script.id.startsWith("temp-") && !mergedScripts.find((s: any) => s.id === script.id)) {
-                    mergedScripts.unshift(script);
-                  }
-                });
-              }
-            } catch {}
-          }
-          // If no backend scripts and there are temp scripts, still render temp scripts
-          if (mergedScripts.length === 0 && cachedScripts) {
-            try {
-              const parsed = JSON.parse(cachedScripts);
-              if (Array.isArray(parsed)) {
-                parsed.forEach((script: any) => {
-                  if (script.id && script.id.startsWith("temp-") && !mergedScripts.find((s: any) => s.id === script.id)) {
-                    mergedScripts.unshift(script);
-                  }
-                });
-              }
-            } catch {}
-          }
-          setScripts(mergedScripts);
-          localStorage.setItem(cacheKey, JSON.stringify(mergedScripts));
+          // Only use backend scripts, do not merge temp scripts
+          setScripts(scriptsData || []);
+          localStorage.setItem(cacheKey, JSON.stringify(scriptsData || []));
         }
         let allCollections: SegmentCollectionsState = {};
         for (const script of scriptsData || []) {
@@ -154,7 +126,7 @@ export function useCanvasAreaLogic({
             let segments: Segment[] = [];
             if (segRes.ok) {
               const segData = await segRes.json();
-              segments = (segData.data || []).map((seg: BaseSegment) => ({ ...seg, tempId: undefined }));
+              segments = (segData.data || []).map((seg: BaseSegment) => ({ ...seg }));
             }
             allCollections[col.id] = {
               ...col,
@@ -167,45 +139,9 @@ export function useCanvasAreaLogic({
           }
         }
         if (mounted) {
-          // Always merge temp (optimistic) segment collections from localStorage with backend collections
-          const segColCacheKey = getSegColCacheKey(organizationId, projectId);
-          const cachedSegCols = localStorage.getItem(segColCacheKey);
-          let mergedCollections: any = { ...allCollections };
-          if (cachedSegCols) {
-            try {
-              const parsed = JSON.parse(cachedSegCols);
-              if (parsed && typeof parsed === "object") {
-                Object.values(parsed).forEach((col: any) => {
-                  if (
-                    col.tempId &&
-                    !mergedCollections[col.tempId] &&
-                    !mergedCollections[col.id]
-                  ) {
-                    mergedCollections[col.tempId] = col;
-                  }
-                });
-              }
-            } catch {}
-          }
-          // If no backend collections and there are temp collections, still render temp collections
-          if (Object.keys(mergedCollections).length === 0 && cachedSegCols) {
-            try {
-              const parsed = JSON.parse(cachedSegCols);
-              if (parsed && typeof parsed === "object") {
-                Object.values(parsed).forEach((col: any) => {
-                  if (
-                    col.tempId &&
-                    !mergedCollections[col.tempId] &&
-                    !mergedCollections[col.id]
-                  ) {
-                    mergedCollections[col.tempId] = col;
-                  }
-                });
-              }
-            } catch {}
-          }
-          setSegmentCollections(mergedCollections);
-          localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(mergedCollections));
+          // Only use backend segment collections, do not merge temp collections
+          setSegmentCollections(allCollections);
+          localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(allCollections));
         }
       } catch (e) {
         if (mounted) setError("Failed to load segment collections.");
@@ -286,6 +222,7 @@ export function useCanvasAreaLogic({
   // Add a new segment collection (non-optimistic: only add after API call succeeds)
   const handleAddSegmentCollection = useCallback(
     async (parentScriptId: string, name: string, numSegments: number) => {
+      setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
@@ -335,6 +272,7 @@ export function useCanvasAreaLogic({
       } catch (e: any) {
         setError(e?.message || "Failed to create segment collection.");
       } finally {
+        setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: false }));
         setSyncing(false);
         if (onSyncChange) onSyncChange(false);
       }
@@ -345,23 +283,8 @@ export function useCanvasAreaLogic({
   // Save a new segment collection (convert temp to real, like ScriptCard)
   const handleSaveNewSegmentCollection = useCallback(
     async (tempId: string, name: string, segments: { text: string }[]) => {
-      setSegmentCollections((prev) => {
-        const updated = {
-          ...prev,
-          [tempId]: {
-            ...prev[tempId],
-            name,
-            segments: prev[tempId].segments.map((seg, i) => ({
-              ...seg,
-              text: segments[i]?.text ?? "",
-            })),
-            isSaving: true,
-            error: null,
-          },
-        };
-        localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(updated));
-        return updated;
-      });
+      // Remove temp segment collection logic (no temp collections)
+      return;
       setSyncing(true);
       try {
         // Create the collection
@@ -379,32 +302,8 @@ export function useCanvasAreaLogic({
           });
           createdSegments.push(seg);
         }
-        setSegmentCollections((prev) => {
-          const { [tempId]: _, ...rest } = prev;
-          const updated = {
-            ...rest,
-            [segCol.id]: {
-              ...segCol,
-              parentScriptId: segCol.scriptId,
-              segments: createdSegments,
-              isSaving: false,
-              deleting: false,
-              error: null,
-              isNew: false,
-            },
-          };
-          localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(updated));
-          return updated;
-        });
-        setSegColPositions((prev) => {
-          if (prev[tempId]) {
-            const { [tempId]: tempPos, ...rest } = prev;
-            const updated = { ...rest, [segCol.id]: tempPos };
-            localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(updated));
-            return updated;
-          }
-          return prev;
-        });
+        // Remove temp segment collection logic (no temp collections)
+        return;
       } catch (e: any) {
         setSegmentCollections((prev) => {
           const { [tempId]: _, ...rest } = prev;
@@ -427,19 +326,8 @@ export function useCanvasAreaLogic({
   // Remove new segment collection (cancel)
   const handleRemoveNewSegmentCollection = useCallback(
     (tempId: string) => {
-      setSegmentCollections((prev) => {
-        const { [tempId]: _, ...rest } = prev;
-        localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(rest));
-        return rest;
-      });
-      setSegColPositions((prev) => {
-        if (prev[tempId]) {
-          const { [tempId]: _, ...rest } = prev;
-          localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(rest));
-          return rest;
-        }
-        return prev;
-      });
+      // Remove temp segment collection logic (no temp collections)
+      return;
     },
     [organizationId, projectId]
   );
@@ -447,6 +335,12 @@ export function useCanvasAreaLogic({
   // Remove handleSaveNewSegmentCollection (no more temp collections)
 
   // Remove handleRemoveNewSegmentCollection (no more temp collections)
+
+  // --- REFACTOR NOTE ---
+  // State is now fully centralized here. All persistent state for scripts, segment collections, and positions
+  // is managed in this hook. All editing state is managed locally in the card components for UI responsiveness.
+  // To further unify editing logic, consider extracting a useEditableField hook for name/text editing in cards.
+  // This will reduce duplication and improve extensibility.
 
   // Edit segment collection name
   const handleEditSegmentCollectionName = useCallback(
@@ -491,34 +385,12 @@ export function useCanvasAreaLogic({
   // Edit segment text
   const handleEditSegmentText = useCallback(
     async (colId: string, segmentId: string, newText: string, index: number) => {
-      // Debug: log segmentId and whether PATCH will be skipped
-      // eslint-disable-next-line no-console
-      console.log("handleEditSegmentText", { colId, segmentId, newText, index, skipPatch: segmentId.startsWith("temp-") });
-      // Prevent PATCH for temp segments (not yet in backend)
-      if (segmentId.startsWith("temp-")) {
-        setSegmentCollections((prev) => {
-          const col = prev[colId];
-          if (!col) return prev;
-          const updatedSegments = col.segments.map((seg, i) =>
-            (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
-              ? { ...seg, text: newText }
-              : seg
-          );
-          return {
-            ...prev,
-            [colId]: {
-              ...col,
-              segments: updatedSegments,
-            },
-          };
-        });
-        return;
-      }
+      // PATCH for all segments (no temp segments)
       setSegmentCollections((prev) => {
         const col = prev[colId];
         if (!col) return prev;
         const updatedSegments = col.segments.map((seg, i) =>
-          (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
+          seg.id === segmentId && i === index
             ? { ...seg, text: newText, isSaving: true, error: null }
             : seg
         );
@@ -540,7 +412,7 @@ export function useCanvasAreaLogic({
           const col = prev[colId];
           if (!col) return prev;
           const updatedSegments = col.segments.map((seg, i) =>
-            (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
+            seg.id === segmentId && i === index
               ? { ...seg, text: newText, isSaving: false, error: null }
               : seg
           );
@@ -559,7 +431,7 @@ export function useCanvasAreaLogic({
           const col = prev[colId];
           if (!col) return prev;
           const updatedSegments = col.segments.map((seg, i) =>
-            (seg.id === segmentId || (seg as Segment).tempId === segmentId) && i === index
+            seg.id === segmentId && i === index
               ? { ...seg, isSaving: false, error: e?.message || "Failed to update segment." }
               : seg
           );
@@ -638,74 +510,25 @@ export function useCanvasAreaLogic({
   }, [organizationId, projectId]);
 
   // --- Script logic (define all handlers before return) ---
-  // Optimistic Create
-  const handleAddScript = useCallback(() => {
-    const tempId = `temp-${Date.now()}`;
-    const newScript: Script & { isSaving?: boolean; deleting?: boolean } = {
-      id: tempId,
-      name: "",
-      text: "",
-      projectId,
-      version: 1,
-      createdAt: "",
-      updatedAt: "",
-      isSaving: false,
-      deleting: false,
-    };
-    setScripts((prev) => {
-      const updated = [newScript, ...prev];
-      updateCache(updated);
-      return updated;
-    });
-  }, [projectId, organizationId]);
-
-  const handleSaveNewScript = useCallback(
-    async (tempId: string, name: string, text: string) => {
+  // Only allow script creation via backend, no temp scripts
+  const handleAddScript = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const created = await createScript(organizationId, projectId, { name: "", text: "" });
       setScripts((prev) => {
-        const updated = prev.map((s) =>
-          s.id === tempId ? { ...s, name, text, isSaving: true } : s
-        );
+        const updated = [created, ...prev];
         updateCache(updated);
         return updated;
       });
-      setSyncing(true);
-      try {
-        const created = await createScript(organizationId, projectId, { name, text });
-        setScripts((prev) => {
-          const updated = prev.map((s) =>
-            s.id === tempId ? { ...created, isSaving: false, deleting: false } : s
-          );
-          updateCache(updated);
-          return updated;
-        });
-        // Migrate position from tempId to real id
-        setPositions((prev) => {
-          if (prev[tempId]) {
-            const { [tempId]: tempPos, ...rest } = prev;
-            const next = { ...rest, [created.id]: tempPos };
-            updatePositionsCache(next);
-            return next;
-          }
-          return prev;
-        });
-      } catch (e) {
-        setScripts((prev) => {
-          const updated = prev.filter((s) => s.id !== tempId);
-          updateCache(updated);
-          return updated;
-        });
-        setError("Failed to create script.");
-      } finally {
-        setScripts((prev) =>
-          prev.map((s) =>
-            s.id === tempId ? { ...s, isSaving: false } : s
-          )
-        );
-        setSyncing(false);
-      }
-    },
-    [organizationId, projectId]
-  );
+    } catch (e) {
+      setError("Failed to create script.");
+    } finally {
+      setSyncing(false);
+    }
+  }, [organizationId, projectId]);
+
+  // Remove handleSaveNewScript (no temp scripts)
+  const handleSaveNewScript = undefined;
 
   // Optimistic Edit
   const handleEditScript = useCallback(
@@ -815,21 +638,8 @@ export function useCanvasAreaLogic({
   );
 
   // Remove new script (cancel)
-  const handleRemoveNewScript = useCallback((tempId: string) => {
-    setScripts((prev) => {
-      const updated = prev.filter((s) => s.id !== tempId);
-      updateCache(updated);
-      return updated;
-    });
-    setPositions((prev) => {
-      if (prev[tempId]) {
-        const { [tempId]: _, ...rest } = prev;
-        updatePositionsCache(rest);
-        return rest;
-      }
-      return prev;
-    });
-  }, [organizationId, projectId]);
+  // Remove handleRemoveNewScript (no temp scripts)
+  const handleRemoveNewScript = undefined;
 
   // Update position of a script card and cache
   const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
@@ -851,6 +661,7 @@ export function useCanvasAreaLogic({
     loading,
     error,
     syncing,
+    pendingSegmentCollection,
     handleAddScript,
     handleSaveNewScript,
     handleEditScript,

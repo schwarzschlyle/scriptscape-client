@@ -23,6 +23,7 @@ interface ScriptCardProps {
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
   isSaving?: boolean;
   deleting?: boolean;
+  pendingSegmentCollection?: boolean;
 }
 
 const ScriptCard: React.FC<ScriptCardProps> = ({
@@ -36,6 +37,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   onAddSegmentCollection,
   isSaving = false,
   deleting = false,
+  pendingSegmentCollection = false,
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
@@ -90,17 +92,18 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   return (
     <CustomCard
       header={
-        <ScriptCardHeader
-          name={name}
-          onNameChange={setName}
-          deleting={deleting}
-          isSaving={isSaving}
-          onDelete={handleDelete}
-          dragAttributes={dragAttributes}
-          dragListeners={dragListeners}
-          active={active}
-          editable={!isSaving && !deleting}
-        />
+      <ScriptCardHeader
+        name={name}
+        onNameChange={setName}
+        deleting={deleting}
+        isSaving={isSaving}
+        onDelete={handleDelete}
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+        active={active}
+        editable={!isSaving && !deleting}
+        pendingSegmentCollection={pendingSegmentCollection}
+      />
       }
       body={
         <>

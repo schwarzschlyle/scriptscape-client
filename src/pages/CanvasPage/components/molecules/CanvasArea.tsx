@@ -99,6 +99,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     segColPositions,
     loading,
     error,
+    pendingSegmentCollection,
     handleAddScript,
     handleSaveNewScript,
     handleEditScript,
@@ -178,21 +179,46 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Prepare links: for each segment collection, draw a curve to its parent script
   const links = Object.values(segmentCollections).map((col) => {
-    if (!col.parentScriptId || !positions[col.parentScriptId] || !segColPositions[col.id || col.tempId || ""]) return null;
-    const from = getCardCenter(col.parentScriptId, true);
-    const to = getCardCenter(col.id || col.tempId || "", false);
+    // Robustly resolve IDs and positions
+    const segColId = col.id || col.tempId || "";
+    const parentId = col.parentScriptId;
+    const scriptPos = positions[parentId];
+    const segColPos = segColPositions[segColId];
+
+    if (!parentId || !scriptPos || !segColPos) return null;
+
+    const from = getCardCenter(parentId, true);
+    const to = getCardCenter(segColId, false);
     const midX = (from.x + to.x) / 2;
+
     return (
       <path
-        key={`link-${col.id || col.tempId}`}
+        key={`link-${segColId}`}
         d={`M${from.x},${from.y} C${midX},${from.y} ${midX},${to.y} ${to.x},${to.y}`}
-        stroke="#2F312F"
-        strokeWidth={2}
+        stroke="#fff"
+        strokeWidth={4}
         fill="none"
-        opacity={0.7}
+        opacity={0.92}
+        style={{
+          filter: "drop-shadow(0 1px 2px #0008)",
+          strokeLinejoin: "round",
+        }}
       />
     );
   });
+
+  // Handler for clicking the canvas background to deactivate cards
+  const handleCanvasBackgroundClick = (e: React.MouseEvent) => {
+    // Only deactivate if there is an active card
+    if (activeId !== null) {
+      setActiveId(null);
+    }
+  };
+
+  // Helper to prevent background click from firing when clicking on a card
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <Box
@@ -206,6 +232,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         m: 0,
         overflow: "scroll",
       }}
+      onClick={handleCanvasBackgroundClick}
     >
       <DndContext
         onDragStart={handleDragStart}
@@ -228,6 +255,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             transformOrigin: "top left",
             transition: "transform 0.2s",
           }}
+          onClick={handleCanvasBackgroundClick}
         >
           {/* SVG for curves */}
           <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
@@ -235,45 +263,48 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           </svg>
           {/* ScriptCards */}
           {scripts.map((script: any) => (
-            <DraggableScriptCard
-              key={script.id}
-              script={script}
-              position={positions[script.id] || { x: 200, y: 200 }}
-              onPositionChange={handleCardPositionChange}
-              organizationId={organizationId}
-              projectId={projectId}
-              isNew={script.id.startsWith("temp-")}
-              onSavedOrCancel={() => handleRemoveNewScript(script.id)}
-              onSave={(name, text) =>
-                script.id.startsWith("temp-")
-                  ? handleSaveNewScript(script.id, name, text)
-                  : handleEditScript(script.id, name, text)
-              }
-              onDelete={() => handleDeleteScript(script.id)}
-              active={activeId === script.id}
-              setActive={setActiveId}
-              onAddSegmentCollection={(name: string, numSegments: number) =>
-                handleAddSegmentCollection(script.id, name, numSegments)
-              }
-              isSaving={!!script.isSaving}
-              deleting={!!script.deleting}
-            />
+            <div key={script.id} onClick={stopPropagation}>
+              <DraggableScriptCard
+                script={script}
+                position={positions[script.id] || { x: 200, y: 200 }}
+                onPositionChange={handleCardPositionChange}
+                organizationId={organizationId}
+                projectId={projectId}
+                isNew={script.id.startsWith("temp-")}
+                onSavedOrCancel={() => handleRemoveNewScript(script.id)}
+                onSave={(name, text) =>
+                  script.id.startsWith("temp-")
+                    ? handleSaveNewScript(script.id, name, text)
+                    : handleEditScript(script.id, name, text)
+                }
+                onDelete={() => handleDeleteScript(script.id)}
+                active={activeId === script.id}
+                setActive={setActiveId}
+                onAddSegmentCollection={(name: string, numSegments: number) =>
+                  handleAddSegmentCollection(script.id, name, numSegments)
+                }
+                isSaving={!!script.isSaving}
+                deleting={!!script.deleting}
+                pendingSegmentCollection={!!pendingSegmentCollection[script.id]}
+              />
+            </div>
           ))}
           {/* SegmentCollectionCards */}
           {Object.values(segmentCollections).map((col: any) => (
-            <DraggableSegmentCollectionCard
-              key={col.id}
-              col={col}
-              position={segColPositions[col.id] || { x: 600, y: 200 }}
-              onPositionChange={handleSegColPositionChange}
-              active={activeId === col.id}
-              setActive={setActiveId}
-              onNameChange={handleEditSegmentCollectionName}
-              onSegmentChange={handleEditSegmentText}
-              onDelete={handleDeleteSegmentCollection}
-              isSaving={!!col.isSaving}
-              deleting={!!col.deleting}
-            />
+            <div key={col.id} onClick={stopPropagation}>
+              <DraggableSegmentCollectionCard
+                col={col}
+                position={segColPositions[col.id] || { x: 600, y: 200 }}
+                onPositionChange={handleSegColPositionChange}
+                active={activeId === col.id}
+                setActive={setActiveId}
+                onNameChange={handleEditSegmentCollectionName}
+                onSegmentChange={handleEditSegmentText}
+                onDelete={handleDeleteSegmentCollection}
+                isSaving={!!col.isSaving}
+                deleting={!!col.deleting}
+              />
+            </div>
           ))}
         </Box>
       </DndContext>

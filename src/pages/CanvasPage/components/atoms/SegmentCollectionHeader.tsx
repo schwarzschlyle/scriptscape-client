@@ -1,6 +1,7 @@
 import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import SegmentIcon from "../../../../assets/segment-icon.svg";
+import { useEditableField } from "../../../../hooks/useEditableField";
 
 interface SegmentCollectionHeaderProps {
   name: string;
@@ -27,42 +28,19 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
   active = false,
   editable = false,
 }) => {
-  const [editing, setEditing] = React.useState(false);
-  const [localName, setLocalName] = React.useState(name || "");
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  // Keep localName in sync with prop when not editing
-  React.useEffect(() => {
-    if (!editing) setLocalName(name || "");
-  }, [name, editing]);
-
-  // Only exit editing on blur or Enter
-  const handleBlur = () => {
-    setEditing(false);
-    if (localName !== name && onNameChange) {
-      onNameChange(localName);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      setEditing(false);
-      if (localName !== name && onNameChange) {
-        onNameChange(localName);
-      }
-    }
-  };
+  const {
+    value: localName,
+    editing,
+    inputRef,
+    startEditing,
+    handleChange,
+    handleBlur,
+    handleKeyDown,
+  } = useEditableField(name || "", onNameChange);
 
   // Allow double-click to start editing
   const handleDoubleClick = () => {
-    if (editable) setEditing(true);
+    if (editable) startEditing();
   };
 
   return (
@@ -70,11 +48,11 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
       <CustomCardHeader
         title={
           editing
-            ? ( // Cast input as React.ReactNode to satisfy type
+            ? (
                 <input
                   ref={inputRef}
                   value={localName}
-                  onChange={e => setLocalName(e.target.value)}
+                  onChange={handleChange}
                   onBlur={handleBlur}
                   onKeyDown={handleKeyDown}
                   style={{
@@ -88,7 +66,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                     width: "90%",
                   }}
                   autoFocus
-                /> as unknown as React.ReactNode
+                />
               )
             : (
                 <>
@@ -116,8 +94,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
         }
         editable={editable}
         editing={editing}
-        onEditStart={() => setEditing(true)}
-        onEditEnd={() => setEditing(false)}
+        onEditStart={startEditing}
+        onEditEnd={() => {}} // not used, handled by hook
         deleting={deleting}
         isSaving={isSaving}
         onDelete={onDelete}
