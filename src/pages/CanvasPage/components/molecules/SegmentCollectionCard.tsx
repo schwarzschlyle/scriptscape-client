@@ -12,8 +12,7 @@ interface Segment {
 }
 
 interface SegmentCollectionCardProps {
-  id?: string;
-  tempId?: string;
+  id: string;
   name: string;
   segments: Segment[];
   isSaving?: boolean;
@@ -27,15 +26,11 @@ interface SegmentCollectionCardProps {
   onNameChange?: (name: string) => void;
   onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
   onDelete?: () => void;
-  isNew?: boolean;
-  onSavedOrCancel?: () => void;
-  onSave?: (name: string, segments: { text: string }[]) => Promise<void>;
   syncing?: boolean;
 }
 
 const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   id,
-  tempId,
   name,
   segments,
   isSaving = false,
@@ -49,36 +44,30 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onNameChange,
   onSegmentChange,
   onDelete,
-  isNew = false,
-  onSavedOrCancel,
-  onSave,
   syncing = false,
 }) => {
-  // Local state for editing name and segments in "new" mode
+  // Local state for editing name and segments
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
   const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<{ name: string; segments: { text: string }[] }>({
     name: name || "",
     segments: segments.map(s => ({ text: s.text || "" })),
   });
 
-  // Keep local state in sync with props when not in new mode
+  // Keep local state in sync with props
   React.useEffect(() => {
-    if (!isNew) {
-      setLocalName(name || "");
-      setLocalSegments(segments.map(s => ({ text: s.text || "" })));
-      setLastSaved({
-        name: name || "",
-        segments: segments.map(s => ({ text: s.text || "" })),
-      });
-    }
-  }, [isNew, name, segments]);
+    setLocalName(name || "");
+    setLocalSegments(segments.map(s => ({ text: s.text || "" })));
+    setLastSaved({
+      name: name || "",
+      segments: segments.map(s => ({ text: s.text || "" })),
+    });
+  }, [name, segments]);
 
   // Keep localSegments in sync with segments after backend save for existing collections
   React.useEffect(() => {
-    if (!isNew && segments && segments.length === localSegments.length) {
+    if (segments && segments.length === localSegments.length) {
       setLocalSegments(segments.map(s => ({ text: s.text || "" })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,31 +76,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   // Auto-save on deactivation (active goes from true to false)
   React.useEffect(() => {
     if (
-      isNew &&
-      !active &&
-      (localName !== lastSaved.name ||
-        localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
-    ) {
-      // Debug: log when auto-save should trigger
-      // eslint-disable-next-line no-console
-      console.log("SegmentCollectionCard auto-save triggered", {
-        isNew,
-        active,
-        localName,
-        lastSaved,
-        localSegments,
-        onSaveDefined: !!onSave,
-      });
-      (async () => {
-        if (onSave) {
-          setSaving(true);
-          await onSave(localName, localSegments);
-          setLastSaved({ name: localName, segments: [...localSegments] });
-          setSaving(false);
-        }
-      })();
-    } else if (
-      !isNew &&
       !active &&
       (localName !== lastSaved.name ||
         localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
@@ -123,8 +87,8 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
       if (onSegmentChange) {
         localSegments.forEach((seg, idx) => {
           if (seg.text !== (lastSaved.segments[idx]?.text ?? "")) {
-            const segmentId = segments[idx]?.id || segments[idx]?.tempId || "";
-            if (segmentId && !segmentId.startsWith("temp-")) {
+            const segmentId = segments[idx]?.id || "";
+            if (segmentId) {
               onSegmentChange(segmentId, seg.text, idx);
             }
           }
@@ -135,15 +99,12 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  // No Save/Cancel buttons; auto-save on deactivate
-  // (handleSave and handleCancel are now unused)
-
   return (
     <CustomCard
       header={
         <SegmentCollectionHeader
-          name={isNew ? localName : name}
-          onNameChange={isNew ? setLocalName : onNameChange}
+          name={localName}
+          onNameChange={setLocalName}
           deleting={deleting}
           isSaving={isSaving}
           segmentsCount={segments.length}
@@ -156,8 +117,8 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
       }
       body={
         <SegmentCollectionBody editable={editable && !isSaving && !deleting}>
-          {(isNew ? localSegments : segments).map((segment, idx) => (
-            <Box key={segments[idx]?.id || segments[idx]?.tempId || idx} sx={{ mb: 2 }}>
+          {localSegments.map((segment, idx) => (
+            <Box key={segments[idx]?.id || idx} sx={{ mb: 2 }}>
               {editingSegmentIndex === idx ? (
                 <textarea
                   value={localSegments[idx].text}
@@ -169,9 +130,9 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                   onBlur={() => {
                     setEditingSegmentIndex(null);
                     // For existing collections, call onSegmentChange on blur
-                    if (!isNew && onSegmentChange) {
-                      const segmentId = segments[idx]?.id || segments[idx]?.tempId || "";
-                      if (segmentId && !segmentId.startsWith("temp-")) {
+                    if (onSegmentChange) {
+                      const segmentId = segments[idx]?.id || "";
+                      if (segmentId) {
                         onSegmentChange(segmentId, localSegments[idx].text, idx);
                       }
                     }
@@ -189,7 +150,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                     padding: "8px",
                     borderRadius: 4,
                   }}
-                  disabled={isSaving || deleting || saving}
+                  disabled={isSaving || deleting}
                   placeholder={`Segment ${idx + 1}`}
                   autoFocus
                 />
@@ -212,7 +173,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                     if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
                   }}
                 >
-                  {(isNew ? localSegments[idx].text : segments[idx].text) || <span style={{ color: "#888" }}>Double-click to edit</span>}
+                  {segment.text || <span style={{ color: "#888" }}>Double-click to edit</span>}
                 </Box>
               )}
             </Box>
@@ -222,7 +183,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
               <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
             </Box>
           )}
-          {/* No Save/Cancel buttons; auto-save on deactivate */}
         </SegmentCollectionBody>
       }
       minHeight={180}

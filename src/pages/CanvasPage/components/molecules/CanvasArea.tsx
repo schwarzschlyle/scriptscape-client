@@ -263,35 +263,21 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             />
           ))}
           {/* SegmentCollectionCards */}
-          {Object.values(segmentCollections).map((col: any) => {
-            const isNew = !!col.tempId && !col.id;
-            return (
-              <DraggableSegmentCollectionCard
-                key={col.id || col.tempId}
-                col={col}
-                position={segColPositions[col.id || col.tempId || ""] || { x: 600, y: 200 }}
-                onPositionChange={handleSegColPositionChange}
-                active={activeId === (col.id || col.tempId)}
-                setActive={setActiveId}
-                onNameChange={handleEditSegmentCollectionName}
-                onSegmentChange={handleEditSegmentText}
-                onDelete={handleDeleteSegmentCollection}
-                onSavedOrCancel={
-                  isNew && col.tempId
-                    ? () => handleRemoveNewSegmentCollection(col.tempId as string)
-                    : undefined
-                }
-                onSave={
-                  isNew && col.tempId
-                    ? (name, segments) =>
-                        handleSaveNewSegmentCollection(col.tempId as string, name, segments)
-                    : undefined
-                }
-                isSaving={!!col.isSaving}
-                deleting={!!col.deleting}
-              />
-            );
-          })}
+          {Object.values(segmentCollections).map((col: any) => (
+            <DraggableSegmentCollectionCard
+              key={col.id}
+              col={col}
+              position={segColPositions[col.id] || { x: 600, y: 200 }}
+              onPositionChange={handleSegColPositionChange}
+              active={activeId === col.id}
+              setActive={setActiveId}
+              onNameChange={handleEditSegmentCollectionName}
+              onSegmentChange={handleEditSegmentText}
+              onDelete={handleDeleteSegmentCollection}
+              isSaving={!!col.isSaving}
+              deleting={!!col.deleting}
+            />
+          ))}
         </Box>
       </DndContext>
       <AddScriptButton onClick={handleAddScript} />
@@ -319,8 +305,6 @@ function DraggableSegmentCollectionCard({
   onNameChange,
   onSegmentChange,
   onDelete,
-  onSavedOrCancel,
-  onSave,
   isSaving,
   deleting,
 }: {
@@ -332,13 +316,11 @@ function DraggableSegmentCollectionCard({
   onNameChange: (colId: string, newName: string) => void;
   onSegmentChange: (colId: string, segmentId: string, newText: string, index: number) => void;
   onDelete: (colId: string) => void;
-  onSavedOrCancel?: () => void;
-  onSave?: (name: string, segments: { text: string }[]) => Promise<void>;
   isSaving?: boolean;
   deleting?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: col.id || col.tempId,
+    id: col.id,
   });
 
   const x = position.x + (transform?.x ?? 0);
@@ -364,7 +346,6 @@ function DraggableSegmentCollectionCard({
     >
       <SegmentCollectionCard
         id={col.id}
-        tempId={col.tempId}
         name={col.name}
         segments={col.segments}
         isSaving={isSaving}
@@ -374,13 +355,10 @@ function DraggableSegmentCollectionCard({
         dragListeners={listeners}
         active={active}
         editable={!isSaving && !deleting}
-        onClick={() => setActive(col.id || col.tempId)}
-        onNameChange={(newName) => onNameChange(col.id || col.tempId, newName)}
-        onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id || col.tempId, segmentId, newText, idx)}
-        onDelete={() => onDelete(col.id || col.tempId)}
-        isNew={!!col.tempId && !col.id}
-        onSavedOrCancel={onSavedOrCancel}
-        onSave={onSave}
+        onClick={() => setActive(col.id)}
+        onNameChange={(newName) => onNameChange(col.id, newName)}
+        onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id, segmentId, newText, idx)}
+        onDelete={() => onDelete(col.id)}
       />
     </Box>
   );

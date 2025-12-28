@@ -284,62 +284,18 @@ export function useCanvasAreaLogic({
   const createSegmentCollectionMutation = useCreateSegmentCollection();
   const createSegmentMutation = useCreateSegment();
 
-  // Add a new segment collection optimistically (unsaved, tempId)
+  // Add a new segment collection (non-optimistic: only add after API call succeeds)
   const handleAddSegmentCollection = useCallback(
     async (parentScriptId: string, name: string, numSegments: number) => {
-      // Optimistically render a placeholder while saving
-      const tempId = `temp-segcol-${Date.now()}`;
-      const tempSegments = Array.from({ length: numSegments }, (_, i) => ({
-        id: "",
-        tempId: `temp-segment-${Date.now()}-${i}`,
-        segmentCollectionId: tempId,
-        segmentIndex: i,
-        text: "New Segment",
-        createdAt: "",
-        updatedAt: "",
-      }));
-      setSegmentCollections((prev) => {
-        const updated = {
-          ...prev,
-          [tempId]: {
-            id: tempId,
-            tempId,
-            name,
-            scriptId: parentScriptId,
-            parentScriptId,
-            segmentCount: numSegments,
-            segments: tempSegments,
-            isSaving: true,
-            deleting: false,
-            error: null,
-            createdAt: "",
-            updatedAt: "",
-            isNew: true,
-          },
-        };
-        localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(updated));
-        return updated;
-      });
-      setSegColPositions((prev) => {
-        const parentPos = positions[parentScriptId] || { x: 200, y: 200 };
-        const offsetX = 380;
-        const offsetY = 40 + Object.keys(prev).length * 40;
-        const updated = {
-          ...prev,
-          [tempId]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
-        };
-        localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(updated));
-        return updated;
-      });
-
-      // Immediately save to backend
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
+        // Create the collection in backend
         const segCol = await createSegmentCollectionMutation.mutateAsync({
           scriptId: parentScriptId,
           name,
         });
+        // Create segments in backend
         const createdSegments: Segment[] = [];
         for (let i = 0; i < numSegments; i++) {
           const seg = await createSegmentMutation.mutateAsync({
@@ -349,10 +305,10 @@ export function useCanvasAreaLogic({
           });
           createdSegments.push(seg);
         }
+        // Add the new collection to state and localStorage only after all API calls succeed
         setSegmentCollections((prev) => {
-          const { [tempId]: _, ...rest } = prev;
           const updated = {
-            ...rest,
+            ...prev,
             [segCol.id]: {
               ...segCol,
               parentScriptId,
@@ -360,32 +316,24 @@ export function useCanvasAreaLogic({
               isSaving: false,
               deleting: false,
               error: null,
-              isNew: false,
             },
           };
           localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(updated));
           return updated;
         });
+        // Assign a position for the new collection
         setSegColPositions((prev) => {
-          if (prev[tempId]) {
-            const { [tempId]: tempPos, ...rest } = prev;
-            const updated = { ...rest, [segCol.id]: tempPos };
-            localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(updated));
-            return updated;
-          }
-          return prev;
+          const parentPos = positions[parentScriptId] || { x: 200, y: 200 };
+          const offsetX = 380;
+          const offsetY = 40 + Object.keys(prev).length * 40;
+          const updated = {
+            ...prev,
+            [segCol.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
+          };
+          localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(updated));
+          return updated;
         });
       } catch (e: any) {
-        setSegmentCollections((prev) => {
-          const { [tempId]: _, ...rest } = prev;
-          localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(rest));
-          return rest;
-        });
-        setSegColPositions((prev) => {
-          const { [tempId]: _, ...rest } = prev;
-          localStorage.setItem(getSegColPositionsKey(organizationId, projectId), JSON.stringify(rest));
-          return rest;
-        });
         setError(e?.message || "Failed to create segment collection.");
       } finally {
         setSyncing(false);
