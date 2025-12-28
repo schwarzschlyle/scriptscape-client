@@ -99,7 +99,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     segColPositions,
     loading,
     error,
-    syncing,
     handleAddScript,
     handleSaveNewScript,
     handleEditScript,
@@ -107,8 +106,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleRemoveNewScript,
     handleCardPositionChange,
     handleAddSegmentCollection,
-    handleSaveNewSegmentCollection,
-    handleRemoveNewSegmentCollection,
     handleEditSegmentCollectionName,
     handleEditSegmentText,
     handleDeleteSegmentCollection,
@@ -345,7 +342,6 @@ function DraggableSegmentCollectionCard({
       }}
     >
       <SegmentCollectionCard
-        id={col.id}
         name={col.name}
         segments={col.segments}
         isSaving={isSaving}

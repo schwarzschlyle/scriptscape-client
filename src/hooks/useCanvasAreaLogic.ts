@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getScripts, createScript, updateScript, deleteScript } from "@api/scripts/queries";
 import type { Script } from "@api/scripts/types";
 import { useCreateSegmentCollection, useUpdateSegmentCollection, useDeleteSegmentCollection } from "@api/segment_collections/mutations";
-import { useCreateSegment, useUpdateSegment, useDeleteSegment } from "@api/segments/mutations";
+import { useCreateSegment, useUpdateSegment } from "@api/segments/mutations";
 import type { SegmentCollection } from "@api/segment_collections/types";
 import type { Segment as BaseSegment } from "@api/segments/types";
 
@@ -52,7 +52,6 @@ export function useCanvasAreaLogic({
   const updateCollectionMutation = useUpdateSegmentCollection();
   const deleteCollectionMutation = useDeleteSegmentCollection();
   const updateSegmentMutation = useUpdateSegment();
-  const deleteSegmentMutation = useDeleteSegment();
 
   function updateCache(scripts: ScriptsState) {
     const cacheKey = getCacheKey(organizationId, projectId);

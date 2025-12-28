@@ -12,7 +12,6 @@ interface Segment {
 }
 
 interface SegmentCollectionCardProps {
-  id: string;
   name: string;
   segments: Segment[];
   isSaving?: boolean;
@@ -26,11 +25,9 @@ interface SegmentCollectionCardProps {
   onNameChange?: (name: string) => void;
   onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
   onDelete?: () => void;
-  syncing?: boolean;
 }
 
 const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
-  id,
   name,
   segments,
   isSaving = false,
@@ -44,7 +41,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onNameChange,
   onSegmentChange,
   onDelete,
-  syncing = false,
 }) => {
   // Local state for editing name and segments
   const [localName, setLocalName] = useState(name || "");

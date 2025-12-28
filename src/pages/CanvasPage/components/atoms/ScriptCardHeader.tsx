@@ -1,9 +1,6 @@
 import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import ScriptIcon from "../../../../assets/script-icon.svg";
-import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
-import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 
 interface ScriptCardHeaderProps {

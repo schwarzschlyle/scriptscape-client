@@ -5,7 +5,6 @@ import ScriptCardHeader from "../atoms/ScriptCardHeader";
 import ScriptCardBody from "../atoms/ScriptCardBody";
 import Box from "@mui/material/Box";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
-import SegmentCollectionCard from "./SegmentCollectionCard";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface ScriptCardProps {
@@ -45,8 +44,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   const [lastSaved, setLastSaved] = useState({ name: script.name || "", text: script.text || "" });
   const [editingBody, setEditingBody] = useState(false);
 
-  // Segment collection state
-  const [segmentCollections, setSegmentCollections] = useState<any[]>([]);
   const [showAddSegmentCollectionModal, setShowAddSegmentCollectionModal] = useState(false);
 
   // Handler for adding a new segment collection (calls parent handler)
