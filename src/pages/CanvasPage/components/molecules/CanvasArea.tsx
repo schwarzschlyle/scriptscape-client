@@ -11,6 +11,7 @@ import { DndContext, useDraggable } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent, DragMoveEvent } from "@dnd-kit/core";
 import ZoomControls from "./ZoomControls";
 import CardConnector from "../../../../components/CardConnector";
+import ScriptAdditionModal from "./ScriptAdditionModal";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -114,6 +115,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleDeleteSegmentCollection,
     handleSegColPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+
+  // Modal state for adding a script
+  const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
 
 
   // Canvas zoom state (1.0 = 100%)
@@ -337,7 +341,15 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           ))}
         </Box>
       </DndContext>
-      <AddScriptButton onClick={handleAddScript} />
+      <AddScriptButton onClick={() => setShowAddScriptModal(true)} />
+      <ScriptAdditionModal
+        open={showAddScriptModal}
+        onClose={() => setShowAddScriptModal(false)}
+        onCreate={(name, text) => {
+          handleAddScript(name, text);
+          setShowAddScriptModal(false);
+        }}
+      />
       <ZoomControls zoom={zoom} setZoom={setZoom} />
       {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>

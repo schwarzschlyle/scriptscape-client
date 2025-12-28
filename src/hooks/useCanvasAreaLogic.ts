@@ -40,6 +40,8 @@ export function useCanvasAreaLogic({
   onSyncChange,
 }: UseCanvasAreaLogicProps) {
   const [scripts, setScripts] = useState<ScriptsState>([]);
+  // Local draft scripts (not yet persisted)
+  const [draftScripts, setDraftScripts] = useState<{ [id: string]: { name: string; text: string } }>({});
   const [positions, setPositions] = useState<PositionsState>({});
   const [segmentCollections, setSegmentCollections] = useState<SegmentCollectionsState>({});
   const [segColPositions, setSegColPositions] = useState<PositionsState>({});
@@ -515,22 +517,24 @@ export function useCanvasAreaLogic({
 
   // --- Script logic (define all handlers before return) ---
   // Only allow script creation via backend, no temp scripts
-  const handleAddScript = useCallback(async () => {
-    setSyncing(true);
-    try {
-      // Provide a default non-empty text to satisfy backend validation
-      const created = await createScript(organizationId, projectId, { name: "Untitled Script", text: " " });
-      setScripts((prev) => {
-        const updated = [created, ...prev];
-        updateCache(updated);
-        return updated;
-      });
-    } catch (e) {
-      setError("Failed to create script.");
-    } finally {
-      setSyncing(false);
-    }
-  }, [organizationId, projectId]);
+  const handleAddScript = useCallback(
+    async (name: string, text: string) => {
+      setSyncing(true);
+      try {
+        const created = await createScript(organizationId, projectId, { name, text });
+        setScripts((prev) => {
+          const updated = [created, ...prev];
+          updateCache(updated);
+          return updated;
+        });
+      } catch (e) {
+        setError("Failed to create script.");
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [organizationId, projectId]
+  );
 
   // Remove handleSaveNewScript (no temp scripts)
   const handleSaveNewScript = undefined;
@@ -658,8 +662,48 @@ export function useCanvasAreaLogic({
   // Clear error
   const clearError = useCallback(() => setError(null), []);
 
+  // Add a new draft script (not persisted)
+  const handleAddDraftScript = useCallback(() => {
+    const tempId = `temp-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    setDraftScripts((prev) => ({
+      ...prev,
+      [tempId]: { name: "", text: "" },
+    }));
+  }, []);
+
+  // Save a draft script (persist to backend, replace with real script)
+  const handleSaveDraftScript = useCallback(
+    async (tempId: string, name: string, text: string) => {
+      try {
+        const created = await createScript(organizationId, projectId, { name, text });
+        setScripts((prev) => {
+          const updated = [created, ...prev];
+          updateCache(updated);
+          return updated;
+        });
+      } catch (e) {
+        setError("Failed to create script.");
+      } finally {
+        setDraftScripts((prev) => {
+          const { [tempId]: _, ...rest } = prev;
+          return rest;
+        });
+      }
+    },
+    [organizationId, projectId]
+  );
+
+  // Remove a draft script (cancel)
+  const handleRemoveDraftScript = useCallback((tempId: string) => {
+    setDraftScripts((prev) => {
+      const { [tempId]: _, ...rest } = prev;
+      return rest;
+    });
+  }, []);
+
   return {
     scripts,
+    draftScripts,
     positions,
     segmentCollections,
     segColPositions,
@@ -668,6 +712,9 @@ export function useCanvasAreaLogic({
     syncing,
     pendingSegmentCollection,
     handleAddScript,
+    handleAddDraftScript,
+    handleSaveDraftScript,
+    handleRemoveDraftScript,
     handleSaveNewScript,
     handleEditScript,
     handleDeleteScript,
