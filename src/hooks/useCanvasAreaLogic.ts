@@ -329,18 +329,6 @@ export function useCanvasAreaLogic({
     [createSegmentCollectionMutation, createSegmentMutation, organizationId, projectId, segmentCollections]
   );
 
-  // Remove new segment collection (cancel)
-  // Removed unused handleRemoveNewSegmentCollection (no temp collections)
-
-  // Remove handleSaveNewSegmentCollection (no more temp collections)
-
-  // Remove handleRemoveNewSegmentCollection (no more temp collections)
-
-  // --- REFACTOR NOTE ---
-  // State is now fully centralized here. All persistent state for scripts, segment collections, and positions
-  // is managed in this hook. All editing state is managed locally in the card components for UI responsiveness.
-  // To further unify editing logic, consider extracting a useEditableField hook for name/text editing in cards.
-  // This will reduce duplication and improve extensibility.
 
   // Edit segment collection name
   const handleEditSegmentCollectionName = useCallback(
@@ -510,7 +498,6 @@ export function useCanvasAreaLogic({
   }, [organizationId, projectId]);
 
   // --- Script logic (define all handlers before return) ---
-  // Only allow script creation via backend, no temp scripts
   const handleAddScript = useCallback(
     async (name: string, text: string) => {
       setSyncing(true);
