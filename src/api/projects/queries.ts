@@ -1,5 +1,3 @@
-// scriptscape-client/src/api/projects/queries.ts
-
 import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { Project, ProjectsListResponse } from "./types";
@@ -15,6 +13,7 @@ export function useProjects(organizationId: string, params?: { page?: number; li
       return response.data;
     },
     enabled: !!organizationId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

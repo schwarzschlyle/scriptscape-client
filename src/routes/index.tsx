@@ -5,6 +5,7 @@ import LoginPage from "@pages/LoginPage/page";
 import RegisterPage from "@pages/RegisterPage/page";
 import CanvasPage from "@pages/CanvasPage/page";
 import TestE2EPage from "@pages/TestE2EPage/page";
+import ProjectsPage from "@pages/ProjectsPage/page";
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
+      {
+        path: "/canvas/:organizationId/",
+        element: <ProjectsPage />
+      },
       {
         path: ROUTES.CANVAS,
         element: <CanvasPage />
