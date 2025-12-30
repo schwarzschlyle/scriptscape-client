@@ -115,25 +115,19 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleSegColPositionChange,
   } = useCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
-  // Modal state for adding a script
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
 
-
   const [zoom, setZoom] = React.useState(0.6);
 
-  // Active card state
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  // Track drag transforms for all cards
   const [dragTransforms, setDragTransforms] = React.useState<{ [id: string]: { x: number; y: number } }>({});
 
-  // Handle drag start to set active card
   const handleDragStart = (event: DragStartEvent) => {
     const id = event.active?.id as string;
     if (id) setActiveId(id);
   };
 
-  // Handle drag move to update dragTransforms
   const handleDragMove = (event: DragMoveEvent) => {
     const id = event.active?.id as string;
     if (id && event.delta) {
@@ -172,7 +166,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   };
 
   // Debug: log script and segment collection IDs and positions
-  console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions, "segmentCollections", Object.keys(segmentCollections), "segColPositions", segColPositions);
+  // console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions, "segmentCollections", Object.keys(segmentCollections), "segColPositions", segColPositions);
 
   // Helper to get the center of a card for curve drawing, using dragTransforms if dragging
   const getCardCenter = (id: string, isScript: boolean) => {

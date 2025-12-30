@@ -42,7 +42,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onSegmentChange,
   onDelete,
 }) => {
-  // Local state for editing name and segments
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
   const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
@@ -51,7 +50,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
     segments: segments.map(s => ({ text: s.text || "" })),
   });
 
-  // Keep local state in sync with props
   React.useEffect(() => {
     setLocalName(name || "");
     setLocalSegments(segments.map(s => ({ text: s.text || "" })));
@@ -61,7 +59,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
     });
   }, [name, segments]);
 
-  // Keep localSegments in sync with segments after backend save for existing collections
   React.useEffect(() => {
     if (segments && segments.length === localSegments.length) {
       setLocalSegments(segments.map(s => ({ text: s.text || "" })));
@@ -69,14 +66,12 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
-  // Auto-save on deactivation (active goes from true to false)
   React.useEffect(() => {
     if (
       !active &&
       (localName !== lastSaved.name ||
         localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
     ) {
-      // For existing collections, save all changed segments on deactivate
       if (onNameChange && localName !== lastSaved.name) {
         onNameChange(localName);
       }

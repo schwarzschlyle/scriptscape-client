@@ -49,12 +49,11 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
         gap: 2,
       }}
     >
-      {/* Project Name (left) */}
+
       <Box sx={{ flex: "0 0 auto", minWidth: 0 }}>
         <ProjectName name={projectName} />
       </Box>
 
-      {/* Organization Name (right of project name) */}
       {orgName && (
         <Box
           sx={{
@@ -83,10 +82,8 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
         </Box>
       )}
 
-      {/* Spacer */}
       <Box sx={{ flex: 1 }} />
 
-      {/* Spinner and Logout */}
       <Box
         sx={{
           flex: "0 0 auto",

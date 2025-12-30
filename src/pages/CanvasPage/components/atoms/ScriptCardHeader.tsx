@@ -11,7 +11,6 @@ interface ScriptCardHeaderProps {
   deleting: boolean;
   isSaving?: boolean;
   onDelete: () => void;
-  // Drag handle props from dnd-kit
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
   active?: boolean;
@@ -21,7 +20,6 @@ interface ScriptCardHeaderProps {
 }
 
 const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
-  // Destructure pendingSegmentCollection so it is NOT spread to CustomCardHeader
   const {
     pendingSegmentCollection,
     ...headerProps
@@ -42,7 +40,6 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
     if (props.editable) startEditing();
   };
 
-  // Blue blinking dot CSS using MUI keyframes
   const blinkBlueDot = keyframes`
     0% { opacity: 1; }
     100% { opacity: 0.3; }

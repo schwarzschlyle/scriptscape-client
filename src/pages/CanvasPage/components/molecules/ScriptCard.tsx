@@ -15,7 +15,6 @@ interface ScriptCardProps {
   onSavedOrCancel?: () => void;
   onSave: (name: string, text: string) => Promise<void>;
   onDelete: () => Promise<void>;
-  // Drag handle props from dnd-kit
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
   active?: boolean;
@@ -41,14 +40,13 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
 }) => {
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
-  // Remove local saving/deleting state, use props only
+
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState({ name: script.name || "", text: script.text || "" });
   const [editingBody, setEditingBody] = useState(false);
 
   const [showAddSegmentCollectionModal, setShowAddSegmentCollectionModal] = useState(false);
 
-  // Handler for adding a new segment collection (calls parent handler)
   const handleAddSegmentCollection = (name: string, numSegments: number) => {
     setShowAddSegmentCollectionModal(false);
     if (onAddSegmentCollection) {
@@ -56,14 +54,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
     }
   };
 
-  // Exit body editing on card deactivation
   React.useEffect(() => {
     if (!active && editingBody) {
       setEditingBody(false);
     }
   }, [active, editingBody]);
 
-  // Save on deactivate (when active goes from true to false)
   React.useEffect(() => {
     if (!active && (name !== lastSaved.name || text !== lastSaved.text)) {
       (async () => {
@@ -153,7 +149,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               />
             </button>
           </Box>
-          {/* Modal for adding segment collection */}
+
           {showAddSegmentCollectionModal && (
             <SegmentCollectionAdditionModal
               open={showAddSegmentCollectionModal}
@@ -161,7 +157,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               onGenerate={handleAddSegmentCollection}
             />
           )}
-          {/* Segment collections are now rendered as top-level cards in CanvasArea */}
         </>
       }
       minHeight={220}
