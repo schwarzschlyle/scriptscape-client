@@ -62,6 +62,7 @@ export default function CanvasPage() {
       <CanvasHeader
         orgName={org?.name}
         projectName={project?.name}
+        projectDescription={project?.description ?? undefined}
         onLogout={logout}
         syncing={syncing}
       />

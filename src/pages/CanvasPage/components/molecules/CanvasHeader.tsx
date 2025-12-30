@@ -7,13 +7,14 @@ import LoadingSpinner from "@components/LoadingSpinner";
 interface CanvasHeaderProps {
   orgName?: string;
   projectName?: string;
+  projectDescription?: string;
   onLogout: () => void;
   syncing?: boolean;
 }
 
 const SPINNER_WIDTH = 40;
 
-const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderProps) => (
+const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, syncing }: CanvasHeaderProps) => (
   <Box
     sx={{
       position: "fixed",
@@ -50,37 +51,61 @@ const CanvasHeader = ({ orgName, projectName, onLogout, syncing }: CanvasHeaderP
       }}
     >
 
-      <Box sx={{ flex: "0 0 auto", minWidth: 0 }}>
-        <ProjectName name={projectName} />
-      </Box>
-
-      {orgName && (
-        <Box
-          sx={{
-            ml: 2,
-            px: 2,
-            py: 0.5,
-            bgcolor: "#E5E7EB",
-            borderRadius: 1,
-            display: "flex",
-            alignItems: "center",
-            height: 32,
-          }}
-        >
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: "#4B5563",
-              fontWeight: 700,
-              fontSize: 14,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-            }}
-          >
-            {orgName}
-          </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0, flexGrow: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "flex-end", minWidth: 0 }}>
+          <ProjectName name={projectName} />
+          {orgName && (
+            <Box
+              sx={{
+                ml: 2,
+                px: 2,
+                py: 0.5,
+                bgcolor: "#E5E7EB",
+                borderRadius: 1,
+                display: "flex",
+                alignItems: "center",
+                flexShrink: 0,
+                minWidth: 0,
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "#4B5563",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {orgName}
+              </Typography>
+            </Box>
+          )}
         </Box>
-      )}
+        {projectDescription && (
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#374151",
+              fontWeight: 400,
+              fontSize: 13,
+              mt: 0.5,
+              maxWidth: 320,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              marginLeft: 0,
+            }}
+            title={projectDescription}
+          >
+            {projectDescription}
+          </Typography>
+        )}
+      </Box>
 
       <Box sx={{ flex: 1 }} />
 
