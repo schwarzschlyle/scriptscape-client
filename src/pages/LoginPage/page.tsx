@@ -10,6 +10,9 @@ import { ROUTES } from "@routes/routes.config";
 import { useCurrentUser } from "@api/users/queries";
 
 export default function LoginPage() {
+  React.useEffect(() => {
+    document.title = "ScriptScape | Login";
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
