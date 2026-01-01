@@ -1,4 +1,3 @@
-
 import React from "react";
 import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
@@ -137,7 +136,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const panStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const mouseStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Imperative refs for smooth pan/zoom
+  // Imperative refs for smooth pan/zoom (SOURCE OF TRUTH)
   const canvasRef = React.useRef<HTMLDivElement | null>(null);
   const zoomRef = React.useRef(zoom);
   const offsetRef = React.useRef(offset);
@@ -146,17 +145,34 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   // Grid ref for infinite grid
   const gridRef = React.useRef<HTMLDivElement | null>(null);
 
-  // Centralized transform apply (minimal, industry-grade)
+  // Centralized transform apply (industry-grade)
   const applyTransform = () => {
-    // No clamping for infinite grid
     const { x, y } = offsetRef.current;
     const z = zoomRef.current;
+    
+    // Apply transform to content layer
     if (canvasRef.current) {
       canvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
     }
-    // Infinite grid: single layer, never scaled, just offset
+    
+    // Industry-grade infinite grid with LOD
     if (gridRef.current) {
-      gridRef.current.style.backgroundPosition = `${x * z}px ${y * z}px`;
+      // Grid moves in screen space (offset * zoom)
+      const gridX = x * z;
+      const gridY = y * z;
+      gridRef.current.style.backgroundPosition = `${gridX}px ${gridY}px`;
+      
+      // LOD: Adjust grid spacing based on zoom
+      // Base spacing is 48px at zoom = 1.0
+      const BASE_SPACING = 48;
+      
+      // Calculate LOD level (powers of 2)
+      // When zoomed out (z < 1), increase spacing
+      // When zoomed in (z > 1), keep base spacing
+      const lod = Math.max(0, Math.ceil(-Math.log2(z)));
+      const spacing = BASE_SPACING * Math.pow(2, lod);
+      
+      gridRef.current.style.backgroundSize = `${spacing}px ${spacing}px`;
     }
   };
 
@@ -222,9 +238,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     });
   };
 
-  // Debug: log script and segment collection IDs and positions
-  // console.log("Rendering CanvasArea: scripts", scripts.map(s => s.id), "positions", positions, "segmentCollections", Object.keys(segmentCollections), "segColPositions", segColPositions);
-
   // Helper to get the center of a card for curve drawing, using dragTransforms if dragging
   const getCardCenter = (id: string, isScript: boolean) => {
     const basePos = isScript ? positions[id] : segColPositions[id];
@@ -278,8 +291,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
     const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
 
-    // Use a cubic Bezier curve with a horizontal midpoint
-
     return (
       <CardConnector
         key={`link-${segColId}`}
@@ -299,7 +310,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Handler for clicking the canvas background to deactivate cards
   const handleCanvasBackgroundClick = () => {
-    // Only deactivate if there is an active card
     if (activeId !== null) {
       setActiveId(null);
     }
@@ -327,11 +337,12 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 2) {
       setIsPanning(true);
-      panStart.current = { ...offset };
+      panStart.current = { ...offsetRef.current }; // ✅ Use ref, not state
       mouseStart.current = { x: e.clientX, y: e.clientY };
       e.preventDefault();
     }
   };
+  
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isPanning) return;
     const dx = ((e.clientX - mouseStart.current.x) / zoomRef.current) * PAN_SPEED;
@@ -342,48 +353,81 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     );
     scheduleTransform();
   };
+  
   const endPan = () => {
-    setIsPanning(false);
-    setOffset(offsetRef.current);
-    setZoom(zoomRef.current);
-  };
-  const handleMouseUp = (e: React.MouseEvent) => {
     if (isPanning) {
-      endPan();
+      setIsPanning(false);
+      // Sync state ONCE at the end
+      setOffset(offsetRef.current);
     }
   };
+  
+  const handleMouseUp = (e: React.MouseEvent) => {
+    endPan();
+  };
+  
   const handleContextMenu = (e: React.MouseEvent) => {
-    // Prevent default context menu on right click
     e.preventDefault();
   };
 
-  // Scroll-to-zoom handler
+  // Scroll-to-zoom handler (FIXED: no setTimeout)
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey) return;
     e.preventDefault();
+    
     const minZoom = getMinZoom();
     const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
     const prevZoom = zoomRef.current;
     const nextZoom = Math.max(minZoom, Math.min(2.0, prevZoom + delta));
+    
     if (prevZoom === nextZoom) return;
+    
+    // Zoom to center of screen
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     const ox = offsetRef.current.x;
     const oy = offsetRef.current.y;
+    
     offsetRef.current = clampOffset(
       cx - ((cx - ox) / prevZoom) * nextZoom,
       cy - ((cy - oy) / prevZoom) * nextZoom
     );
     zoomRef.current = nextZoom;
+    
     scheduleTransform();
-    // Sync React state after wheel ends (debounced)
-    if (rafRef.current == null) {
-      setTimeout(() => {
+    
+    // ✅ CRITICAL FIX: Don't sync state immediately during wheel
+    // State sync happens via debounce or wheel end
+  };
+  
+  // Debounced state sync for wheel zoom
+  const wheelEndTimerRef = React.useRef<number | null>(null);
+  
+  React.useEffect(() => {
+    const handleWheelEnd = () => {
+      if (wheelEndTimerRef.current) {
+        clearTimeout(wheelEndTimerRef.current);
+      }
+      wheelEndTimerRef.current = window.setTimeout(() => {
         setOffset(offsetRef.current);
         setZoom(zoomRef.current);
-      }, 0);
-    }
-  };
+      }, 150); // Sync state 150ms after last wheel event
+    };
+    
+    const wheelHandler = (e: WheelEvent) => {
+      if (!e.ctrlKey) {
+        handleWheelEnd();
+      }
+    };
+    
+    window.addEventListener('wheel', wheelHandler, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', wheelHandler);
+      if (wheelEndTimerRef.current) {
+        clearTimeout(wheelEndTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Box
@@ -392,10 +436,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         inset: 0,
         width: "100vw",
         height: "100vh",
-        bgcolor: "#111211", // Match canvas background to prevent flash
+        bgcolor: "#111211",
         p: 0,
         m: 0,
-        overflow: "hidden", // Hide scrollbars
+        overflow: "hidden",
         userSelect: isPanning ? "none" : "auto",
         cursor: isPanning ? "grabbing" : "default",
       }}
@@ -413,7 +457,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
       >
-        {/* Infinite grid layer (not scaled, no LOD, no opacity) */}
+        {/* Industry-grade infinite grid with LOD */}
         <Box
           ref={gridRef}
           sx={{
@@ -422,10 +466,11 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             pointerEvents: "none",
             backgroundColor: "#111211",
             backgroundImage: "radial-gradient(#646564 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
+            backgroundSize: "48px 48px", // Base size, will be adjusted by LOD
             zIndex: 0,
           }}
         />
+        
         {/* Scaled content layer */}
         <Box
           ref={canvasRef}
@@ -440,7 +485,6 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             willChange: "transform",
             transformOrigin: "top left",
             zIndex: 1,
-            // No transition for transform!
           }}
           onClick={handleCanvasBackgroundClick}
         >
@@ -448,6 +492,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
             {links}
           </svg>
+          
           {/* ScriptCards */}
           {scripts.map((script: any) => (
             <div key={script.id} onClick={stopPropagation}>
@@ -470,6 +515,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               />
             </div>
           ))}
+          
           {/* SegmentCollectionCards */}
           {Object.values(segmentCollections).map((col: any) => (
             <div key={col.id} onClick={stopPropagation}>
@@ -489,12 +535,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           ))}
         </Box>
       </DndContext>
+      
       <AddScriptButton onClick={() => setShowAddScriptModal(true)} />
+      
       <ScriptAdditionModal
         open={showAddScriptModal}
         onClose={() => setShowAddScriptModal(false)}
         onCreate={(name, text) => {
-          // Calculate random position in current viewport
           const vw = window.innerWidth;
           const vh = window.innerHeight;
           const left = (-offset.x) / zoom;
@@ -511,11 +558,11 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           setShowScriptGenerationModal(true);
         }}
       />
+      
       <ScriptGenerationModal
         open={showScriptGenerationModal}
         onClose={() => setShowScriptGenerationModal(false)}
         onGenerate={() => {
-          // Calculate random position in current viewport
           const vw = window.innerWidth;
           const vh = window.innerHeight;
           const left = (-offset.x) / zoom;
@@ -529,12 +576,15 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           setShowScriptGenerationModal(false);
         }}
       />
+      
       <ZoomControls zoom={zoom} setZoom={setZoom} />
+      
       {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
           <LoadingSpinner size={32} label="" />
         </Box>
       )}
+      
       {error && (
         <Box color="error.main" sx={{ mt: 2 }}>
           {error}
