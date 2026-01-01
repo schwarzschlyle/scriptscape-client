@@ -11,18 +11,27 @@ interface ScriptCardBodyProps {
   children?: React.ReactNode;
 }
 
-const ScriptCardBody: React.FC<ScriptCardBodyProps> = (props) => (
+const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
+  text,
+  editable,
+  children,
+  // Do not pass these to CustomCardBody:
+  onTextChange,
+  onRequestEditBody,
+  onBodyBlur,
+  ...rest
+}) => (
   <CustomCardBody
-    {...props}
+    {...rest}
     onDoubleClick={() => {
-      if (!props.editable && props.onRequestEditBody) props.onRequestEditBody();
+      if (!editable && onRequestEditBody) onRequestEditBody();
     }}
   >
-    {props.editable && props.onTextChange ? (
+    {editable && onTextChange ? (
       <textarea
-        value={props.text}
-        onChange={e => props.onTextChange!(e.target.value)}
-        onBlur={props.onBodyBlur}
+        value={text}
+        onChange={e => onTextChange(e.target.value)}
+        onBlur={onBodyBlur}
         style={{
           width: "100%",
           minHeight: 60,
@@ -49,7 +58,7 @@ const ScriptCardBody: React.FC<ScriptCardBodyProps> = (props) => (
           textAlign: "center",
         }}
       >
-        {props.text}
+        {text}
       </Box>
     )}
   </CustomCardBody>
