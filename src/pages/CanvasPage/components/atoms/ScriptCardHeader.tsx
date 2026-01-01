@@ -86,7 +86,12 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
               }}
               autoFocus
             />
-          ) : localName || "Untitled Script"
+          ) : (
+            <span>
+              <span style={{ color: "#abf43e" }}>[Script Input] </span>
+              <span style={{ color: "#fff" }}>{localName || "Untitled Script"}</span>
+            </span>
+          )
         }
         icon={
           <img

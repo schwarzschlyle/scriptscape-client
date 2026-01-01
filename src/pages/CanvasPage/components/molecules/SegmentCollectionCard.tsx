@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
+import CustomCardBody from "../../../../components/CustomCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
-import SegmentCollectionBody from "../atoms/SegmentCollectionBody";
 import Box from "@mui/material/Box";
 
 interface Segment {
@@ -107,9 +107,25 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
         />
       }
       body={
-        <SegmentCollectionBody editable={editable && !isSaving && !deleting}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            alignItems: "stretch",
+            width: "100%",
+            py: 1,
+          }}
+        >
           {localSegments.map((segment, idx) => (
-            <Box key={segments[idx]?.id || idx} sx={{ mb: 2 }}>
+            <CustomCardBody
+              key={segments[idx]?.id || idx}
+              style={{
+                minHeight: 48,
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
               {editingSegmentIndex === idx ? (
                 <textarea
                   value={localSegments[idx].text}
@@ -130,33 +146,29 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                   }}
                   style={{
                     width: "100%",
-                    minHeight: 48,
+                    minHeight: 40,
                     background: "transparent",
                     color: "#fff",
-                    border: "1px solid #444",
+                    border: "none",
                     outline: "none",
                     resize: "vertical",
                     fontFamily: "monospace",
                     fontSize: 14,
-                    padding: "8px",
-                    borderRadius: 4,
+                    padding: "4px 0",
                   }}
                   disabled={isSaving || deleting}
                   placeholder={`Segment ${idx + 1}`}
                   autoFocus
                 />
               ) : (
-                <Box
-                  sx={{
+                <div
+                  style={{
                     width: "100%",
-                    minHeight: 48,
-                    background: "transparent",
+                    minHeight: 40,
                     color: "#fff",
-                    border: "1px solid #444",
-                    borderRadius: 4,
                     fontFamily: "monospace",
                     fontSize: 14,
-                    padding: "8px",
+                    padding: "4px 0",
                     cursor: editable && !isSaving && !deleting ? "pointer" : "default",
                     whiteSpace: "pre-wrap",
                   }}
@@ -165,16 +177,16 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                   }}
                 >
                   {segment.text || <span style={{ color: "#888" }}>Double-click to edit</span>}
-                </Box>
+                </div>
               )}
-            </Box>
+            </CustomCardBody>
           ))}
           {error && (
             <Box sx={{ mt: 1, px: 2 }}>
               <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
             </Box>
           )}
-        </SegmentCollectionBody>
+        </Box>
       }
       minHeight={180}
       active={active}

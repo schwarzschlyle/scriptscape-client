@@ -69,14 +69,18 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                 />
               )
             : (
-                <>
-                  {localName || "Untitled Segment Collection"}
-                  {typeof segmentsCount === "number" && (
-                    <span style={{ color: "#bdbdbd", fontWeight: 400, marginLeft: 8 }}>
-                      ({segmentsCount})
-                    </span>
-                  )}
-                </>
+                <span>
+                  <span style={{ color: "#abf43e" }}>
+                    [Segments]
+                    {typeof segmentsCount === "number" && (
+                      <> ({segmentsCount})</>
+                    )}
+                  </span>
+                  {" "}
+                  <span style={{ color: "#fff" }}>
+                    {localName || "Untitled Segment Collection"}
+                  </span>
+                </span>
               )
         }
         icon={
