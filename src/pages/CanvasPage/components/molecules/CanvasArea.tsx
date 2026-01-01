@@ -463,7 +463,6 @@ const handleMouseUp = () => {
   // Scroll-to-zoom handler (FIXED: no setTimeout)
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey) return;
-    e.preventDefault();
     
     const minZoom = getMinZoom();
     const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
