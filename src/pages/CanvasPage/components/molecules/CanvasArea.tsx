@@ -35,6 +35,8 @@ function DraggableScriptCard({
   isSaving,
   deleting,
   pendingSegmentCollection,
+  zoom,
+  dragDelta,
   ...props
 }: {
   script: Script;
@@ -50,22 +52,27 @@ function DraggableScriptCard({
   isSaving?: boolean;
   deleting?: boolean;
   pendingSegmentCollection?: boolean;
+  zoom: number;
+  dragDelta?: { x: number; y: number } | null;
 }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: script.id,
   });
 
-  // Calculate the current position (drag offset + base position)
-  const x = position.x + (transform?.x ?? 0);
-  const y = position.y + (transform?.y ?? 0);
+  // CRITICAL: Simple addition in world space
+  // position is world coordinates
+  // dragDelta is world coordinates (converted from screen in handleDragMove)
+  // Canvas transform will handle scaling for display
+  const x = position.x + (dragDelta?.x ?? 0);
+  const y = position.y + (dragDelta?.y ?? 0);
 
   return (
     <Box
       ref={setNodeRef}
       sx={{
         position: "absolute",
-        left: x,
-        top: y,
+        left: x,   // World space
+        top: y,    // World space
         width: CARD_WIDTH,
         minWidth: 0,
         m: 0,
@@ -75,6 +82,7 @@ function DraggableScriptCard({
         bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
+        // NO CSS transform! Canvas transform does all the scaling.
       }}
     >
       <ScriptCard
@@ -194,119 +202,153 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   }, [zoom, offset]);
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  const [dragTransforms, setDragTransforms] = React.useState<{ [id: string]: { x: number; y: number } }>({});
+  
+  // Track if we're currently in a drag operation (not just card selected)
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = event.active?.id as string;
-    if (id) setActiveId(id);
+    if (id) {
+      setActiveId(id);
+      setIsDragging(true);
+      setActiveDragDelta(null); // Clear any stale drag state
+    }
   };
+
+  // Track active drag delta in WORLD SPACE
+  const [activeDragDelta, setActiveDragDelta] = React.useState<{ x: number; y: number } | null>(null);
 
   const handleDragMove = (event: DragMoveEvent) => {
-    const id = event.active?.id as string;
-    if (id && event.delta) {
-      setDragTransforms((prev) => ({
-        ...prev,
-        [id]: { x: event.delta.x, y: event.delta.y },
-      }));
-    }
+    if (!event.delta) return;
+    
+    // CRITICAL: Convert screen-space delta to world-space delta ONCE
+    // DndKit gives us cumulative screen pixels moved
+    // We divide by zoom to get world units
+    const worldDelta = {
+      x: event.delta.x / zoomRef.current,
+      y: event.delta.y / zoomRef.current
+    };
+    
+    setActiveDragDelta(worldDelta);
   };
 
-  // Handle drag end to update position and clear dragTransforms
+  // Handle drag end - persist the position change
   const HEADER_HEIGHT = 64;
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, delta } = event;
+    const { active } = event;
     const id = active.id as string;
-    // Clamp Y to header height, adjusted for zoom
     const minY = HEADER_HEIGHT / zoom;
+    
+    // activeDragDelta is already in world space
+    const worldDelta = activeDragDelta || { x: 0, y: 0 };
+    
     if (positions[id]) {
-      // ScriptCard
-      const pos = positions[id];
-      const newX = pos.x + delta.x;
-      const newY = Math.max(minY, pos.y + delta.y);
+      // ScriptCard - simple addition in world space
+      const oldPos = positions[id];
+      const newX = oldPos.x + worldDelta.x;
+      const newY = Math.max(minY, oldPos.y + worldDelta.y);
       handleCardPositionChange(id, newX, newY);
     } else if (segColPositions[id]) {
-      // SegmentCollectionCard
-      const pos = segColPositions[id];
-      const newX = pos.x + delta.x;
-      const newY = Math.max(minY, pos.y + delta.y);
+      // SegmentCollectionCard - simple addition in world space
+      const oldPos = segColPositions[id];
+      const newX = oldPos.x + worldDelta.x;
+      const newY = Math.max(minY, oldPos.y + worldDelta.y);
       handleSegColPositionChange(id, newX, newY);
     }
-    setDragTransforms((prev) => {
-      const newTransforms = { ...prev };
-      delete newTransforms[id];
-      return newTransforms;
-    });
+    
+    // Clear drag state
+    setActiveDragDelta(null);
+    setIsDragging(false);
+    // Note: Don't clear activeId here - card should stay selected after drag
   };
 
-  // Helper to get the center of a card for curve drawing, using dragTransforms if dragging
+  // Helper to get the center of a card for curve drawing
+  // All coordinates in world space - simple addition
   const getCardCenter = (id: string, isScript: boolean) => {
     const basePos = isScript ? positions[id] : segColPositions[id];
     if (!basePos) return { x: 0, y: 0 };
-    const drag = dragTransforms[id] || { x: 0, y: 0 };
+    
+    // Only apply drag delta if this card is actively being dragged (not just selected)
+    const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
+    
+    // Simple addition - all in world space
     return {
-      x: basePos.x + drag.x + CARD_WIDTH / 2,
-      y: basePos.y + drag.y + 90, // Approximate vertical center
+      x: basePos.x + delta.x + CARD_WIDTH / 2,
+      y: basePos.y + delta.y + 90, // Approximate vertical center
     };
   };
 
   // Prepare links: for each segment collection, draw a curve to its parent script
-  const links = Object.values(segmentCollections).map((col) => {
-    // Robustly resolve IDs and positions
-    const segColId = col.id || "";
-    const parentId = col.parentScriptId;
-    const scriptPos = positions[parentId];
-    const segColPos = segColPositions[segColId];
+  const links = Object.values(segmentCollections)
+    .map((col) => {
+      const segColId = col.id || "";
+      const parentId = col.parentScriptId;
+      
+      // Validate IDs exist
+      if (!parentId || !segColId) return null;
+      
+      // Validate positions exist
+      const scriptPos = positions[parentId];
+      const segColPos = segColPositions[segColId];
+      
+      if (!scriptPos || !segColPos) return null;
+      
+      // Validate positions are valid numbers
+      const isValidPos = (pos: any) => {
+        return (
+          pos &&
+          typeof pos.x === "number" &&
+          typeof pos.y === "number" &&
+          isFinite(pos.x) &&
+          isFinite(pos.y)
+        );
+      };
+      
+      if (!isValidPos(scriptPos) || !isValidPos(segColPos)) return null;
 
-    // Validate positions
-    function isValidPos(pos: any) {
+      // Get card centers (accounts for drag transforms)
+      const from = getCardCenter(parentId, true);
+      const to = getCardCenter(segColId, false);
+      
+      // Validate computed centers
+      if (!isValidPos(from) || !isValidPos(to)) return null;
+
+      // Avoid zero-length curves
+      let adjustedTo = { ...to };
+      if (Math.abs(from.x - to.x) < 1 && Math.abs(from.y - to.y) < 1) {
+        adjustedTo.x += 40;
+        adjustedTo.y += 40;
+      }
+
+      // Clamp to canvas bounds for safety
+      const clamp = (val: number, min: number, max: number) => 
+        Math.max(min, Math.min(max, val));
+      
+      const CANVAS_MIN = -1000; // Allow some overflow for smooth dragging
+      const CANVAS_MAX = CANVAS_SIZE + 1000;
+      
+      const fx = clamp(from.x, CANVAS_MIN, CANVAS_MAX);
+      const fy = clamp(from.y, CANVAS_MIN, CANVAS_MAX);
+      const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
+      const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
+
       return (
-        pos &&
-        typeof pos.x === "number" &&
-        typeof pos.y === "number" &&
-        isFinite(pos.x) &&
-        isFinite(pos.y)
+        <CardConnector
+          key={`link-${segColId}`}
+          from={{ x: fx, y: fy }}
+          to={{ x: tx, y: ty }}
+          canvasSize={CANVAS_SIZE}
+          stroke="#fff"
+          strokeWidth={1}
+          opacity={0.92}
+          style={{
+            filter: "drop-shadow(0 1px 2px #0008)",
+            strokeLinejoin: "round",
+          }}
+        />
       );
-    }
-
-    if (!parentId || !isValidPos(scriptPos) || !isValidPos(segColPos)) return null;
-
-    const from = getCardCenter(parentId, true);
-    const to = getCardCenter(segColId, false);
-
-    // If from and to are the same, offset to avoid zero-length curve
-    let adjustedTo = { ...to };
-    if (from.x === to.x && from.y === to.y) {
-      adjustedTo.x += 40;
-      adjustedTo.y += 40;
-    }
-
-    // Clamp coordinates to canvas bounds
-    function clamp(val: number, min: number, max: number) {
-      return Math.max(min, Math.min(max, val));
-    }
-    const CANVAS_MIN = 0;
-    const CANVAS_MAX = CANVAS_SIZE;
-    const fx = clamp(from.x, CANVAS_MIN, CANVAS_MAX);
-    const fy = clamp(from.y, CANVAS_MIN, CANVAS_MAX);
-    const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
-    const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
-
-    return (
-      <CardConnector
-        key={`link-${segColId}`}
-        from={{ x: fx, y: fy }}
-        to={{ x: tx, y: ty }}
-        canvasSize={CANVAS_SIZE}
-        stroke="#fff"
-        strokeWidth={1}
-        opacity={0.92}
-        style={{
-          filter: "drop-shadow(0 1px 2px #0008)",
-          strokeLinejoin: "round",
-        }}
-      />
-    );
-  });
+    })
+    .filter(Boolean); // Remove null entries
 
   // Handler for clicking the canvas background to deactivate cards
   const handleCanvasBackgroundClick = () => {
@@ -512,6 +554,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 isSaving={!!script.isSaving}
                 deleting={!!script.deleting}
                 pendingSegmentCollection={!!pendingSegmentCollection[script.id]}
+                zoom={zoom}
+                dragDelta={activeId === script.id && isDragging ? activeDragDelta : null}
               />
             </div>
           ))}
@@ -530,6 +574,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 onDelete={handleDeleteSegmentCollection}
                 isSaving={!!col.isSaving}
                 deleting={!!col.deleting}
+                zoom={zoom}
+                dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
               />
             </div>
           ))}
@@ -605,6 +651,8 @@ function DraggableSegmentCollectionCard({
   onDelete,
   isSaving,
   deleting,
+  zoom,
+  dragDelta,
 }: {
   col: any;
   position: { x: number; y: number };
@@ -616,21 +664,24 @@ function DraggableSegmentCollectionCard({
   onDelete: (colId: string) => void;
   isSaving?: boolean;
   deleting?: boolean;
+  zoom: number;
+  dragDelta?: { x: number; y: number } | null;
 }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: col.id,
   });
 
-  const x = position.x + (transform?.x ?? 0);
-  const y = position.y + (transform?.y ?? 0);
+  // Simple addition in world space
+  const x = position.x + (dragDelta?.x ?? 0);
+  const y = position.y + (dragDelta?.y ?? 0);
 
   return (
     <Box
       ref={setNodeRef}
       sx={{
         position: "absolute",
-        left: x,
-        top: y,
+        left: x,   // World space
+        top: y,    // World space
         width: CARD_WIDTH,
         minWidth: 0,
         m: 0,
@@ -640,6 +691,7 @@ function DraggableSegmentCollectionCard({
         bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
+        // NO CSS transform!
       }}
     >
       <SegmentCollectionCard
