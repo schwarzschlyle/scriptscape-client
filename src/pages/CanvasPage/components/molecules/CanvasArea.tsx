@@ -23,7 +23,7 @@ interface CanvasAreaProps {
 const CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 const PAN_SPEED = 0.3;
-const ZOOM_SPEED = 0.3;
+const ZOOM_SPEED = 0.1;
 
 
 function DraggableScriptCard({
@@ -341,12 +341,12 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     const minZoom = getMinZoom();
     const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
     let newZoom = Math.max(minZoom, Math.min(2.0, zoom + delta));
-    // Zoom to mouse position (centered)
-    const mx = e.clientX;
-    const my = e.clientY;
-    // Correct zoom-at-cursor math
-    const newOffsetX = mx - ((mx - offset.x) / zoom) * newZoom;
-    const newOffsetY = my - ((my - offset.y) / zoom) * newZoom;
+    // Zoom to viewport center (not mouse)
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    // Correct zoom-at-center math
+    const newOffsetX = cx - ((cx - offset.x) / zoom) * newZoom;
+    const newOffsetY = cy - ((cy - offset.y) / zoom) * newZoom;
     setZoom(newZoom);
     setOffset(clampOffset(newOffsetX, newOffsetY));
   };
