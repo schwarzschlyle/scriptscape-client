@@ -407,8 +407,14 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                           y: (segColPositions[col.id]?.y || 200) + 90,
                         }}
                         to={{
-                          x: (visualDirectionsPositions[vd.id]?.x || ((segColPositions[col.id]?.x || 600) + 380)) + CARD_WIDTH / 2,
-                          y: (visualDirectionsPositions[vd.id]?.y || ((segColPositions[col.id]?.y || 200) + 120)) + 90,
+                          x:
+                            (visualDirectionsPositions[vd.id]?.x || ((segColPositions[col.id]?.x || 600) + 380)) +
+                            (activeId === vd.id && isDragging && activeDragDelta ? activeDragDelta.x : 0) +
+                            CARD_WIDTH / 2,
+                          y:
+                            (visualDirectionsPositions[vd.id]?.y || ((segColPositions[col.id]?.y || 200) + 120)) +
+                            (activeId === vd.id && isDragging && activeDragDelta ? activeDragDelta.y : 0) +
+                            90,
                         }}
                         canvasSize={CANVAS_SIZE}
                         stroke="#fff"
