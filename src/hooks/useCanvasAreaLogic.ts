@@ -144,6 +144,7 @@ export function useCanvasAreaLogic({
           // Only use backend segment collections, do not merge temp collections
           setSegmentCollections(allCollections);
           localStorage.setItem(getSegColCacheKey(organizationId, projectId), JSON.stringify(allCollections));
+          setError(null); // Clear error after successful fetch
         }
       } catch (e) {
         if (mounted) setError("Failed to load segment collections.");
@@ -453,6 +454,7 @@ export function useCanvasAreaLogic({
       setSyncing(true);
       try {
         await deleteCollectionMutation.mutateAsync(colId);
+        setError(null); // Clear error after successful delete
       } catch (e: any) {
         // Rollback on error
         setSegmentCollections((prev) => {
@@ -601,6 +603,7 @@ export function useCanvasAreaLogic({
           }
         }
         await deleteScript(organizationId, projectId, id);
+        setError(null); // Clear error after successful delete
       } catch (e) {
         // If deletion fails, reload scripts from cache (fallback)
         setScripts((prev) => {

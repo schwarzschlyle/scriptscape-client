@@ -749,7 +749,7 @@ const handleMouseUp = () => {
         </Box>
       )}
       
-      {error && (
+      {error && Object.keys(segmentCollections).length === 0 && scripts.length === 0 && (
         <Box color="error.main" sx={{ mt: 2 }}>
           {error}
         </Box>

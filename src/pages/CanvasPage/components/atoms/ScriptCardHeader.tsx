@@ -48,14 +48,15 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
   const blueDot = (
     <Box
       sx={{
-        width: 12,
-        height: 12,
+        width: 10,
+        height: 10,
         borderRadius: "50%",
         background: "linear-gradient(135deg, #2196f3 60%, #21cbf3 100%)",
-        marginRight: 1,
-        border: "2px solid #fff",
-        boxShadow: "0 0 8px 2px #2196f3aa",
+        marginRight: 0,
+        border: "1.5px solid #232523",
         animation: `${blinkBlueDot} 1s infinite alternate`,
+        transition: "background 0.2s",
+        display: "inline-block",
       }}
     />
   );
@@ -107,27 +108,28 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
           />
         }
         actions={
-          props.pendingSegmentCollection
-            ? blueDot
-            : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: props.isSaving
-                      ? "#ff9800"
-                      : props.active
-                      ? "#abf43e"
-                      : "#6a6967",
-                    marginRight: 0,
-                    border: "1.5px solid #232523",
-                    transition: "background 0.2s",
-                  }}
-                />
-              </Box>
-            )
+          <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
+            {props.pendingSegmentCollection ? (
+              blueDot
+            ) : (
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: props.isSaving
+                    ? "#ff9800"
+                    : props.active
+                    ? "#abf43e"
+                    : "#6a6967",
+                  marginRight: 0,
+                  border: "1.5px solid #232523",
+                  transition: "background 0.2s",
+                  display: "inline-block",
+                }}
+              />
+            )}
+          </Box>
         }
         editable={props.editable}
         editing={editing}
