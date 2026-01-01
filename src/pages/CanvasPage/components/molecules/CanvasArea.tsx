@@ -452,9 +452,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     }
   };
   
-  const handleMouseUp = (e: React.MouseEvent) => {
-    endPan();
-  };
+const handleMouseUp = () => {
+  endPan();
+};
   
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
