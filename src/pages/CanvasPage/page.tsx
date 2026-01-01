@@ -8,7 +8,7 @@ import { useCanvasAuth } from "@hooks/useCanvasAuth";
 import { useLogout } from "@hooks/useLogout";
 
 import CanvasHeader from "./components/molecules/CanvasHeader";
-import CanvasArea from "./components/molecules/CanvasArea";
+import CanvasArea from "./components/organisms/CanvasArea";
 import { useState, useCallback } from "react";
 
 export default function CanvasPage() {

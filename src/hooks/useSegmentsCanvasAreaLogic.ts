@@ -34,7 +34,6 @@ export function useSegmentsCanvasAreaLogic({
 }: UseSegmentsCanvasAreaLogicProps) {
   const [segmentCollections, setSegmentCollections] = useState<SegmentCollectionsState>({});
   const [segColPositions, setSegColPositions] = useState<PositionsState>({});
-  const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +59,6 @@ export function useSegmentsCanvasAreaLogic({
 
   // Load from cache on mount, then fetch from backend in background
   useEffect(() => {
-    let mounted = true;
     setLoading(true);
 
     // Segment collections: load from localStorage first (optimistic render)
@@ -87,12 +85,7 @@ export function useSegmentsCanvasAreaLogic({
       } catch {}
     }
 
-    setPositionsLoaded(true);
-
     setLoading(false);
-    return () => {
-      mounted = false;
-    };
   }, [organizationId, projectId]);
 
   useEffect(() => {
