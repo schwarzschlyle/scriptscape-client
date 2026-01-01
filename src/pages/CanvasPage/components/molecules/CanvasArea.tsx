@@ -23,7 +23,7 @@ interface CanvasAreaProps {
 const CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 const PAN_SPEED = 0.3;
-const ZOOM_SPEED = 0.1;
+const ZOOM_SPEED = 0.02;
 
 
 function DraggableScriptCard({
@@ -136,6 +136,46 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const [isPanning, setIsPanning] = React.useState(false);
   const panStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const mouseStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Imperative refs for smooth pan/zoom
+  const canvasRef = React.useRef<HTMLDivElement | null>(null);
+  const zoomRef = React.useRef(zoom);
+  const offsetRef = React.useRef(offset);
+  const rafRef = React.useRef<number | null>(null);
+
+  // Grid ref for infinite grid
+  const gridRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Centralized transform apply (minimal, industry-grade)
+  const applyTransform = () => {
+    // No clamping for infinite grid
+    const { x, y } = offsetRef.current;
+    const z = zoomRef.current;
+    if (canvasRef.current) {
+      canvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+    }
+    // Infinite grid: single layer, never scaled, just offset
+    if (gridRef.current) {
+      gridRef.current.style.backgroundPosition = `${x * z}px ${y * z}px`;
+    }
+  };
+
+  // RAF scheduler
+  const scheduleTransform = () => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      applyTransform();
+    });
+  };
+
+  // Keep refs in sync with React state
+  React.useEffect(() => {
+    zoomRef.current = zoom;
+    offsetRef.current = offset;
+    scheduleTransform();
+    // eslint-disable-next-line
+  }, [zoom, offset]);
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dragTransforms, setDragTransforms] = React.useState<{ [id: string]: { x: number; y: number } }>({});
@@ -280,33 +320,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     // eslint-disable-next-line
   }, []);
 
-  // Clamp offset to prevent seeing blank space
-  const clampOffset = (x: number, y: number) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const canvasW = CANVAS_SIZE * zoom;
-    const canvasH = CANVAS_SIZE * zoom;
-
-    let minX, maxX, minY, maxY;
-
-    if (canvasW <= vw) {
-      // Canvas smaller than viewport: center and lock
-      minX = maxX = (vw - canvasW) / 2 / zoom;
-    } else {
-      minX = -CANVAS_SIZE + vw / zoom;
-      maxX = 0;
-    }
-    if (canvasH <= vh) {
-      minY = maxY = (vh - canvasH) / 2 / zoom;
-    } else {
-      minY = (vh - CANVAS_SIZE * zoom) / zoom;
-      maxY = 0;
-    }
-    return {
-      x: Math.min(maxX, Math.max(minX, x)),
-      y: Math.min(maxY, Math.max(minY, y)),
-    };
-  };
+  // No clamping for infinite grid
+  const clampOffset = (x: number, y: number) => ({ x, y });
 
   // Right-click panning handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -318,15 +333,23 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     }
   };
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      const dx = ((e.clientX - mouseStart.current.x) / zoom) * PAN_SPEED;
-      const dy = ((e.clientY - mouseStart.current.y) / zoom) * PAN_SPEED;
-      setOffset(clampOffset(panStart.current.x + dx, panStart.current.y + dy));
-    }
+    if (!isPanning) return;
+    const dx = ((e.clientX - mouseStart.current.x) / zoomRef.current) * PAN_SPEED;
+    const dy = ((e.clientY - mouseStart.current.y) / zoomRef.current) * PAN_SPEED;
+    offsetRef.current = clampOffset(
+      panStart.current.x + dx,
+      panStart.current.y + dy
+    );
+    scheduleTransform();
+  };
+  const endPan = () => {
+    setIsPanning(false);
+    setOffset(offsetRef.current);
+    setZoom(zoomRef.current);
   };
   const handleMouseUp = (e: React.MouseEvent) => {
     if (isPanning) {
-      setIsPanning(false);
+      endPan();
     }
   };
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -336,19 +359,30 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Scroll-to-zoom handler
   const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey) return; // Let browser handle pinch-zoom
+    if (e.ctrlKey) return;
     e.preventDefault();
     const minZoom = getMinZoom();
     const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
-    let newZoom = Math.max(minZoom, Math.min(2.0, zoom + delta));
-    // Zoom to viewport center (not mouse)
+    const prevZoom = zoomRef.current;
+    const nextZoom = Math.max(minZoom, Math.min(2.0, prevZoom + delta));
+    if (prevZoom === nextZoom) return;
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    // Correct zoom-at-center math
-    const newOffsetX = cx - ((cx - offset.x) / zoom) * newZoom;
-    const newOffsetY = cy - ((cy - offset.y) / zoom) * newZoom;
-    setZoom(newZoom);
-    setOffset(clampOffset(newOffsetX, newOffsetY));
+    const ox = offsetRef.current.x;
+    const oy = offsetRef.current.y;
+    offsetRef.current = clampOffset(
+      cx - ((cx - ox) / prevZoom) * nextZoom,
+      cy - ((cy - oy) / prevZoom) * nextZoom
+    );
+    zoomRef.current = nextZoom;
+    scheduleTransform();
+    // Sync React state after wheel ends (debounced)
+    if (rafRef.current == null) {
+      setTimeout(() => {
+        setOffset(offsetRef.current);
+        setZoom(zoomRef.current);
+      }, 0);
+    }
   };
 
   return (
@@ -358,7 +392,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         inset: 0,
         width: "100vw",
         height: "100vh",
-        bgcolor: "#f0f4fa",
+        bgcolor: "#111211", // Match canvas background to prevent flash
         p: 0,
         m: 0,
         overflow: "hidden", // Hide scrollbars
@@ -369,7 +403,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseLeave={endPan}
       onContextMenu={handleContextMenu}
       onWheel={handleWheel}
       tabIndex={0}
@@ -379,21 +413,34 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
       >
+        {/* Infinite grid layer (not scaled, no LOD, no opacity) */}
         <Box
+          ref={gridRef}
+          sx={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            backgroundColor: "#111211",
+            backgroundImage: "radial-gradient(#646564 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+            zIndex: 0,
+          }}
+        />
+        {/* Scaled content layer */}
+        <Box
+          ref={canvasRef}
           sx={{
             position: "absolute",
             left: 0,
             top: 0,
             width: `${CANVAS_SIZE}px`,
             height: `${CANVAS_SIZE}px`,
-            bgcolor: "#111211",
-            backgroundImage:
-              "radial-gradient(#646564 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
+            bgcolor: "transparent",
             cursor: isPanning ? "grabbing" : "default",
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+            willChange: "transform",
             transformOrigin: "top left",
-            transition: isPanning ? "none" : "transform 0.2s",
+            zIndex: 1,
+            // No transition for transform!
           }}
           onClick={handleCanvasBackgroundClick}
         >
