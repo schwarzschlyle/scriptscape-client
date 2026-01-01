@@ -1,20 +1,20 @@
 import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import CustomCardBody from "../../../../components/CustomCardBody";
-import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
+import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
 import Box from "@mui/material/Box";
 import CardTypography from "../molecules/CardTypography";
 
-interface Segment {
+interface VisualDirection {
   id?: string;
   tempId?: string;
-  text: string;
-  segmentIndex?: number;
+  content: string;
+  visualIndex?: number;
 }
 
-interface SegmentCollectionCardProps {
+interface VisualDirectionCardProps {
   name: string;
-  segments: Segment[];
+  visuals: VisualDirection[];
   isSaving?: boolean;
   deleting?: boolean;
   error?: string | null;
@@ -24,15 +24,14 @@ interface SegmentCollectionCardProps {
   dragListeners?: any;
   onClick?: () => void;
   onNameChange?: (name: string) => void;
-  onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
+  onVisualChange?: (visualId: string, newContent: string, index: number) => void;
   onDelete?: () => void;
-  onGenerateVisualDirection?: () => void;
   pendingVisualDirection?: boolean;
 }
 
-const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
+const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   name,
-  segments,
+  visuals,
   isSaving = false,
   deleting = false,
   error = null,
@@ -42,54 +41,54 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   dragListeners,
   onClick,
   onNameChange,
-  onSegmentChange,
+  onVisualChange,
   onDelete,
-  onGenerateVisualDirection,
+  pendingVisualDirection = false,
 }) => {
   const [localName, setLocalName] = useState(name || "");
-  const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
-  const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
-  const [lastSaved, setLastSaved] = useState<{ name: string; segments: { text: string }[] }>({
+  const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
+  const [editingVisualIndex, setEditingVisualIndex] = useState<number | null>(null);
+  const [lastSaved, setLastSaved] = useState<{ name: string; visuals: { content: string }[] }>({
     name: name || "",
-    segments: segments.map(s => ({ text: s.text || "" })),
+    visuals: visuals.map(v => ({ content: v.content || "" })),
   });
 
   React.useEffect(() => {
     setLocalName(name || "");
-    setLocalSegments(segments.map(s => ({ text: s.text || "" })));
+    setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
     setLastSaved({
       name: name || "",
-      segments: segments.map(s => ({ text: s.text || "" })),
+      visuals: visuals.map(v => ({ content: v.content || "" })),
     });
-  }, [name, segments]);
+  }, [name, visuals]);
 
   React.useEffect(() => {
-    if (segments && segments.length === localSegments.length) {
-      setLocalSegments(segments.map(s => ({ text: s.text || "" })));
+    if (visuals && visuals.length === localVisuals.length) {
+      setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+  }, [visuals]);
 
   React.useEffect(() => {
     if (
       !active &&
       (localName !== lastSaved.name ||
-        localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
+        localVisuals.some((v, i) => v.content !== (lastSaved.visuals[i]?.content ?? "")))
     ) {
       if (onNameChange && localName !== lastSaved.name) {
         onNameChange(localName);
       }
-      if (onSegmentChange) {
-        localSegments.forEach((seg, idx) => {
-          if (seg.text !== (lastSaved.segments[idx]?.text ?? "")) {
-            const segmentId = segments[idx]?.id || "";
-            if (segmentId) {
-              onSegmentChange(segmentId, seg.text, idx);
+      if (onVisualChange) {
+        localVisuals.forEach((vis, idx) => {
+          if (vis.content !== (lastSaved.visuals[idx]?.content ?? "")) {
+            const visualId = visuals[idx]?.id || "";
+            if (visualId) {
+              onVisualChange(visualId, vis.content, idx);
             }
           }
         });
       }
-      setLastSaved({ name: localName, segments: [...localSegments] });
+      setLastSaved({ name: localName, visuals: [...localVisuals] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -97,49 +96,48 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   return (
     <CustomCard
       header={
-        <SegmentCollectionHeader
+        <VisualDirectionCardHeader
           name={localName}
           onNameChange={setLocalName}
           deleting={deleting}
           isSaving={isSaving}
-          segmentsCount={segments.length}
+          visualsCount={visuals.length}
           onDelete={onDelete}
           dragAttributes={dragAttributes}
           dragListeners={dragListeners}
           active={active}
           editable={editable && !isSaving && !deleting}
-          pendingVisualDirection={!!(typeof window !== "undefined" && (window as any).pendingVisualDirection)}
+          pendingVisualDirection={pendingVisualDirection}
         />
       }
       body={
         <Box sx={{ pt: 2, pb: 2 }}>
-          {localSegments.map((segment, idx) => (
+          {localVisuals.map((visual, idx) => (
             <CustomCardBody
-              key={segments[idx]?.id || idx}
-              editable={editingSegmentIndex === idx && !isSaving && !deleting}
+              key={visuals[idx]?.id || idx}
+              editable={editingVisualIndex === idx && !isSaving && !deleting}
               style={{
                 minHeight: 48,
                 width: "100%",
                 boxSizing: "border-box",
-                marginBottom: idx === localSegments.length - 1 ? 0 : 1,
+                marginBottom: idx === localVisuals.length - 1 ? 0 : 1,
                 marginTop: 0,
               }}
             >
-              {editingSegmentIndex === idx ? (
+              {editingVisualIndex === idx ? (
                 <textarea
-                  value={localSegments[idx].text}
+                  value={localVisuals[idx].content}
                   onChange={e => {
-                    setLocalSegments(ls =>
-                      ls.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
+                    setLocalVisuals(lv =>
+                      lv.map((v, i) => (i === idx ? { ...v, content: e.target.value } : v))
                     );
                   }}
                   onBlur={() => {
-                    setEditingSegmentIndex(null);
-                    // For existing collections, call onSegmentChange on blur
-                    if (onSegmentChange) {
-                      const segmentId = segments[idx]?.id || "";
-                      if (segmentId) {
-                        onSegmentChange(segmentId, localSegments[idx].text, idx);
+                    setEditingVisualIndex(null);
+                    if (onVisualChange) {
+                      const visualId = visuals[idx]?.id || "";
+                      if (visualId) {
+                        onVisualChange(visualId, localVisuals[idx].content, idx);
                       }
                     }
                   }}
@@ -156,7 +154,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                     padding: "4px 0",
                   }}
                   disabled={isSaving || deleting}
-                  placeholder={`Segment ${idx + 1}`}
+                  placeholder={`Visual Direction ${idx + 1}`}
                   autoFocus
                 />
               ) : (
@@ -172,11 +170,11 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                     whiteSpace: "pre-wrap",
                   }}
                   onDoubleClick={() => {
-                    if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
+                    if (editable && !isSaving && !deleting) setEditingVisualIndex(idx);
                   }}
                 >
-                  {segment.text ? (
-                    <CardTypography variant="cardBody">{segment.text}</CardTypography>
+                  {visual.content ? (
+                    <CardTypography variant="cardBody">{visual.content}</CardTypography>
                   ) : (
                     <span style={{ color: "#888" }}>Double-click to edit</span>
                   )}
@@ -189,33 +187,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
               )}
             </CustomCardBody>
           ))}
-          {/* Button to generate VisualDirectionCard */}
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-            <button
-              style={{
-                background: "#2196f3",
-                color: "#fff",
-                border: "none",
-                borderRadius: 4,
-                padding: "6px 14px",
-                fontWeight: 600,
-                cursor: isSaving ? "not-allowed" : "pointer",
-                opacity: isSaving ? 0.5 : 1,
-                fontSize: 14,
-              }}
-              onClick={() => {
-                if (typeof window !== "undefined" && typeof (window as any).onGenerateVisualDirection === "function") {
-                  (window as any).onGenerateVisualDirection();
-                }
-                if (onGenerateVisualDirection) {
-                  onGenerateVisualDirection();
-                }
-              }}
-              disabled={isSaving}
-            >
-              + Visual Direction
-            </button>
-          </Box>
         </Box>
       }
       minHeight={180}
@@ -228,4 +199,4 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   );
 };
 
-export default SegmentCollectionCard;
+export default VisualDirectionCard;

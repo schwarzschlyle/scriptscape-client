@@ -13,6 +13,8 @@ import ScriptAdditionModal from "../molecules/ScriptAdditionModal";
 import ScriptGenerationModal from "../molecules/ScriptGenerationModal";
 import DraggableScriptCard from "../molecules/DraggableScriptCard";
 import DraggableSegmentCollectionCard from "../molecules/DraggableSegmentCollectionCard";
+import DraggableVisualDirectionCard from "../molecules/DraggableVisualDirectionCard";
+import { useVisualDirectionCanvasAreaLogic } from "@hooks/useVisualDirectionCanvasAreaLogic";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -23,6 +25,8 @@ interface CanvasAreaProps {
 const CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 
+import CanvasHeader from "../molecules/CanvasHeader";
+
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
   // Scripts logic
   const {
@@ -30,6 +34,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     positions,
     loading: scriptsLoading,
     error: scriptsError,
+    syncing: scriptsSyncing,
     handleAddScript,
     handleEditScript,
     handleDeleteScript,
@@ -42,6 +47,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     segColPositions,
     loading: segsLoading,
     error: segsError,
+    syncing: segsSyncing,
     pendingSegmentCollection,
     handleAddSegmentCollection,
     handleEditSegmentCollectionName,
@@ -50,9 +56,24 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleSegColPositionChange,
   } = useSegmentsCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
+  // Visual Directions logic
+  const {
+    visualDirections,
+    visualDirectionsPositions,
+    loading: visualsLoading,
+    error: visualsError,
+    syncing: visualsSyncing,
+    pendingVisualDirection,
+    handleAddVisualDirection,
+    handleEditVisualDirectionContent,
+    handleDeleteVisualDirection,
+    handleVisualDirectionPositionChange,
+  } = useVisualDirectionCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+
   // Compose loading and error states
-  const loading = scriptsLoading || segsLoading;
-  const error = scriptsError || segsError;
+  const loading = scriptsLoading || segsLoading || visualsLoading;
+  const error = scriptsError || segsError || visualsError;
+  const syncing = scriptsSyncing || segsSyncing || visualsSyncing;
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
@@ -122,6 +143,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       const newX = maybeSnapToGrid(rawX);
       const newY = Math.max(minY, maybeSnapToGrid(rawY));
       handleSegColPositionChange(id, newX, newY);
+    } else if (visualDirectionsPositions[id]) {
+      const oldPos = visualDirectionsPositions[id];
+      const rawX = oldPos.x + worldDelta.x;
+      const rawY = oldPos.y + worldDelta.y;
+      const newX = maybeSnapToGrid(rawX);
+      const newY = Math.max(minY, maybeSnapToGrid(rawY));
+      handleVisualDirectionPositionChange(id, newX, newY);
     }
     setActiveDragDelta(null);
     setIsDragging(false);
@@ -201,7 +229,15 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   };
 
   return (
-    <Box
+    <>
+      <CanvasHeader
+        orgName={""}
+        projectName={""}
+        projectDescription={""}
+        onLogout={() => {}}
+        syncing={syncing}
+      />
+      <Box
       sx={{
         position: "fixed",
         inset: 0,
@@ -319,7 +355,60 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 isSaving={!!col.isSaving}
                 deleting={!!col.deleting}
                 dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
+                onGenerateVisualDirection={() => {
+                  // Generate a new VisualDirectionCard for this segment collection
+                  const parentPos = segColPositions[col.id] || { x: 600, y: 200 };
+                  const offsetX = 380;
+                  const offsetY = 120;
+                  handleAddVisualDirection(
+                    col.id,
+                    "Generated Visual Direction",
+                    { x: parentPos.x + offsetX, y: parentPos.y + offsetY }
+                  );
+                }}
+                pendingVisualDirection={!!pendingVisualDirection[col.id]}
               />
+              {/* Render VisualDirectionCards for this segment collection */}
+              {Object.values(visualDirections)
+                .filter((vd: any) => vd.parentSegmentCollectionId === col.id)
+                .map((vd: any) => (
+                  <React.Fragment key={vd.id}>
+                    {/* Bezier curve from SegmentCollectionCard to VisualDirectionCard */}
+                    <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
+                      <CardConnector
+                        from={{
+                          x: (segColPositions[col.id]?.x || 600) + CARD_WIDTH / 2,
+                          y: (segColPositions[col.id]?.y || 200) + 90,
+                        }}
+                        to={{
+                          x: (visualDirectionsPositions[vd.id]?.x || ((segColPositions[col.id]?.x || 600) + 380)) + CARD_WIDTH / 2,
+                          y: (visualDirectionsPositions[vd.id]?.y || ((segColPositions[col.id]?.y || 200) + 120)) + 90,
+                        }}
+                        canvasSize={CANVAS_SIZE}
+                        stroke="#fff"
+                        strokeWidth={1}
+                        opacity={0.92}
+                        style={{
+                          filter: "drop-shadow(0 1px 2px #0008)",
+                          strokeLinejoin: "round",
+                        }}
+                      />
+                    </svg>
+                    <DraggableVisualDirectionCard
+                      visual={vd}
+                      position={visualDirectionsPositions[vd.id] || { x: (segColPositions[col.id]?.x || 600) + 380, y: (segColPositions[col.id]?.y || 200) + 120 }}
+                      active={activeId === vd.id}
+                      setActive={setActiveId}
+                      onNameChange={() => {}}
+                      onVisualChange={handleEditVisualDirectionContent}
+                      onDelete={handleDeleteVisualDirection}
+                      isSaving={!!vd.isSaving}
+                      deleting={!!vd.deleting}
+                      dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
+                      pendingVisualDirection={!!pendingVisualDirection[col.id]}
+                    />
+                  </React.Fragment>
+                ))}
             </div>
           ))}
         </Box>
@@ -360,6 +449,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           const bottom = top + vh / zoom - 220;
           const randX = left + Math.random() * Math.max(0, right - left);
           const randY = top + Math.random() * Math.max(0, bottom - top);
+          // TODO: [AI INTEGRATION] The following random id and generated script content will be replaced by AI-generated content from the API.
           const id = Math.floor(1000 + Math.random() * 9000).toString();
           handleAddScript(`Generated-Script-Title-${id}`, `Generated-Script-Text=${id}`, { x: randX, y: randY });
           setShowScriptGenerationModal(false);
@@ -380,6 +470,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         </Box>
       )}
     </Box>
+    </>
   );
 };
 

@@ -1,16 +1,17 @@
 import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
-import SegmentIcon from "../../../../assets/segment-icon.svg";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
+import Box from "@mui/material/Box";
 import { keyframes } from "@mui/system";
+import VisualIcon from "../../../../assets/segment-icon.svg"; // Use a visual icon if available
 
-interface SegmentCollectionHeaderProps {
+interface VisualDirectionCardHeaderProps {
   name: string;
   onNameChange?: (value: string) => void;
   deleting?: boolean;
   isSaving?: boolean;
-  segmentsCount?: number;
+  visualsCount?: number;
   onDelete?: () => void;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
@@ -19,12 +20,12 @@ interface SegmentCollectionHeaderProps {
   pendingVisualDirection?: boolean;
 }
 
-const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
+const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
   name,
   onNameChange,
   deleting,
   isSaving = false,
-  segmentsCount,
+  visualsCount,
   onDelete,
   dragAttributes,
   dragListeners,
@@ -52,8 +53,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
     100% { opacity: 0.3; }
   `;
   const blueDot = (
-    <div
-      style={{
+    <Box
+      sx={{
         width: 10,
         height: 10,
         borderRadius: "50%",
@@ -95,8 +96,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
             : (
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img
-                    src={SegmentIcon}
-                    alt="Segment Icon"
+                    src={VisualIcon}
+                    alt="Visual Icon"
                     style={{
                       width: 16,
                       height: 16,
@@ -106,10 +107,10 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                     }}
                   />
                   <CardTypography variant="cardType">
-                    Segments{typeof segmentsCount === "number" ? ` (${segmentsCount})` : ""}
+                    Visual Directions{typeof visualsCount === "number" ? ` (${visualsCount})` : ""}
                   </CardTypography>
                   <CardTypography variant="cardTitle">
-                    {localName || "Untitled Segment Collection"}
+                    {localName || "Untitled Visual Direction"}
                   </CardTypography>
                 </span>
               )
@@ -154,4 +155,4 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
   );
 };
 
-export default SegmentCollectionHeader;
+export default VisualDirectionCardHeader;

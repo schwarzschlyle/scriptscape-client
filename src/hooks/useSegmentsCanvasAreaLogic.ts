@@ -109,6 +109,7 @@ export function useSegmentsCanvasAreaLogic({
         function random4Digit() {
           return Math.floor(1000 + Math.random() * 9000).toString();
         }
+        // TODO: [AI INTEGRATION] The following random string will be replaced by AI-generated content from the API.
         for (let i = 0; i < numSegments; i++) {
           const seg = await createSegmentMutation.mutateAsync({
             collectionId: segCol.id,
