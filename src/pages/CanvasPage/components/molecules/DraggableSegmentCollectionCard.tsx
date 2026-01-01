@@ -16,7 +16,7 @@ interface DraggableSegmentCollectionCardProps {
   isSaving?: boolean;
   deleting?: boolean;
   dragDelta?: { x: number; y: number } | null;
-  onGenerateVisualDirection?: () => void;
+  onGenerateVisualDirections?: () => void;
   pendingVisualDirection?: boolean;
 }
 
@@ -31,7 +31,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
   isSaving,
   deleting,
   dragDelta,
-  onGenerateVisualDirection,
+  onGenerateVisualDirections,
   pendingVisualDirection,
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -73,7 +73,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
         onNameChange={(newName) => onNameChange(col.id, newName)}
         onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id, segmentId, newText, idx)}
         onDelete={() => onDelete(col.id)}
-        onGenerateVisualDirection={typeof onGenerateVisualDirection === "function" ? onGenerateVisualDirection : undefined}
+        onGenerateVisualDirections={typeof onGenerateVisualDirections === "function" ? onGenerateVisualDirections : undefined}
         pendingVisualDirection={pendingVisualDirection}
       />
     </Box>

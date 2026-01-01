@@ -26,7 +26,7 @@ interface SegmentCollectionCardProps {
   onNameChange?: (name: string) => void;
   onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
   onDelete?: () => void;
-  onGenerateVisualDirection?: () => void;
+  onGenerateVisualDirections?: () => void;
   pendingVisualDirection?: boolean;
 }
 
@@ -44,7 +44,8 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onNameChange,
   onSegmentChange,
   onDelete,
-  onGenerateVisualDirection,
+  onGenerateVisualDirections,
+  pendingVisualDirection,
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
@@ -108,88 +109,88 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           dragListeners={dragListeners}
           active={active}
           editable={editable && !isSaving && !deleting}
-          pendingVisualDirection={!!(typeof window !== "undefined" && (window as any).pendingVisualDirection)}
+          pendingVisualDirection={pendingVisualDirection}
         />
       }
       body={
         <Box sx={{ pt: 2, pb: 2 }}>
           {localSegments.map((segment, idx) => (
-            <CustomCardBody
-              key={segments[idx]?.id || idx}
-              editable={editingSegmentIndex === idx && !isSaving && !deleting}
-              style={{
-                minHeight: 48,
-                width: "100%",
-                boxSizing: "border-box",
-                marginBottom: idx === localSegments.length - 1 ? 0 : 1,
-                marginTop: 0,
-              }}
-            >
-              {editingSegmentIndex === idx ? (
-                <textarea
-                  value={localSegments[idx].text}
-                  onChange={e => {
-                    setLocalSegments(ls =>
-                      ls.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
-                    );
-                  }}
-                  onBlur={() => {
-                    setEditingSegmentIndex(null);
-                    // For existing collections, call onSegmentChange on blur
-                    if (onSegmentChange) {
-                      const segmentId = segments[idx]?.id || "";
-                      if (segmentId) {
-                        onSegmentChange(segmentId, localSegments[idx].text, idx);
+            <Box key={segments[idx]?.id || idx} sx={{ display: "flex", alignItems: "center", mb: idx === localSegments.length - 1 ? 0 : 1 }}>
+              <CustomCardBody
+                editable={editingSegmentIndex === idx && !isSaving && !deleting}
+                style={{
+                  minHeight: 48,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  marginTop: 0,
+                }}
+              >
+                {editingSegmentIndex === idx ? (
+                  <textarea
+                    value={localSegments[idx].text}
+                    onChange={e => {
+                      setLocalSegments(ls =>
+                        ls.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
+                      );
+                    }}
+                    onBlur={() => {
+                      setEditingSegmentIndex(null);
+                      // For existing collections, call onSegmentChange on blur
+                      if (onSegmentChange) {
+                        const segmentId = segments[idx]?.id || "";
+                        if (segmentId) {
+                          onSegmentChange(segmentId, localSegments[idx].text, idx);
+                        }
                       }
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    minHeight: 40,
-                    background: "transparent",
-                    color: "#fff",
-                    border: "none",
-                    outline: "none",
-                    resize: "vertical",
-                    fontFamily: "monospace",
-                    fontSize: 14,
-                    padding: "4px 0",
-                  }}
-                  disabled={isSaving || deleting}
-                  placeholder={`Segment ${idx + 1}`}
-                  autoFocus
-                />
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    minHeight: 40,
-                    color: "#fff",
-                    fontFamily: "monospace",
-                    fontSize: 14,
-                    padding: "4px 0",
-                    cursor: editable && !isSaving && !deleting ? "pointer" : "default",
-                    whiteSpace: "pre-wrap",
-                  }}
-                  onDoubleClick={() => {
-                    if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
-                  }}
-                >
-                  {segment.text ? (
-                    <CardTypography variant="cardBody">{segment.text}</CardTypography>
-                  ) : (
-                    <span style={{ color: "#888" }}>Double-click to edit</span>
-                  )}
-                </div>
-              )}
-              {error && idx === 0 && (
-                <Box sx={{ mt: 1, px: 2 }}>
-                  <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-                </Box>
-              )}
-            </CustomCardBody>
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 40,
+                      background: "transparent",
+                      color: "#fff",
+                      border: "none",
+                      outline: "none",
+                      resize: "vertical",
+                      fontFamily: "monospace",
+                      fontSize: 14,
+                      padding: "4px 0",
+                    }}
+                    disabled={isSaving || deleting}
+                    placeholder={`Segment ${idx + 1}`}
+                    autoFocus
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      minHeight: 40,
+                      color: "#fff",
+                      fontFamily: "monospace",
+                      fontSize: 14,
+                      padding: "4px 0",
+                      cursor: editable && !isSaving && !deleting ? "pointer" : "default",
+                      whiteSpace: "pre-wrap",
+                    }}
+                    onDoubleClick={() => {
+                      if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
+                    }}
+                  >
+                    {segment.text ? (
+                      <CardTypography variant="cardBody">{segment.text}</CardTypography>
+                    ) : (
+                      <span style={{ color: "#888" }}>Double-click to edit</span>
+                    )}
+                  </div>
+                )}
+                {error && idx === 0 && (
+                  <Box sx={{ mt: 1, px: 2 }}>
+                    <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+                  </Box>
+                )}
+              </CustomCardBody>
+            </Box>
           ))}
-          {/* Button to generate VisualDirectionCard */}
+          {/* Single button to generate all visual directions */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
             <button
               style={{
@@ -204,16 +205,13 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                 fontSize: 14,
               }}
               onClick={() => {
-                if (typeof window !== "undefined" && typeof (window as any).onGenerateVisualDirection === "function") {
-                  (window as any).onGenerateVisualDirection();
-                }
-                if (onGenerateVisualDirection) {
-                  onGenerateVisualDirection();
+                if (onGenerateVisualDirections) {
+                  onGenerateVisualDirections();
                 }
               }}
               disabled={isSaving}
             >
-              + Visual Direction
+              + Visual Directions
             </button>
           </Box>
         </Box>

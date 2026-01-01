@@ -32,7 +32,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   dragDelta,
   pendingVisualDirection,
 }) => {
-  const { setNodeRef } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: visual.id,
   });
 
@@ -59,7 +59,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
     >
       <VisualDirectionCard
         name={visual.name || ""}
-        visuals={[visual]}
+        visuals={visual.visuals}
         isSaving={isSaving}
         deleting={deleting}
         active={active}
@@ -68,6 +68,8 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         onVisualChange={(visualId, newContent, idx) => onVisualChange(visualId, newContent, idx)}
         onDelete={() => onDelete(visual.id)}
         pendingVisualDirection={pendingVisualDirection}
+        dragAttributes={attributes}
+        dragListeners={listeners}
       />
     </Box>
   );

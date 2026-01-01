@@ -4,6 +4,7 @@ import SegmentIcon from "../../../../assets/segment-icon.svg";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
 import { keyframes } from "@mui/system";
+import Box from "@mui/material/Box";
 
 interface SegmentCollectionHeaderProps {
   name: string;
@@ -52,8 +53,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
     100% { opacity: 0.3; }
   `;
   const blueDot = (
-    <div
-      style={{
+    <Box
+      sx={{
         width: 10,
         height: 10,
         borderRadius: "50%",

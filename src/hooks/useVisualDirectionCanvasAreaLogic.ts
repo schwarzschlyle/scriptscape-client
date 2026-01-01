@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useCreateVisual, useUpdateVisual, useDeleteVisual } from "@api/visuals/mutations";
 import type { Visual } from "@api/visuals/types";
 
-type VisualDirection = Visual;
+type VisualDirection = {
+  id: string;
+  parentSegmentCollectionId: string;
+  visuals: Visual[];
+  isSaving?: boolean;
+  deleting?: boolean;
+  error?: string | null;
+};
 type VisualDirectionsState = {
-  [id: string]: VisualDirection & {
-    parentSegmentCollectionId: string;
-    isSaving?: boolean;
-    deleting?: boolean;
-    error?: string | null;
-  };
+  [visualDirectionId: string]: VisualDirection;
 };
 type PositionsState = { [id: string]: { x: number; y: number } };
 
@@ -89,27 +91,38 @@ export function useVisualDirectionCanvasAreaLogic({
 
   // Add a new visual direction (non-optimistic: only add after API call succeeds)
   const handleAddVisualDirection = useCallback(
-    async (parentSegmentCollectionId: string, content: string, position?: { x: number; y: number }) => {
+    async (
+      parentSegmentCollectionId: string,
+      segmentIds: string[],
+      contents: string[],
+      position?: { x: number; y: number },
+      visualSetIdOverride?: string
+    ) => {
       setPendingVisualDirection(prev => ({ ...prev, [parentSegmentCollectionId]: true }));
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
-        // TODO: [AI INTEGRATION] The following random string will be replaced by AI-generated content from the API.
-        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
-        const generatedContent = content || `Generated-VisualDirection-${randomId}`;
-        // Create the visual direction in backend
-        const visual = await createVisualMutation.mutateAsync({
-          visualSetId: projectId,
-          segmentId: parentSegmentCollectionId,
-          content: generatedContent,
-        });
-        // Add the new visual direction to state and localStorage only after API call succeeds
+        // Create all visuals in backend
+        const visuals: Visual[] = [];
+        for (let i = 0; i < contents.length; i++) {
+          const content = contents[i];
+          const segmentId = segmentIds[i];
+          const visual = await createVisualMutation.mutateAsync({
+            visualSetId: visualSetIdOverride || projectId,
+            segmentId,
+            content,
+          });
+          visuals.push(visual);
+        }
+        // Add the new visual direction (with all visuals) to state and localStorage only after all API calls succeed
+        const newId = visuals[0]?.id || `${parentSegmentCollectionId}-visual-direction-${Date.now()}`;
         setVisualDirections((prev) => {
           const updated = {
             ...prev,
-            [visual.id]: {
-              ...visual,
+            [newId]: {
+              id: newId,
               parentSegmentCollectionId,
+              visuals,
               isSaving: false,
               deleting: false,
               error: null,
@@ -118,12 +131,12 @@ export function useVisualDirectionCanvasAreaLogic({
           updateVisualDirectionsCache(updated);
           return updated;
         });
-        // Assign a position for the new visual direction
+        // Assign a position for the new visual direction card
         if (position) {
           setVisualDirectionsPositions((prev) => {
             const updated = {
               ...prev,
-              [visual.id]: position,
+              [newId]: position,
             };
             updateVisualDirectionsPositionsCache(updated);
             return updated;
