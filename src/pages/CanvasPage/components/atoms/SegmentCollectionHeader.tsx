@@ -2,6 +2,7 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import SegmentIcon from "../../../../assets/segment-icon.svg";
 import { useEditableField } from "../../../../hooks/useEditableField";
+import CardTypography from "../molecules/CardTypography";
 
 interface SegmentCollectionHeaderProps {
   name: string;
@@ -69,33 +70,28 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                 />
               )
             : (
-                <span>
-                  <span style={{ color: "#abf43e" }}>
-                    [Segments]
-                    {typeof segmentsCount === "number" && (
-                      <> ({segmentsCount})</>
-                    )}
-                  </span>
-                  {" "}
-                  <span style={{ color: "#fff" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <img
+                    src={SegmentIcon}
+                    alt="Segment Icon"
+                    style={{
+                      width: 16,
+                      height: 16,
+                      marginRight: 4,
+                      display: "inline-block",
+                      verticalAlign: "middle",
+                    }}
+                  />
+                  <CardTypography variant="cardType">
+                    Segments{typeof segmentsCount === "number" ? ` (${segmentsCount})` : ""}
+                  </CardTypography>
+                  <CardTypography variant="cardTitle">
                     {localName || "Untitled Segment Collection"}
-                  </span>
+                  </CardTypography>
                 </span>
               )
         }
-        icon={
-          <img
-            src={SegmentIcon}
-            alt="Segment Icon"
-            style={{
-              width: 16,
-              height: 16,
-              marginRight: 8,
-              display: "inline-block",
-              verticalAlign: "middle",
-            }}
-          />
-        }
+        icon={null}
         editable={editable}
         editing={editing}
         onEditStart={startEditing}

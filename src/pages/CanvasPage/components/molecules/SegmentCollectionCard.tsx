@@ -3,6 +3,7 @@ import CustomCard from "../../../../components/CustomCard";
 import CustomCardBody from "../../../../components/CustomCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
 import Box from "@mui/material/Box";
+import CardTypography from "../molecules/CardTypography";
 
 interface Segment {
   id?: string;
@@ -170,7 +171,11 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                     if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
                   }}
                 >
-                  {segment.text || <span style={{ color: "#888" }}>Double-click to edit</span>}
+                  {segment.text ? (
+                    <CardTypography variant="cardBody">{segment.text}</CardTypography>
+                  ) : (
+                    <span style={{ color: "#888" }}>Double-click to edit</span>
+                  )}
                 </div>
               )}
               {error && idx === 0 && (

@@ -4,6 +4,7 @@ import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import { keyframes } from "@mui/system";
+import CardTypography from "../molecules/CardTypography";
 
 interface ScriptCardHeaderProps {
   name: string;
@@ -88,25 +89,24 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
               autoFocus
             />
           ) : (
-            <span>
-              <span style={{ color: "#abf43e" }}>[Script Input] </span>
-              <span style={{ color: "#fff" }}>{localName || "Untitled Script"}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <img
+                src={ScriptIcon}
+                alt="Script Icon"
+                style={{
+                  width: 16,
+                  height: 16,
+                  marginRight: 4,
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                }}
+              />
+              <CardTypography variant="cardType">Script Input</CardTypography>
+              <CardTypography variant="cardTitle">{localName || "Untitled Script"}</CardTypography>
             </span>
           )
         }
-        icon={
-          <img
-            src={ScriptIcon}
-            alt="Script Icon"
-            style={{
-              width: 16,
-              height: 16,
-              marginRight: 8,
-              display: "inline-block",
-              verticalAlign: "middle",
-            }}
-          />
-        }
+        icon={null}
         actions={
           <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
             {props.pendingSegmentCollection ? (
