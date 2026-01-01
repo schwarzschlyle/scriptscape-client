@@ -22,6 +22,14 @@ const ProjectsPage: React.FC = () => {
     organizationId,
   });
 
+  React.useEffect(() => {
+    if (org?.name) {
+      document.title = `${org.name} | Projects`;
+    } else {
+      document.title = "Projects";
+    }
+  }, [org?.name]);
+
   if (userLoading || orgLoading) {
     return <LoadingSpinner label="Loading organization..." />;
   }

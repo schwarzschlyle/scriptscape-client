@@ -3,24 +3,26 @@ import CustomButton from "@components/CustomButton";
 import CustomForm from "@components/CustomForm";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useRegister, useLogin, useCreateOrganization, useCreateProject } from "@api";
+import { useRegister, useLogin, useCreateOrganization } from "@api";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
 
 export default function RegisterPage() {
+  React.useEffect(() => {
+    document.title = "ScriptScape | Register";
+  }, []);
   const [firstName, setFirstName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgId, setOrgId] = useState<string>("");
+  const [, setOrgId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createOrg = useCreateOrganization();
   const register = useRegister();
   const login = useLogin();
-  const createProject = useCreateProject(orgId);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,17 +51,7 @@ export default function RegisterPage() {
       localStorage.setItem("accessToken", loginResp.accessToken);
       localStorage.setItem("refreshToken", loginResp.refreshToken);
 
-      const projectResp = await createProject.mutateAsync({
-        name: projectName,
-        description: "User project",
-      });
-      if (!projectResp.id) throw new Error("Project creation failed");
-
-      navigate(
-        ROUTES.CANVAS
-          .replace(":organizationId", orgResp.id)
-          .replace(":projectId", projectResp.id)
-      );
+      navigate(`/canvas/${orgResp.id}/`);
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {

@@ -11,13 +11,14 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { useProjects } from "@api/projects/queries";
 import { useCreateProject } from "@api/projects/mutations";
+import queryClient from "@api/queryClient";
 
 export interface ProjectsListProps {
   organizationId: string;
 }
 
 const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
-  const { data, isLoading, isError, error, refetch } = useProjects(organizationId);
+  const { data, isLoading, isError, error } = useProjects(organizationId);
   const projectsRaw = Array.isArray(data) ? data : [];
   const projects = projectsRaw.map((p: any) => ({
     ...p,
@@ -70,7 +71,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
       setAddOpen(false);
       setNewName("");
       setNewDesc("");
-      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
       if (resp?.id) {
         window.location.href = `/canvas/${organizationId}/${resp.id}`;
       }
