@@ -281,10 +281,8 @@ export function useCanvasAreaLogic({
     [organizationId, projectId, positions, createSegmentCollectionMutation, createSegmentMutation]
   );
 
-  // Save a new segment collection (convert temp to real, like ScriptCard)
   const handleSaveNewSegmentCollection = useCallback(
     async (tempId: string, name: string, segments: { text: string }[]) => {
-      // Remove temp segment collection logic (no temp collections)
       return;
       setSyncing(true);
       try {
@@ -303,7 +301,6 @@ export function useCanvasAreaLogic({
           });
           createdSegments.push(seg);
         }
-        // Remove temp segment collection logic (no temp collections)
         return;
       } catch (e: any) {
         setSegmentCollections((prev) => {
