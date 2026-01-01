@@ -150,8 +150,46 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const offsetRef = React.useRef(offset);
   const rafRef = React.useRef<number | null>(null);
 
-  // Grid ref for infinite grid
-  const gridRef = React.useRef<HTMLDivElement | null>(null);
+  // Grid refs for two-tier infinite grid
+  const minorGridRef = React.useRef<HTMLDivElement | null>(null);
+  const majorGridRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Calculate grid opacity based on zoom level for smooth LOD transitions
+  const getGridOpacity = React.useCallback((zoom: number, gridType: 'minor' | 'major') => {
+    if (gridType === 'minor') {
+      // Minor grid (20px) - visible when zoomed in for precision
+      if (zoom < 0.3) return 0;
+      if (zoom < 0.6) return (zoom - 0.3) / 0.3 * 0.3; // Fade in 0 → 0.3
+      if (zoom < 1.5) return 0.3 + (zoom - 0.6) / 0.9 * 0.4; // Fade in 0.3 → 0.7
+      return 0.7; // Full visibility when zoomed in
+    } else {
+      // Major grid (100px) - visible when zoomed out for orientation
+      if (zoom < 0.25) return 0.4; // Always somewhat visible when very zoomed out
+      if (zoom < 0.8) return 0.4 + (zoom - 0.25) / 0.55 * 0.4; // Fade in 0.4 → 0.8
+      if (zoom < 1.5) return 0.8; // Peak visibility at normal zoom
+      if (zoom < 3.0) return 0.8 - (zoom - 1.5) / 1.5 * 0.8; // Fade out 0.8 → 0
+      return 0; // Hidden when very zoomed in
+    }
+  }, []);
+
+  // Snap to grid helper (optional - set to false to disable snapping)
+  const SNAP_TO_GRID = false; // Set to true to enable snap-to-grid
+  const GRID_SIZE = 20; // Base grid size in pixels
+  const SNAP_THRESHOLD = 10; // Snap if within this distance (world space)
+  
+  const snapToGrid = React.useCallback((value: number) => {
+    return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  }, []);
+  
+  const maybeSnapToGrid = React.useCallback((value: number) => {
+    if (!SNAP_TO_GRID) return value;
+    
+    const snapped = snapToGrid(value);
+    const distance = Math.abs(value - snapped);
+    
+    // Only snap if close enough
+    return distance < SNAP_THRESHOLD ? snapped : value;
+  }, [snapToGrid]);
 
   // Centralized transform apply (industry-grade)
   const applyTransform = () => {
@@ -163,24 +201,18 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       canvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
     }
     
-    // Industry-grade infinite grid with LOD
-    if (gridRef.current) {
-      // Grid moves in screen space (offset * zoom)
-      const gridX = x * z;
-      const gridY = y * z;
-      gridRef.current.style.backgroundPosition = `${gridX}px ${gridY}px`;
-      
-      // LOD: Adjust grid spacing based on zoom
-      // Base spacing is 48px at zoom = 1.0
-      const BASE_SPACING = 48;
-      
-      // Calculate LOD level (powers of 2)
-      // When zoomed out (z < 1), increase spacing
-      // When zoomed in (z > 1), keep base spacing
-      const lod = Math.max(0, Math.ceil(-Math.log2(z)));
-      const spacing = BASE_SPACING * Math.pow(2, lod);
-      
-      gridRef.current.style.backgroundSize = `${spacing}px ${spacing}px`;
+    // Industry-grade two-tier grid with smooth LOD transitions
+    const gridX = x * z;
+    const gridY = y * z;
+    
+    if (minorGridRef.current) {
+      minorGridRef.current.style.backgroundPosition = `${gridX}px ${gridY}px`;
+      minorGridRef.current.style.opacity = String(getGridOpacity(z, 'minor'));
+    }
+    
+    if (majorGridRef.current) {
+      majorGridRef.current.style.backgroundPosition = `${gridX}px ${gridY}px`;
+      majorGridRef.current.style.opacity = String(getGridOpacity(z, 'major'));
     }
   };
 
@@ -245,14 +277,24 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     if (positions[id]) {
       // ScriptCard - simple addition in world space
       const oldPos = positions[id];
-      const newX = oldPos.x + worldDelta.x;
-      const newY = Math.max(minY, oldPos.y + worldDelta.y);
+      const rawX = oldPos.x + worldDelta.x;
+      const rawY = oldPos.y + worldDelta.y;
+      
+      // Apply snap-to-grid if enabled
+      const newX = maybeSnapToGrid(rawX);
+      const newY = Math.max(minY, maybeSnapToGrid(rawY));
+      
       handleCardPositionChange(id, newX, newY);
     } else if (segColPositions[id]) {
       // SegmentCollectionCard - simple addition in world space
       const oldPos = segColPositions[id];
-      const newX = oldPos.x + worldDelta.x;
-      const newY = Math.max(minY, oldPos.y + worldDelta.y);
+      const rawX = oldPos.x + worldDelta.x;
+      const rawY = oldPos.y + worldDelta.y;
+      
+      // Apply snap-to-grid if enabled
+      const newX = maybeSnapToGrid(rawX);
+      const newY = Math.max(minY, maybeSnapToGrid(rawY));
+      
       handleSegColPositionChange(id, newX, newY);
     }
     
@@ -499,16 +541,34 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
       >
-        {/* Industry-grade infinite grid with LOD */}
+        {/* Two-tier infinite grid system */}
+        
+        {/* Minor grid layer (20px) - for precision positioning */}
         <Box
-          ref={gridRef}
+          ref={minorGridRef}
           sx={{
             position: "fixed",
             inset: 0,
             pointerEvents: "none",
-            backgroundColor: "#111211",
-            backgroundImage: "radial-gradient(#646564 1px, transparent 1px)",
-            backgroundSize: "48px 48px", // Base size, will be adjusted by LOD
+            backgroundColor: "transparent",
+            backgroundImage: "radial-gradient(circle, #383838 0.5px, transparent 0.5px)",
+            backgroundSize: "20px 20px",
+            opacity: 0.3,
+            zIndex: 0,
+          }}
+        />
+        
+        {/* Major grid layer (100px) - for orientation and sections */}
+        <Box
+          ref={majorGridRef}
+          sx={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            backgroundColor: "transparent",
+            backgroundImage: "radial-gradient(circle, #505050 1px, transparent 1px)",
+            backgroundSize: "100px 100px",
+            opacity: 0.6,
             zIndex: 0,
           }}
         />
