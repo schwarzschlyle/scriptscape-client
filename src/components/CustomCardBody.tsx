@@ -26,7 +26,7 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       boxSizing: "border-box",
       background: "#2F312F",
       border: "1.5px solid #1f211f",
-      borderRadius: 4,
+      borderRadius: 2,
       minHeight: 60,
       mt: 2,
       mb: 2,
@@ -34,6 +34,9 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       textAlign: !editable ? "center" : "left",
       alignItems: !editable ? "center" : "stretch",
       justifyContent: !editable ? "center" : "flex-start",
+      overflow: "auto",
+      wordBreak: "break-word",
+      maxWidth: "100%",
       ...style,
     }}
     className={className}

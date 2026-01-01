@@ -108,7 +108,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
         active={active}
         inputRef={inputRef}
         actions={
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
             <div
               style={{
                 width: 10,
@@ -119,7 +119,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                   : active
                   ? "#abf43e"
                   : "#6a6967",
-                marginRight: 8,
+                marginRight: 0,
                 border: "1.5px solid #232523",
                 transition: "background 0.2s",
               }}

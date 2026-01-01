@@ -107,23 +107,17 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
         />
       }
       body={
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-            alignItems: "stretch",
-            width: "100%",
-            py: 1,
-          }}
-        >
+        <Box sx={{ pt: 2, pb: 2 }}>
           {localSegments.map((segment, idx) => (
             <CustomCardBody
               key={segments[idx]?.id || idx}
+              editable={editingSegmentIndex === idx && !isSaving && !deleting}
               style={{
                 minHeight: 48,
                 width: "100%",
                 boxSizing: "border-box",
+                marginBottom: idx === localSegments.length - 1 ? 0 : 1,
+                marginTop: 0,
               }}
             >
               {editingSegmentIndex === idx ? (
@@ -179,13 +173,13 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                   {segment.text || <span style={{ color: "#888" }}>Double-click to edit</span>}
                 </div>
               )}
+              {error && idx === 0 && (
+                <Box sx={{ mt: 1, px: 2 }}>
+                  <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+                </Box>
+              )}
             </CustomCardBody>
           ))}
-          {error && (
-            <Box sx={{ mt: 1, px: 2 }}>
-              <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-            </Box>
-          )}
         </Box>
       }
       minHeight={180}

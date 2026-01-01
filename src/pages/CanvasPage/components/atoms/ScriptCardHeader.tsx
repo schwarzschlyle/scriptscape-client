@@ -110,7 +110,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
           props.pendingSegmentCollection
             ? blueDot
             : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, marginLeft: "auto" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
                 <Box
                   sx={{
                     width: 10,
@@ -121,7 +121,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
                       : props.active
                       ? "#abf43e"
                       : "#6a6967",
-                    marginRight: 1,
+                    marginRight: 0,
                     border: "1.5px solid #232523",
                     transition: "background 0.2s",
                   }}
