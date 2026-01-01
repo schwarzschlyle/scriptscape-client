@@ -22,6 +22,7 @@ interface ScriptCardHeaderProps {
 const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
   const {
     pendingSegmentCollection,
+    onNameChange,
     ...headerProps
   } = props;
 
@@ -33,7 +34,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
     handleChange,
     handleBlur,
     handleKeyDown,
-  } = useEditableField(props.name || "", props.onNameChange);
+  } = useEditableField(props.name || "", onNameChange);
 
   // Allow double-click to start editing
   const handleDoubleClick = () => {
