@@ -26,9 +26,16 @@ const AddScriptButton: React.FC<AddScriptButtonProps> = ({ onClick }) => (
         boxShadow: 4,
         bgcolor: "#272927",
         "&:hover": { bgcolor: "#272927" },
+        width: 28,
+        height: 28,
+        minHeight: 28,
+        minWidth: 28,
+        maxWidth: 28,
+        maxHeight: 28,
       }}
+      size="small"
     >
-      <AddIcon sx={{ color: "#abf43e" }} />
+      <AddIcon sx={{ color: "#abf43e", fontSize: 16 }} />
     </Fab>
   </Box>
 );

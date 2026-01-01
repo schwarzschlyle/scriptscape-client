@@ -22,51 +22,13 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
       left: 32,
       zIndex: 1200,
       display: "flex",
-      flexDirection: "column",
+      flexDirection: "row",
+      alignItems: "center",
       gap: 2,
       pointerEvents: "none",
       transform: "none !important",
     }}
   >
-    <Fab
-      aria-label="zoom in"
-      onClick={onZoomIn}
-      sx={{
-        pointerEvents: "auto",
-        boxShadow: 4,
-        bgcolor: "#272927",
-        "&:hover": { bgcolor: "#323332" },
-        mb: 1,
-      }}
-      size="small"
-    >
-      <AddIcon sx={{ color: "#abf43e" }} />
-    </Fab>
-    <Box
-      sx={{
-        pointerEvents: "auto",
-        bgcolor: "#272927",
-        borderRadius: 1,
-        px: 1.5,
-        py: 0.5,
-        mb: 1,
-        textAlign: "center",
-        minWidth: 60,
-        boxShadow: 4,
-      }}
-    >
-      <Box
-        component="span"
-        sx={{
-          color: "#abf43e",
-          fontSize: 13,
-          fontWeight: 500,
-          fontFamily: "monospace",
-        }}
-      >
-        {zoom}%
-      </Box>
-    </Box>
     <Fab
       aria-label="zoom out"
       onClick={onZoomOut}
@@ -75,10 +37,55 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
         boxShadow: 4,
         bgcolor: "#272927",
         "&:hover": { bgcolor: "#323332" },
+        width: 20,
+        height: 20,
+        minHeight: 20,
+        minWidth: 20,
+        maxWidth: 20,
+        maxHeight: 20,
       }}
       size="small"
     >
-      <RemoveIcon sx={{ color: "#abf43e" }} />
+      <RemoveIcon sx={{ color: "#abf43e", fontSize: 16 }} />
+    </Fab>
+    <span
+      style={{
+        color: "#abf43e",
+        fontSize: 8,
+        fontWeight: 700,
+        fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
+        fontStyle: "bold",
+        margin: "0 8px",
+        pointerEvents: "auto",
+        background: "none",
+        boxShadow: "none",
+        borderRadius: 0,
+        padding: 0,
+        minWidth: 0,
+        lineHeight: 1.2,
+        letterSpacing: 0,
+      }}
+    >
+      {zoom}%
+    </span>
+    <Fab
+      aria-label="zoom in"
+      onClick={onZoomIn}
+      sx={{
+        pointerEvents: "auto",
+        boxShadow: 4,
+        bgcolor: "#272927",
+        "&:hover": { bgcolor: "#323332" },
+        width: 20,
+        height: 20,
+        minHeight: 20,
+        minWidth: 20,
+        maxWidth: 20,
+        maxHeight: 20,
+      }}
+      size="small"
+    >
+      <AddIcon sx={{ color: "#abf43e", fontSize: 16 }} />
     </Fab>
   </Box>
 );
