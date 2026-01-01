@@ -1,6 +1,7 @@
 import React from "react";
 import CustomCardBody from "../../../../components/CustomCardBody";
 import Box from "@mui/material/Box";
+import CardTypography from "../molecules/CardTypography";
 
 interface ScriptCardBodyProps {
   text: string;
@@ -51,14 +52,11 @@ const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
         sx={{
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
-          fontFamily: "monospace",
-          fontSize: 14,
-          color: "#fff",
           width: "100%",
           textAlign: "center",
         }}
       >
-        {text}
+        <CardTypography variant="cardBody">{text}</CardTypography>
       </Box>
     )}
   </CustomCardBody>

@@ -4,6 +4,7 @@ import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import { keyframes } from "@mui/system";
+import CardTypography from "../molecules/CardTypography";
 
 interface ScriptCardHeaderProps {
   name: string;
@@ -48,14 +49,15 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
   const blueDot = (
     <Box
       sx={{
-        width: 12,
-        height: 12,
+        width: 10,
+        height: 10,
         borderRadius: "50%",
         background: "linear-gradient(135deg, #2196f3 60%, #21cbf3 100%)",
-        marginRight: 1,
-        border: "2px solid #fff",
-        boxShadow: "0 0 8px 2px #2196f3aa",
+        marginRight: 0,
+        border: "1.5px solid #232523",
         animation: `${blinkBlueDot} 1s infinite alternate`,
+        transition: "background 0.2s",
+        display: "inline-block",
       }}
     />
   );
@@ -86,43 +88,48 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
               }}
               autoFocus
             />
-          ) : localName || "Untitled Script"
+          ) : (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <img
+                src={ScriptIcon}
+                alt="Script Icon"
+                style={{
+                  width: 16,
+                  height: 16,
+                  marginRight: 4,
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                }}
+              />
+              <CardTypography variant="cardType">Script Input</CardTypography>
+              <CardTypography variant="cardTitle">{localName || "Untitled Script"}</CardTypography>
+            </span>
+          )
         }
-        icon={
-          <img
-            src={ScriptIcon}
-            alt="Script Icon"
-            style={{
-              width: 16,
-              height: 16,
-              marginRight: 8,
-              display: "inline-block",
-              verticalAlign: "middle",
-            }}
-          />
-        }
+        icon={null}
         actions={
-          props.pendingSegmentCollection
-            ? blueDot
-            : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, marginLeft: "auto" }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: props.isSaving
-                      ? "#ff9800"
-                      : props.active
-                      ? "#abf43e"
-                      : "#6a6967",
-                    marginRight: 1,
-                    border: "1.5px solid #232523",
-                    transition: "background 0.2s",
-                  }}
-                />
-              </Box>
-            )
+          <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
+            {props.pendingSegmentCollection ? (
+              blueDot
+            ) : (
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: props.isSaving
+                    ? "#ff9800"
+                    : props.active
+                    ? "#abf43e"
+                    : "#6a6967",
+                  marginRight: 0,
+                  border: "1.5px solid #232523",
+                  transition: "background 0.2s",
+                  display: "inline-block",
+                }}
+              />
+            )}
+          </Box>
         }
         editable={props.editable}
         editing={editing}
