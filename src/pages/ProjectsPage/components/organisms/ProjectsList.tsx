@@ -28,9 +28,9 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   // Debug: log orgId and fetched projects
   React.useEffect(() => {
     // eslint-disable-next-line no-console
-    console.log("ProjectsPage orgId:", organizationId, "projectsRaw:", projectsRaw);
+    // console.log("ProjectsPage orgId:", organizationId, "projectsRaw:", projectsRaw);
     if (data) {
-      console.log("Projects API response:", data);
+      // console.log("Projects API response:", data);
     }
   }, [organizationId, projectsRaw, data]);
 

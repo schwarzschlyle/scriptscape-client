@@ -212,19 +212,13 @@ export function useCanvasAreaLogic({
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // --- Script logic omitted for brevity (unchanged) ---
-
-  // --- Segment Collection Logic ---
-
-  // --- NEW SEGMENT COLLECTION LOGIC (mirrors ScriptCard) ---
-
   const createSegmentCollectionMutation = useCreateSegmentCollection();
   const createSegmentMutation = useCreateSegment();
 
   // Add a new segment collection (non-optimistic: only add after API call succeeds)
   const handleAddSegmentCollection = useCallback(
     async (parentScriptId: string, name: string, numSegments: number) => {
-      console.log("handleAddSegmentCollection parentScriptId:", parentScriptId);
+      // console.log("handleAddSegmentCollection parentScriptId:", parentScriptId);
       setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
@@ -499,7 +493,7 @@ export function useCanvasAreaLogic({
 
   // --- Script logic (define all handlers before return) ---
   const handleAddScript = useCallback(
-    async (name: string, text: string) => {
+    async (name: string, text: string, position?: { x: number; y: number }) => {
       setSyncing(true);
       try {
         const created = await createScript(organizationId, projectId, { name, text });
@@ -508,6 +502,14 @@ export function useCanvasAreaLogic({
           updateCache(updated);
           return updated;
         });
+        // Assign position if provided
+        if (position) {
+          setPositions((prev) => {
+            const next = { ...prev, [created.id]: position };
+            updatePositionsCache(next);
+            return next;
+          });
+        }
       } catch (e) {
         setError("Failed to create script.");
       } finally {

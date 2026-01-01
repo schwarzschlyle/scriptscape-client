@@ -22,6 +22,8 @@ interface CanvasAreaProps {
 
 const CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
+const PAN_SPEED = 0.3;
+const ZOOM_SPEED = 0.3;
 
 
 function DraggableScriptCard({
@@ -118,7 +120,22 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
 
-  const [zoom, setZoom] = React.useState(0.6);
+  // Compute minimum zoom so canvas always covers viewport
+  const getMinZoom = () => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    return Math.max(vw / CANVAS_SIZE, vh / CANVAS_SIZE, 0.01);
+  };
+  const [zoom, setZoom] = React.useState(() => {
+    const minZoom = getMinZoom();
+    return Math.max(0.6, minZoom);
+  });
+
+  // Viewport offset (for panning)
+  const [offset, setOffset] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = React.useState(false);
+  const panStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const mouseStart = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dragTransforms, setDragTransforms] = React.useState<{ [id: string]: { x: number; y: number } }>({});
@@ -253,6 +270,87 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     e.stopPropagation();
   };
 
+  // Center canvas on mount
+  React.useEffect(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const centerX = (CANVAS_SIZE * zoom - vw) / 2 / zoom;
+    const centerY = (CANVAS_SIZE * zoom - vh) / 2 / zoom;
+    setOffset({ x: -centerX, y: -centerY });
+    // eslint-disable-next-line
+  }, []);
+
+  // Clamp offset to prevent seeing blank space
+  const clampOffset = (x: number, y: number) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const canvasW = CANVAS_SIZE * zoom;
+    const canvasH = CANVAS_SIZE * zoom;
+
+    let minX, maxX, minY, maxY;
+
+    if (canvasW <= vw) {
+      // Canvas smaller than viewport: center and lock
+      minX = maxX = (vw - canvasW) / 2 / zoom;
+    } else {
+      minX = -CANVAS_SIZE + vw / zoom;
+      maxX = 0;
+    }
+    if (canvasH <= vh) {
+      minY = maxY = (vh - canvasH) / 2 / zoom;
+    } else {
+      minY = (vh - CANVAS_SIZE * zoom) / zoom;
+      maxY = 0;
+    }
+    return {
+      x: Math.min(maxX, Math.max(minX, x)),
+      y: Math.min(maxY, Math.max(minY, y)),
+    };
+  };
+
+  // Right-click panning handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 2) {
+      setIsPanning(true);
+      panStart.current = { ...offset };
+      mouseStart.current = { x: e.clientX, y: e.clientY };
+      e.preventDefault();
+    }
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning) {
+      const dx = ((e.clientX - mouseStart.current.x) / zoom) * PAN_SPEED;
+      const dy = ((e.clientY - mouseStart.current.y) / zoom) * PAN_SPEED;
+      setOffset(clampOffset(panStart.current.x + dx, panStart.current.y + dy));
+    }
+  };
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isPanning) {
+      setIsPanning(false);
+    }
+  };
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // Prevent default context menu on right click
+    e.preventDefault();
+  };
+
+  // Scroll-to-zoom handler
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey) return; // Let browser handle pinch-zoom
+    e.preventDefault();
+    const minZoom = getMinZoom();
+    const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
+    let newZoom = Math.max(minZoom, Math.min(2.0, zoom + delta));
+    // Zoom to mouse position (centered)
+    const mx = e.clientX;
+    const my = e.clientY;
+    // Correct zoom-at-cursor math
+    const newOffsetX = mx - ((mx - offset.x) / zoom) * newZoom;
+    const newOffsetY = my - ((my - offset.y) / zoom) * newZoom;
+    setZoom(newZoom);
+    setOffset(clampOffset(newOffsetX, newOffsetY));
+  };
+
   return (
     <Box
       sx={{
@@ -263,9 +361,18 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         bgcolor: "#f0f4fa",
         p: 0,
         m: 0,
-        overflow: "scroll",
+        overflow: "hidden", // Hide scrollbars
+        userSelect: isPanning ? "none" : "auto",
+        cursor: isPanning ? "grabbing" : "default",
       }}
       onClick={handleCanvasBackgroundClick}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onContextMenu={handleContextMenu}
+      onWheel={handleWheel}
+      tabIndex={0}
     >
       <DndContext
         onDragStart={handleDragStart}
@@ -283,10 +390,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             backgroundImage:
               "radial-gradient(#646564 1px, transparent 1px)",
             backgroundSize: "48px 48px",
-            cursor: "default",
-            transform: `scale(${zoom})`,
+            cursor: isPanning ? "grabbing" : "default",
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: "top left",
-            transition: "transform 0.2s",
+            transition: isPanning ? "none" : "transform 0.2s",
           }}
           onClick={handleCanvasBackgroundClick}
         >
@@ -340,7 +447,16 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         open={showAddScriptModal}
         onClose={() => setShowAddScriptModal(false)}
         onCreate={(name, text) => {
-          handleAddScript(name, text);
+          // Calculate random position in current viewport
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const left = (-offset.x) / zoom;
+          const top = (-offset.y) / zoom;
+          const right = left + vw / zoom - CARD_WIDTH;
+          const bottom = top + vh / zoom - 220;
+          const randX = left + Math.random() * Math.max(0, right - left);
+          const randY = top + Math.random() * Math.max(0, bottom - top);
+          handleAddScript(name, text, { x: randX, y: randY });
           setShowAddScriptModal(false);
         }}
         onGenerate={() => {
@@ -352,8 +468,17 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         open={showScriptGenerationModal}
         onClose={() => setShowScriptGenerationModal(false)}
         onGenerate={() => {
+          // Calculate random position in current viewport
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const left = (-offset.x) / zoom;
+          const top = (-offset.y) / zoom;
+          const right = left + vw / zoom - CARD_WIDTH;
+          const bottom = top + vh / zoom - 220;
+          const randX = left + Math.random() * Math.max(0, right - left);
+          const randY = top + Math.random() * Math.max(0, bottom - top);
           const id = Math.floor(1000 + Math.random() * 9000).toString();
-          handleAddScript(`Generated-Script-Title-${id}`, `Generated-Script-Text=${id}`);
+          handleAddScript(`Generated-Script-Title-${id}`, `Generated-Script-Text=${id}`, { x: randX, y: randY });
           setShowScriptGenerationModal(false);
         }}
       />

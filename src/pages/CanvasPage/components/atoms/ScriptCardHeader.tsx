@@ -59,7 +59,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
     />
   );
 
-  console.log("ScriptCardHeader", props.name, "pendingSegmentCollection:", props.pendingSegmentCollection);
+  // console.log("ScriptCardHeader", props.name, "pendingSegmentCollection:", props.pendingSegmentCollection);
 
   return (
     <div onDoubleClick={handleDoubleClick}>
