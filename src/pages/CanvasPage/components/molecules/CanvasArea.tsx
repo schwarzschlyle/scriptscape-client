@@ -82,7 +82,6 @@ function DraggableScriptCard({
         bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
-        // NO CSS transform! Canvas transform does all the scaling.
       }}
     >
       <ScriptCard
@@ -133,6 +132,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     const vh = window.innerHeight;
     return Math.max(vw / CANVAS_SIZE, vh / CANVAS_SIZE, 0.01);
   };
+  
+  // Zoom display remapping: 0.6 internal = 100% displayed
+  const ZOOM_DISPLAY_BASE = 0.6; // Internal zoom that displays as 100%
+  const getDisplayZoom = (internalZoom: number) => {
+    return Math.round((internalZoom / ZOOM_DISPLAY_BASE) * 100);
+  };
+  
   const [zoom, setZoom] = React.useState(() => {
     const minZoom = getMinZoom();
     return Math.max(0.6, minZoom);
@@ -157,18 +163,18 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   // Calculate grid opacity based on zoom level for smooth LOD transitions
   const getGridOpacity = React.useCallback((zoom: number, gridType: 'minor' | 'major') => {
     if (gridType === 'minor') {
-      // Minor grid (20px) - visible when zoomed in for precision
+      // Minor grid (20px) - visible at normal zoom levels
       if (zoom < 0.3) return 0;
-      if (zoom < 0.6) return (zoom - 0.3) / 0.3 * 0.3; // Fade in 0 → 0.3
-      if (zoom < 1.5) return 0.3 + (zoom - 0.6) / 0.9 * 0.4; // Fade in 0.3 → 0.7
+      if (zoom < 0.5) return (zoom - 0.3) / 0.2 * 0.4; // Fade in 0 → 0.4
+      if (zoom < 2.0) return 0.4 + (zoom - 0.5) / 1.5 * 0.3; // Fade in 0.4 → 0.7
       return 0.7; // Full visibility when zoomed in
     } else {
-      // Major grid (100px) - visible when zoomed out for orientation
-      if (zoom < 0.25) return 0.4; // Always somewhat visible when very zoomed out
-      if (zoom < 0.8) return 0.4 + (zoom - 0.25) / 0.55 * 0.4; // Fade in 0.4 → 0.8
+      // Major grid (100px) 
+      if (zoom < 0.2) return 0.5; // Always visible when very zoomed out
+      if (zoom < 0.6) return 0.5 + (zoom - 0.2) / 0.4 * 0.3; // Fade in 0.5 → 0.8
       if (zoom < 1.5) return 0.8; // Peak visibility at normal zoom
-      if (zoom < 3.0) return 0.8 - (zoom - 1.5) / 1.5 * 0.8; // Fade out 0.8 → 0
-      return 0; // Hidden when very zoomed in
+      if (zoom < 3.0) return 0.8 - (zoom - 1.5) / 1.5 * 0.5; // Fade out 0.8 → 0.3
+      return 0.3; // Slightly visible when very zoomed in
     }
   }, []);
 
@@ -421,7 +427,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 2) {
       setIsPanning(true);
-      panStart.current = { ...offsetRef.current }; // ✅ Use ref, not state
+      panStart.current = { ...offsetRef.current };
       mouseStart.current = { x: e.clientX, y: e.clientY };
       e.preventDefault();
     }
@@ -483,6 +489,59 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     // ✅ CRITICAL FIX: Don't sync state immediately during wheel
     // State sync happens via debounce or wheel end
   };
+
+  // Zoom button handlers (match wheel behavior - zoom to center)
+  const handleZoomIn = React.useCallback(() => {
+    const minZoom = getMinZoom();
+    const prevZoom = zoomRef.current;
+    const nextZoom = Math.max(minZoom, Math.min(2.0, prevZoom + ZOOM_SPEED * 5)); // 5x for button
+    
+    if (prevZoom === nextZoom) return;
+    
+    // Zoom to center of screen (same as wheel)
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const ox = offsetRef.current.x;
+    const oy = offsetRef.current.y;
+    
+    offsetRef.current = clampOffset(
+      cx - ((cx - ox) / prevZoom) * nextZoom,
+      cy - ((cy - oy) / prevZoom) * nextZoom
+    );
+    zoomRef.current = nextZoom;
+    
+    scheduleTransform();
+    
+    // Sync state immediately for buttons (no debounce needed)
+    setOffset(offsetRef.current);
+    setZoom(zoomRef.current);
+  }, []);
+
+  const handleZoomOut = React.useCallback(() => {
+    const minZoom = getMinZoom();
+    const prevZoom = zoomRef.current;
+    const nextZoom = Math.max(minZoom, Math.min(2.0, prevZoom - ZOOM_SPEED * 5)); // 5x for button
+    
+    if (prevZoom === nextZoom) return;
+    
+    // Zoom to center of screen (same as wheel)
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const ox = offsetRef.current.x;
+    const oy = offsetRef.current.y;
+    
+    offsetRef.current = clampOffset(
+      cx - ((cx - ox) / prevZoom) * nextZoom,
+      cy - ((cy - oy) / prevZoom) * nextZoom
+    );
+    zoomRef.current = nextZoom;
+    
+    scheduleTransform();
+    
+    // Sync state immediately for buttons (no debounce needed)
+    setOffset(offsetRef.current);
+    setZoom(zoomRef.current);
+  }, []);
   
   // Debounced state sync for wheel zoom
   const wheelEndTimerRef = React.useRef<number | null>(null);
@@ -541,9 +600,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
       >
-        {/* Two-tier infinite grid system */}
+        {/* Two-tier infinite grid system (Figma/Miro style) */}
         
-        {/* Minor grid layer (20px) - for precision positioning */}
+        {/* Minor grid layer (20px) - fine precision grid */}
         <Box
           ref={minorGridRef}
           sx={{
@@ -551,14 +610,14 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             inset: 0,
             pointerEvents: "none",
             backgroundColor: "transparent",
-            backgroundImage: "radial-gradient(circle, #383838 0.5px, transparent 0.5px)",
+            backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.35) 0.5px, transparent 0.5px)",
             backgroundSize: "20px 20px",
-            opacity: 0.3,
+            opacity: 0.8,
             zIndex: 0,
           }}
         />
         
-        {/* Major grid layer (100px) - for orientation and sections */}
+        {/* Major grid layer (100px) - section markers */}
         <Box
           ref={majorGridRef}
           sx={{
@@ -566,9 +625,9 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
             inset: 0,
             pointerEvents: "none",
             backgroundColor: "transparent",
-            backgroundImage: "radial-gradient(circle, #505050 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.5) 1.5px, transparent 1.5px)",
             backgroundSize: "100px 100px",
-            opacity: 0.6,
+            opacity: 0.85,
             zIndex: 0,
           }}
         />
@@ -683,7 +742,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         }}
       />
       
-      <ZoomControls zoom={zoom} setZoom={setZoom} />
+      <ZoomControls zoom={getDisplayZoom(zoom)} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       
       {loading && scripts.length === 0 && (
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
@@ -711,7 +770,6 @@ function DraggableSegmentCollectionCard({
   onDelete,
   isSaving,
   deleting,
-  zoom,
   dragDelta,
 }: {
   col: any;
@@ -751,7 +809,6 @@ function DraggableSegmentCollectionCard({
         bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
-        // NO CSS transform!
       }}
     >
       <SegmentCollectionCard

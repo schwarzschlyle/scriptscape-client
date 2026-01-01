@@ -5,19 +5,15 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import Box from "@mui/material/Box";
 
 interface ZoomControlsProps {
-  zoom: number;
-  setZoom: (z: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
+  zoom: number; // Display percentage (e.g., 100 means 100%)
+  onZoomIn: () => void;
+  onZoomOut: () => void;
 }
 
 const ZoomControls: React.FC<ZoomControlsProps> = ({
   zoom,
-  setZoom,
-  min = 0.2,
-  max = 2.0,
-  step = 0.1,
+  onZoomIn,
+  onZoomOut,
 }) => (
   <Box
     sx={{
@@ -34,26 +30,51 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
   >
     <Fab
       aria-label="zoom in"
-      onClick={() => setZoom(Math.min(max, zoom + step))}
+      onClick={onZoomIn}
       sx={{
         pointerEvents: "auto",
         boxShadow: 4,
         bgcolor: "#272927",
-        "&:hover": { bgcolor: "#272927" },
+        "&:hover": { bgcolor: "#323332" },
         mb: 1,
       }}
       size="small"
     >
       <AddIcon sx={{ color: "#abf43e" }} />
     </Fab>
+    <Box
+      sx={{
+        pointerEvents: "auto",
+        bgcolor: "#272927",
+        borderRadius: 1,
+        px: 1.5,
+        py: 0.5,
+        mb: 1,
+        textAlign: "center",
+        minWidth: 60,
+        boxShadow: 4,
+      }}
+    >
+      <Box
+        component="span"
+        sx={{
+          color: "#abf43e",
+          fontSize: 13,
+          fontWeight: 500,
+          fontFamily: "monospace",
+        }}
+      >
+        {zoom}%
+      </Box>
+    </Box>
     <Fab
       aria-label="zoom out"
-      onClick={() => setZoom(Math.max(min, zoom - step))}
+      onClick={onZoomOut}
       sx={{
         pointerEvents: "auto",
         boxShadow: 4,
         bgcolor: "#272927",
-        "&:hover": { bgcolor: "#272927" },
+        "&:hover": { bgcolor: "#323332" },
       }}
       size="small"
     >
