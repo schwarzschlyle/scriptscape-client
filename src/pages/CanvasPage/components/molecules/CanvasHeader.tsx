@@ -1,8 +1,8 @@
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import ProjectName from "../atoms/ProjectName";
-import LogoutButton from "../atoms/LogoutButton";
+import IconButton from "@mui/material/IconButton";
+import LogoutIcon from "@mui/icons-material/Logout";
 import LoadingSpinner from "@components/LoadingSpinner";
+import CanvasTypography from "./CanvasTypography";
 
 interface CanvasHeaderProps {
   orgName?: string;
@@ -49,7 +49,9 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
 
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0, flexGrow: 1 }}>
         <Box sx={{ display: "flex", flexDirection: "row", alignItems: "flex-end", minWidth: 0 }}>
-          <ProjectName name={projectName} />
+          <CanvasTypography variant="projectName">
+            {projectName}
+          </CanvasTypography>
           {orgName && (
             <Box
               sx={{
@@ -64,42 +66,27 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
                 minWidth: 0,
               }}
             >
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: "#4B5563",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
+              <CanvasTypography variant="organizationName">
                 {orgName}
-              </Typography>
+              </CanvasTypography>
             </Box>
           )}
         </Box>
         {projectDescription && (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#374151",
-              fontWeight: 400,
-              fontSize: 13,
-              mt: 0.5,
+          <CanvasTypography
+            variant="projectDescription"
+            style={{
+              marginTop: 4,
               maxWidth: 320,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              marginLeft: 0,
+              display: "block",
             }}
             title={projectDescription}
           >
             {projectDescription}
-          </Typography>
+          </CanvasTypography>
         )}
       </Box>
 
@@ -135,7 +122,22 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
             <Box sx={{ width: 20, height: 20, alignSelf: "center" }} />
           )}
         </Box>
-        <LogoutButton onClick={onLogout} />
+        <IconButton
+          onClick={onLogout}
+          size="small"
+          sx={{
+            color: "#fff",
+            bgcolor: "transparent",
+            "&:hover": {
+              bgcolor: "rgba(255,255,255,0.08)",
+            },
+            borderRadius: 1,
+            ml: 1,
+          }}
+          aria-label="Logout"
+        >
+          <LogoutIcon fontSize="small" />
+        </IconButton>
       </Box>
     </Box>
   </Box>
