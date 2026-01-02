@@ -142,18 +142,18 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: isSaving ? "not-allowed" : "pointer",
-          opacity: isSaving ? 0.5 : 1,
+          cursor: isSaving || pendingSegmentCollection ? "not-allowed" : "pointer",
+          opacity: isSaving || pendingSegmentCollection ? 0.5 : 1,
           padding: 0,
           margin: 0,
           outline: "none",
           zIndex: 2,
         }}
         onClick={() => {
-          if (!isSaving) setShowAddSegmentCollectionModal(true);
+          if (!isSaving && !pendingSegmentCollection) setShowAddSegmentCollectionModal(true);
         }}
         aria-label="Generate Segments"
-        disabled={isSaving}
+        disabled={isSaving || pendingSegmentCollection}
       >
         <img
           src={AiPromptIcon}
@@ -162,7 +162,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             width: 22,
             height: 22,
             display: "block",
-            filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+            filter: isSaving || pendingSegmentCollection ? "grayscale(1) opacity(0.5)" : "none",
           }}
         />
       </button>

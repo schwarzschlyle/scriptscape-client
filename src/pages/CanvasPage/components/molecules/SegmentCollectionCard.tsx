@@ -142,20 +142,20 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: isSaving ? "not-allowed" : "pointer",
-          opacity: isSaving ? 0.5 : 1,
+          cursor: isSaving || pendingVisualDirection ? "not-allowed" : "pointer",
+          opacity: isSaving || pendingVisualDirection ? 0.5 : 1,
           padding: 0,
           margin: 0,
           outline: "none",
           zIndex: 2,
         }}
         onClick={() => {
-          if (!isSaving && onGenerateVisualDirections) {
+          if (!isSaving && !pendingVisualDirection && onGenerateVisualDirections) {
             onGenerateVisualDirections();
           }
         }}
         aria-label="Generate Visual Directions"
-        disabled={isSaving}
+        disabled={isSaving || pendingVisualDirection}
       >
         <img
           src={AiPromptIcon}
@@ -164,7 +164,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             width: 22,
             height: 22,
             display: "block",
-            filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+            filter: isSaving || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
           }}
         />
       </button>
