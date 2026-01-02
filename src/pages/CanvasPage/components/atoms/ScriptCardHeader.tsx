@@ -101,8 +101,7 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
                   verticalAlign: "middle",
                 }}
               />
-              <CardTypography variant="cardType">Script Input</CardTypography>
-              <CardTypography variant="cardTitle">{localName || "Untitled Script"}</CardTypography>
+              <CardTypography variant="cardType">{localName || "Untitled Script"}</CardTypography>
             </span>
           )
         }

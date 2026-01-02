@@ -107,10 +107,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                     }}
                   />
                   <CardTypography variant="cardType">
-                    Segments{typeof segmentsCount === "number" ? ` (${segmentsCount})` : ""}
-                  </CardTypography>
-                  <CardTypography variant="cardTitle">
                     {localName || "Untitled Segment Collection"}
+                    {typeof segmentsCount === "number" ? ` (${segmentsCount})` : ""}
                   </CardTypography>
                 </span>
               )
