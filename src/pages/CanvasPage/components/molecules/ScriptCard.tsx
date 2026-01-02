@@ -4,6 +4,7 @@ import CustomCard from "../../../../components/CustomCard";
 import ScriptCardHeader from "../atoms/ScriptCardHeader";
 import ScriptCardBody from "../atoms/ScriptCardBody";
 import Box from "@mui/material/Box";
+import CardActionsArea from "../../../../components/CardActionsArea";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
@@ -109,15 +110,13 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             editable={editingBody && !isSaving && !deleting}
             onRequestEditBody={() => setEditingBody(true)}
             onBodyBlur={() => setEditingBody(false)}
-          >
-            {error && (
-              <Box sx={{ mt: 1, px: 2 }}>
-                <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-              </Box>
-            )}
-          </ScriptCardBody>
-          {/* + Button for adding segment collection */}
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+          />
+          {error && (
+            <Box sx={{ mt: 1, px: 2 }}>
+              <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+            </Box>
+          )}
+          <CardActionsArea>
             <button
               style={{
                 background: "none",
@@ -148,7 +147,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
                 }}
               />
             </button>
-          </Box>
+          </CardActionsArea>
 
           {showAddSegmentCollectionModal && (
             <SegmentCollectionAdditionModal

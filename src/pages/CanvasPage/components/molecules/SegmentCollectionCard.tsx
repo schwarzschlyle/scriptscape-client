@@ -3,6 +3,7 @@ import CustomCard from "../../../../components/CustomCard";
 import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
 import Box from "@mui/material/Box";
+import CardActionsArea from "../../../../components/CardActionsArea";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface Segment {
@@ -122,8 +123,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             error={error}
             onSegmentChange={onSegmentChange}
           />
-          {/* Single button to generate all visual directions */}
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <CardActionsArea>
             <button
               style={{
                 background: "none",
@@ -156,10 +156,10 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                 }}
               />
             </button>
-          </Box>
+          </CardActionsArea>
         </>
       }
-      minHeight={180}
+      minHeight={220}
       active={active}
       style={{
         marginTop: 16,

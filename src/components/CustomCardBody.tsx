@@ -22,7 +22,6 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       display: "flex",
       flexDirection: "column",
       flex: 1,
-      p: 2,
       boxSizing: "border-box",
       background: "#2F312F",
       border: "1.5px solid #1f211f",
@@ -37,6 +36,10 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       overflow: "auto",
       wordBreak: "break-word",
       maxWidth: "100%",
+      fontFamily: "monospace",
+      fontSize: 14,
+      color: "#fff",
+      padding: "8px",
       ...style,
     }}
     className={className}

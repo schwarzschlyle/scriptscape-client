@@ -1,7 +1,6 @@
 import React from "react";
-import CustomCardBody from "../../../../components/CustomCardBody";
 import Box from "@mui/material/Box";
-import CardTypography from "../molecules/CardTypography";
+import EditableCardContentArea from "./EditableCardContentArea";
 
 interface ScriptCardBodyProps {
   text: string;
@@ -9,57 +8,27 @@ interface ScriptCardBodyProps {
   editable?: boolean;
   onRequestEditBody?: () => void;
   onBodyBlur?: () => void;
-  children?: React.ReactNode;
 }
 
 const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
   text,
   editable,
-  children,
-  // Do not pass these to CustomCardBody:
   onTextChange,
   onRequestEditBody,
   onBodyBlur,
   ...rest
 }) => (
-  <CustomCardBody
-    {...rest}
-    onDoubleClick={() => {
-      if (!editable && onRequestEditBody) onRequestEditBody();
-    }}
-  >
-    {editable && onTextChange ? (
-      <textarea
-        value={text}
-        onChange={e => onTextChange(e.target.value)}
-        onBlur={onBodyBlur}
-        style={{
-          width: "100%",
-          minHeight: 60,
-          background: "transparent",
-          color: "#fff",
-          border: "none",
-          outline: "none",
-          resize: "vertical",
-          fontFamily: "monospace",
-          fontSize: 14,
-          padding: "8px",
-        }}
-        autoFocus
-      />
-    ) : (
-      <Box
-        sx={{
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          width: "100%",
-          textAlign: "center",
-        }}
-      >
-        <CardTypography variant="cardBody">{text}</CardTypography>
-      </Box>
-    )}
-  </CustomCardBody>
+  <Box sx={{ pt: 2, pb: 2 }}>
+    <EditableCardContentArea
+      value={text}
+      editable={!!editable}
+      onChange={onTextChange}
+      onRequestEdit={onRequestEditBody}
+      onBlur={onBodyBlur}
+      minHeight={60}
+      {...rest}
+    />
+  </Box>
 );
 
 export default ScriptCardBody;

@@ -44,7 +44,7 @@ const CustomCard: React.FC<CustomCardProps> = ({
       {header}
       {header && <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />}
       {body ? (
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
           {body}
         </Box>
       ) : (

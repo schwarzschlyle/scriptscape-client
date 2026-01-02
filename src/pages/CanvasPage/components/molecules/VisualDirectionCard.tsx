@@ -118,7 +118,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
           onVisualChange={onVisualChange}
         />
       }
-      minHeight={180}
+      minHeight={220}
       active={active}
       style={{
         marginTop: 16,
