@@ -33,18 +33,16 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
   onCreate,
   onGenerate,
 }) => {
-  const [name, setName] = useState("");
   const [text, setText] = useState("");
 
   const handleCreate = () => {
-    if (name.trim()) {
-      onCreate(name.trim(), text);
+    if (text.trim()) {
+      onCreate("Script Input", text);
     }
   };
 
   React.useEffect(() => {
     if (open) {
-      setName("");
       setText("");
     }
   }, [open]);
@@ -55,14 +53,7 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
         <Typography variant="h6" sx={{ mb: 2 }}>
           Create New Script
         </Typography>
-        <TextField
-          type="text"
-          label="Script Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          fullWidth
-          sx={{ mb: 2 }}
-        />
+        {/* Script name input removed */}
         <TextField
           type="text"
           label="Script Text"
@@ -84,7 +75,7 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
           >
             GENERATE
           </Button>
-          <Button onClick={handleCreate} variant="contained" color="primary" disabled={!name.trim()}>
+          <Button onClick={handleCreate} variant="contained" color="primary" disabled={!text.trim()}>
             Create
           </Button>
         </Box>

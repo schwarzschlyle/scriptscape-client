@@ -55,9 +55,8 @@ const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
       const script = await generate(brief, branding, duration);
       setGeneratedScript(script);
       if (onCreate) {
-        // Use the first line or a default as the title, and the full script as text
-        const title = script.split("\n")[0] || "Generated Script";
-        onCreate(title, script);
+        // Always use "Script Input" as the title
+        onCreate("Script Input", script);
       }
     } catch (e: any) {
       // error is handled by the hook
