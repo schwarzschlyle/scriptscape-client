@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { useCreateSegmentCollection, useUpdateSegmentCollection, useDeleteSegmentCollection } from "@api/segment_collections/mutations";
+import {
+  useCreateSegmentCollection,
+  useUpdateSegmentCollection,
+  useDeleteSegmentCollection,
+} from "@api/segment_collections/mutations";
 import { useCreateSegment, useUpdateSegment } from "@api/segments/mutations";
 import type { SegmentCollection } from "@api/segment_collections/types";
 import type { Segment as BaseSegment } from "@api/segments/types";
 
 type Segment = BaseSegment;
-type SegmentCollectionsState = {
+type CollectionsState = {
   [id: string]: SegmentCollection & {
     parentScriptId: string;
     segments: Segment[];
@@ -16,9 +20,9 @@ type SegmentCollectionsState = {
 };
 type PositionsState = { [id: string]: { x: number; y: number } };
 
-const getSegColCacheKey = (organizationId: string, projectId: string) =>
+const getCacheKey = (organizationId: string, projectId: string) =>
   `segment-collections-cache-${organizationId}-${projectId}`;
-const getSegColPositionsKey = (organizationId: string, projectId: string) =>
+const getPositionsKey = (organizationId: string, projectId: string) =>
   `segment-collections-positions-${organizationId}-${projectId}`;
 
 export interface UseSegmentsCanvasAreaLogicProps {
@@ -32,55 +36,52 @@ export function useSegmentsCanvasAreaLogic({
   projectId,
   onSyncChange,
 }: UseSegmentsCanvasAreaLogicProps) {
-  const [segmentCollections, setSegmentCollections] = useState<SegmentCollectionsState>({});
-  const [segColPositions, setSegColPositions] = useState<PositionsState>({});
+  const [collections, setCollections] = useState<CollectionsState>({});
+  const [positions, setPositions] = useState<PositionsState>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Track pending segment collection creation per script
-  const [pendingSegmentCollection, setPendingSegmentCollection] = useState<{ [scriptId: string]: boolean }>({});
-
+  // FIX: Move mutation hooks to top level
+  const createSegmentCollectionMutation = useCreateSegmentCollection();
+  const createSegmentMutation = useCreateSegment();
   const updateCollectionMutation = useUpdateSegmentCollection();
   const deleteCollectionMutation = useDeleteSegmentCollection();
   const updateSegmentMutation = useUpdateSegment();
-  const createSegmentCollectionMutation = useCreateSegmentCollection();
-  const createSegmentMutation = useCreateSegment();
 
-  function updateSegColCache(collections: SegmentCollectionsState) {
-    const cacheKey = getSegColCacheKey(organizationId, projectId);
+  function updateCache(collections: CollectionsState) {
+    const cacheKey = getCacheKey(organizationId, projectId);
     localStorage.setItem(cacheKey, JSON.stringify(collections));
   }
 
-  function updateSegColPositionsCache(positions: PositionsState) {
-    const positionsKey = getSegColPositionsKey(organizationId, projectId);
+  function updatePositionsCache(positions: PositionsState) {
+    const positionsKey = getPositionsKey(organizationId, projectId);
     localStorage.setItem(positionsKey, JSON.stringify(positions));
   }
 
-  // Load from cache on mount, then fetch from backend in background
   useEffect(() => {
     setLoading(true);
 
-    // Segment collections: load from localStorage first (optimistic render)
-    const segColCacheKey = getSegColCacheKey(organizationId, projectId);
-    const cachedSegCols = localStorage.getItem(segColCacheKey);
-    if (cachedSegCols) {
+    // Collections
+    const cacheKey = getCacheKey(organizationId, projectId);
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
       try {
-        const parsed = JSON.parse(cachedSegCols);
+        const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === "object") {
-          setSegmentCollections(parsed);
+          setCollections(parsed);
         }
       } catch {}
     }
 
-    // Segment collection positions
-    const segColPositionsKey = getSegColPositionsKey(organizationId, projectId);
-    const cachedSegColPositions = localStorage.getItem(segColPositionsKey);
-    if (cachedSegColPositions) {
+    // Positions
+    const positionsKey = getPositionsKey(organizationId, projectId);
+    const cachedPositions = localStorage.getItem(positionsKey);
+    if (cachedPositions) {
       try {
-        const parsed = JSON.parse(cachedSegColPositions);
+        const parsed = JSON.parse(cachedPositions);
         if (parsed && typeof parsed === "object") {
-          setSegColPositions(parsed);
+          setPositions(parsed);
         }
       } catch {}
     }
@@ -92,15 +93,19 @@ export function useSegmentsCanvasAreaLogic({
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // Add a new segment collection (non-optimistic: only add after API call succeeds)
-  const handleAddSegmentCollection = useCallback(
-    async (parentScriptId: string, name: string, numSegments: number, parentScriptPosition?: { x: number; y: number }) => {
-      setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
+  // Add a new collection (non-optimistic: only add after API call succeeds)
+  const handleAddCollection = useCallback(
+    async (
+      parentScriptId: string,
+      name: string,
+      numSegments: number,
+      parentScriptPosition?: { x: number; y: number }
+    ) => {
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
         // Create the collection in backend
-        const segCol = await createSegmentCollectionMutation.mutateAsync({
+        const collection = await createSegmentCollectionMutation.mutateAsync({
           scriptId: parentScriptId,
           name,
         });
@@ -109,21 +114,20 @@ export function useSegmentsCanvasAreaLogic({
         function random4Digit() {
           return Math.floor(1000 + Math.random() * 9000).toString();
         }
-        // TODO: [AI INTEGRATION] The following random string will be replaced by AI-generated content from the API.
         for (let i = 0; i < numSegments; i++) {
           const seg = await createSegmentMutation.mutateAsync({
-            collectionId: segCol.id,
+            collectionId: collection.id,
             segmentIndex: i,
             text: `Generated-Segment-${random4Digit()}`,
           });
           createdSegments.push(seg);
         }
         // Add the new collection to state and localStorage only after all API calls succeed
-        setSegmentCollections((prev) => {
+        setCollections((prev) => {
           const updated = {
             ...prev,
-            [segCol.id]: {
-              ...segCol,
+            [collection.id]: {
+              ...collection,
               parentScriptId,
               segments: createdSegments,
               isSaving: false,
@@ -131,36 +135,35 @@ export function useSegmentsCanvasAreaLogic({
               error: null,
             },
           };
-          updateSegColCache(updated);
+          updateCache(updated);
           return updated;
         });
         // Assign a position for the new collection
-        setSegColPositions((prev) => {
+        setPositions((prev) => {
           const parentPos = parentScriptPosition || { x: 200, y: 200 };
           const offsetX = 380;
           const offsetY = 40 + Object.keys(prev).length * 40;
           const updated = {
             ...prev,
-            [segCol.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
+            [collection.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
           };
-          updateSegColPositionsCache(updated);
+          updatePositionsCache(updated);
           return updated;
         });
       } catch (e: any) {
         setError(e?.message || "Failed to create segment collection.");
       } finally {
-        setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: false }));
         setSyncing(false);
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, createSegmentCollectionMutation, createSegmentMutation]
+    [organizationId, projectId, onSyncChange, createSegmentCollectionMutation, createSegmentMutation]
   );
 
-  // Edit segment collection name
-  const handleEditSegmentCollectionName = useCallback(
+  // Edit collection name
+  const handleEditCollectionName = useCallback(
     async (colId: string, newName: string) => {
-      setSegmentCollections((prev) => ({
+      setCollections((prev) => ({
         ...prev,
         [colId]: {
           ...prev[colId],
@@ -172,7 +175,7 @@ export function useSegmentsCanvasAreaLogic({
       setSyncing(true);
       try {
         await updateCollectionMutation.mutateAsync({ id: colId, data: { name: newName } });
-        setSegmentCollections((prev) => ({
+        setCollections((prev) => ({
           ...prev,
           [colId]: {
             ...prev[colId],
@@ -182,7 +185,7 @@ export function useSegmentsCanvasAreaLogic({
           },
         }));
       } catch (e: any) {
-        setSegmentCollections((prev) => ({
+        setCollections((prev) => ({
           ...prev,
           [colId]: {
             ...prev[colId],
@@ -200,7 +203,7 @@ export function useSegmentsCanvasAreaLogic({
   // Edit segment text
   const handleEditSegmentText = useCallback(
     async (colId: string, segmentId: string, newText: string, index: number) => {
-      setSegmentCollections((prev) => {
+      setCollections((prev) => {
         const col = prev[colId];
         if (!col) return prev;
         const updatedSegments = col.segments.map((seg, i) =>
@@ -222,7 +225,7 @@ export function useSegmentsCanvasAreaLogic({
       if (onSyncChange) onSyncChange(true);
       try {
         await updateSegmentMutation.mutateAsync({ id: segmentId, data: { text: newText } });
-        setSegmentCollections((prev) => {
+        setCollections((prev) => {
           const col = prev[colId];
           if (!col) return prev;
           const updatedSegments = col.segments.map((seg, i) =>
@@ -241,7 +244,7 @@ export function useSegmentsCanvasAreaLogic({
           };
         });
       } catch (e: any) {
-        setSegmentCollections((prev) => {
+        setCollections((prev) => {
           const col = prev[colId];
           if (!col) return prev;
           const updatedSegments = col.segments.map((seg, i) =>
@@ -264,22 +267,22 @@ export function useSegmentsCanvasAreaLogic({
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [updateSegmentMutation]
+    [onSyncChange, updateSegmentMutation]
   );
 
-  // Delete segment collection (optimistic)
-  const handleDeleteSegmentCollection = useCallback(
+  // Delete collection (optimistic)
+  const handleDeleteCollection = useCallback(
     async (colId: string) => {
       let prevCol: any;
-      setSegmentCollections((prev) => {
+      setCollections((prev) => {
         prevCol = prev[colId];
         const { [colId]: _, ...rest } = prev;
-        updateSegColCache(rest);
+        updateCache(rest);
         return rest;
       });
-      setSegColPositions((prev) => {
+      setPositions((prev) => {
         const { [colId]: _, ...rest } = prev;
-        updateSegColPositionsCache(rest);
+        updatePositionsCache(rest);
         return rest;
       });
       setSyncing(true);
@@ -288,7 +291,7 @@ export function useSegmentsCanvasAreaLogic({
         setError(null); // Clear error after successful delete
       } catch (e: any) {
         // Rollback on error
-        setSegmentCollections((prev) => {
+        setCollections((prev) => {
           const updated = {
             ...prev,
             [colId]: {
@@ -297,29 +300,29 @@ export function useSegmentsCanvasAreaLogic({
               error: e?.message || "Failed to delete segment collection.",
             },
           };
-          updateSegColCache(updated);
+          updateCache(updated);
           return updated;
         });
-        setSegColPositions((prev) => {
+        setPositions((prev) => {
           const updated = {
             ...prev,
             [colId]: prevCol && prevCol.position ? prevCol.position : { x: 600, y: 200 },
           };
-          updateSegColPositionsCache(updated);
+          updatePositionsCache(updated);
           return updated;
         });
       } finally {
         setSyncing(false);
       }
     },
-    [deleteCollectionMutation, organizationId, projectId]
+    [deleteCollectionMutation]
   );
 
-  // Update position of a segment collection card and cache
-  const handleSegColPositionChange = useCallback((id: string, x: number, y: number) => {
-    setSegColPositions((prev) => {
+  // Update position of a collection card and cache
+  const handleCollectionPositionChange = useCallback((id: string, x: number, y: number) => {
+    setPositions((prev) => {
       const next = { ...prev, [id]: { x, y } };
-      updateSegColPositionsCache(next);
+      updatePositionsCache(next);
       return next;
     });
   }, [organizationId, projectId]);
@@ -328,17 +331,16 @@ export function useSegmentsCanvasAreaLogic({
   const clearError = useCallback(() => setError(null), []);
 
   return {
-    segmentCollections,
-    segColPositions,
+    collections,
+    positions,
     loading,
     error,
     syncing,
-    pendingSegmentCollection,
-    handleAddSegmentCollection,
-    handleEditSegmentCollectionName,
+    handleAddCollection,
+    handleEditCollectionName,
     handleEditSegmentText,
-    handleDeleteSegmentCollection,
-    handleSegColPositionChange,
+    handleDeleteCollection,
+    handleCollectionPositionChange,
     clearError,
   };
 }

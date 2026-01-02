@@ -10,14 +10,14 @@ type VisualDirection = {
   deleting?: boolean;
   error?: string | null;
 };
-type VisualDirectionsState = {
+type DirectionsState = {
   [visualDirectionId: string]: VisualDirection;
 };
 type PositionsState = { [id: string]: { x: number; y: number } };
 
-const getVisualDirectionsCacheKey = (organizationId: string, projectId: string) =>
+const getCacheKey = (organizationId: string, projectId: string) =>
   `visual-directions-cache-${organizationId}-${projectId}`;
-const getVisualDirectionsPositionsKey = (organizationId: string, projectId: string) =>
+const getPositionsKey = (organizationId: string, projectId: string) =>
   `visual-directions-positions-${organizationId}-${projectId}`;
 
 export interface UseVisualDirectionCanvasAreaLogicProps {
@@ -31,26 +31,24 @@ export function useVisualDirectionCanvasAreaLogic({
   projectId,
   onSyncChange,
 }: UseVisualDirectionCanvasAreaLogicProps) {
-  const [visualDirections, setVisualDirections] = useState<VisualDirectionsState>({});
-  const [visualDirectionsPositions, setVisualDirectionsPositions] = useState<PositionsState>({});
+  const [directions, setDirections] = useState<DirectionsState>({});
+  const [positions, setPositions] = useState<PositionsState>({});
+  const [pendingVisualDirection, setPendingVisualDirection] = useState<{ [segmentCollectionId: string]: boolean }>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Track pending visual direction creation per segment collection
-  const [pendingVisualDirection, setPendingVisualDirection] = useState<{ [segmentCollectionId: string]: boolean }>({});
 
   const createVisualMutation = useCreateVisual();
   const updateVisualMutation = useUpdateVisual();
   const deleteVisualMutation = useDeleteVisual();
 
-  function updateVisualDirectionsCache(directions: VisualDirectionsState) {
-    const cacheKey = getVisualDirectionsCacheKey(organizationId, projectId);
+  function updateCache(directions: DirectionsState) {
+    const cacheKey = getCacheKey(organizationId, projectId);
     localStorage.setItem(cacheKey, JSON.stringify(directions));
   }
 
-  function updateVisualDirectionsPositionsCache(positions: PositionsState) {
-    const positionsKey = getVisualDirectionsPositionsKey(organizationId, projectId);
+  function updatePositionsCache(positions: PositionsState) {
+    const positionsKey = getPositionsKey(organizationId, projectId);
     localStorage.setItem(positionsKey, JSON.stringify(positions));
   }
 
@@ -58,26 +56,26 @@ export function useVisualDirectionCanvasAreaLogic({
   useEffect(() => {
     setLoading(true);
 
-    // Visual directions: load from localStorage first (optimistic render)
-    const cacheKey = getVisualDirectionsCacheKey(organizationId, projectId);
+    // Directions: load from localStorage first (optimistic render)
+    const cacheKey = getCacheKey(organizationId, projectId);
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === "object") {
-          setVisualDirections(parsed);
+          setDirections(parsed);
         }
       } catch {}
     }
 
-    // Visual direction positions
-    const positionsKey = getVisualDirectionsPositionsKey(organizationId, projectId);
+    // Positions
+    const positionsKey = getPositionsKey(organizationId, projectId);
     const cachedPositions = localStorage.getItem(positionsKey);
     if (cachedPositions) {
       try {
         const parsed = JSON.parse(cachedPositions);
         if (parsed && typeof parsed === "object") {
-          setVisualDirectionsPositions(parsed);
+          setPositions(parsed);
         }
       } catch {}
     }
@@ -89,8 +87,8 @@ export function useVisualDirectionCanvasAreaLogic({
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
-  // Add a new visual direction (non-optimistic: only add after API call succeeds)
-  const handleAddVisualDirection = useCallback(
+  // Add a new direction (non-optimistic: only add after API call succeeds)
+  const handleAdd = useCallback(
     async (
       parentSegmentCollectionId: string,
       segmentIds: string[],
@@ -114,9 +112,9 @@ export function useVisualDirectionCanvasAreaLogic({
           });
           visuals.push(visual);
         }
-        // Add the new visual direction (with all visuals) to state and localStorage only after all API calls succeed
+        // Add the new direction (with all visuals) to state and localStorage only after all API calls succeed
         const newId = visuals[0]?.id || `${parentSegmentCollectionId}-visual-direction-${Date.now()}`;
-        setVisualDirections((prev) => {
+        setDirections((prev) => {
           const updated = {
             ...prev,
             [newId]: {
@@ -128,17 +126,17 @@ export function useVisualDirectionCanvasAreaLogic({
               error: null,
             },
           };
-          updateVisualDirectionsCache(updated);
+          updateCache(updated);
           return updated;
         });
-        // Assign a position for the new visual direction card
+        // Assign a position for the new direction card
         if (position) {
-          setVisualDirectionsPositions((prev) => {
+          setPositions((prev) => {
             const updated = {
               ...prev,
               [newId]: position,
             };
-            updateVisualDirectionsPositionsCache(updated);
+            updatePositionsCache(updated);
             return updated;
           });
         }
@@ -150,13 +148,13 @@ export function useVisualDirectionCanvasAreaLogic({
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, createVisualMutation]
+    [organizationId, projectId, createVisualMutation, onSyncChange]
   );
 
-  // Edit visual direction content
-  const handleEditVisualDirectionContent = useCallback(
+  // Edit direction content
+  const handleEdit = useCallback(
     async (visualId: string, newContent: string) => {
-      setVisualDirections((prev) => ({
+      setDirections((prev) => ({
         ...prev,
         [visualId]: {
           ...prev[visualId],
@@ -171,7 +169,7 @@ export function useVisualDirectionCanvasAreaLogic({
           id: visualId,
           data: { content: newContent },
         });
-        setVisualDirections((prev) => ({
+        setDirections((prev) => ({
           ...prev,
           [visualId]: {
             ...prev[visualId],
@@ -181,7 +179,7 @@ export function useVisualDirectionCanvasAreaLogic({
           },
         }));
       } catch (e: any) {
-        setVisualDirections((prev) => ({
+        setDirections((prev) => ({
           ...prev,
           [visualId]: {
             ...prev[visualId],
@@ -196,19 +194,19 @@ export function useVisualDirectionCanvasAreaLogic({
     [updateVisualMutation]
   );
 
-  // Delete visual direction (optimistic)
-  const handleDeleteVisualDirection = useCallback(
+  // Delete direction (optimistic)
+  const handleDelete = useCallback(
     async (visualId: string) => {
-      let prevVisual: any;
-      setVisualDirections((prev) => {
-        prevVisual = prev[visualId];
+      let prevDirection: any;
+      setDirections((prev) => {
+        prevDirection = prev[visualId];
         const { [visualId]: _, ...rest } = prev;
-        updateVisualDirectionsCache(rest);
+        updateCache(rest);
         return rest;
       });
-      setVisualDirectionsPositions((prev) => {
+      setPositions((prev) => {
         const { [visualId]: _, ...rest } = prev;
-        updateVisualDirectionsPositionsCache(rest);
+        updatePositionsCache(rest);
         return rest;
       });
       setSyncing(true);
@@ -217,24 +215,24 @@ export function useVisualDirectionCanvasAreaLogic({
         setError(null); // Clear error after successful delete
       } catch (e: any) {
         // Rollback on error
-        setVisualDirections((prev) => {
+        setDirections((prev) => {
           const updated = {
             ...prev,
             [visualId]: {
-              ...prevVisual,
+              ...prevDirection,
               deleting: false,
               error: e?.message || "Failed to delete visual direction.",
             },
           };
-          updateVisualDirectionsCache(updated);
+          updateCache(updated);
           return updated;
         });
-        setVisualDirectionsPositions((prev) => {
+        setPositions((prev) => {
           const updated = {
             ...prev,
-            [visualId]: prevVisual && prevVisual.position ? prevVisual.position : { x: 600, y: 200 },
+            [visualId]: prevDirection && prevDirection.position ? prevDirection.position : { x: 600, y: 200 },
           };
-          updateVisualDirectionsPositionsCache(updated);
+          updatePositionsCache(updated);
           return updated;
         });
       } finally {
@@ -244,11 +242,11 @@ export function useVisualDirectionCanvasAreaLogic({
     [deleteVisualMutation, organizationId, projectId]
   );
 
-  // Update position of a visual direction card and cache
-  const handleVisualDirectionPositionChange = useCallback((id: string, x: number, y: number) => {
-    setVisualDirectionsPositions((prev) => {
+  // Update position of a direction card and cache
+  const handlePositionChange = useCallback((id: string, x: number, y: number) => {
+    setPositions((prev) => {
       const next = { ...prev, [id]: { x, y } };
-      updateVisualDirectionsPositionsCache(next);
+      updatePositionsCache(next);
       return next;
     });
   }, [organizationId, projectId]);
@@ -257,16 +255,16 @@ export function useVisualDirectionCanvasAreaLogic({
   const clearError = useCallback(() => setError(null), []);
 
   return {
-    visualDirections,
-    visualDirectionsPositions,
+    directions,
+    positions,
+    pendingVisualDirection,
     loading,
     error,
     syncing,
-    pendingVisualDirection,
-    handleAddVisualDirection,
-    handleEditVisualDirectionContent,
-    handleDeleteVisualDirection,
-    handleVisualDirectionPositionChange,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handlePositionChange,
     clearError,
   };
 }

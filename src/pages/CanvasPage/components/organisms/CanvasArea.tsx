@@ -44,31 +44,30 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   // Segments logic
   const {
-    segmentCollections,
-    segColPositions,
+    collections,
+    positions: segColPositions,
     loading: segsLoading,
     error: segsError,
     syncing: segsSyncing,
-    pendingSegmentCollection,
-    handleAddSegmentCollection,
-    handleEditSegmentCollectionName,
+    handleAddCollection,
+    handleEditCollectionName,
     handleEditSegmentText,
-    handleDeleteSegmentCollection,
-    handleSegColPositionChange,
+    handleDeleteCollection,
+    handleCollectionPositionChange,
   } = useSegmentsCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   // Visual Directions logic
   const {
-    visualDirections,
-    visualDirectionsPositions,
+    directions: visualDirections,
+    positions: visualDirectionsPositions,
+    pendingVisualDirection,
     loading: visualsLoading,
     error: visualsError,
     syncing: visualsSyncing,
-    pendingVisualDirection,
-    handleAddVisualDirection,
-    handleEditVisualDirectionContent,
-    handleDeleteVisualDirection,
-    handleVisualDirectionPositionChange,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handlePositionChange,
   } = useVisualDirectionCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   // Visual Set creation mutation
@@ -146,14 +145,14 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       const rawY = oldPos.y + worldDelta.y;
       const newX = maybeSnapToGrid(rawX);
       const newY = Math.max(minY, maybeSnapToGrid(rawY));
-      handleSegColPositionChange(id, newX, newY);
+      handleCollectionPositionChange(id, newX, newY);
     } else if (visualDirectionsPositions[id]) {
       const oldPos = visualDirectionsPositions[id];
       const rawX = oldPos.x + worldDelta.x;
       const rawY = oldPos.y + worldDelta.y;
       const newX = maybeSnapToGrid(rawX);
       const newY = Math.max(minY, maybeSnapToGrid(rawY));
-      handleVisualDirectionPositionChange(id, newX, newY);
+      handlePositionChange(id, newX, newY);
     }
     setActiveDragDelta(null);
     setIsDragging(false);
@@ -169,7 +168,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     };
   };
 
-  const links = Object.values(segmentCollections)
+  const links = Object.values(collections)
     .map((col) => {
       const segColId = col.id || "";
       const parentId = col.parentScriptId;
@@ -334,36 +333,38 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 onDelete={() => handleDeleteScript(script.id)}
                 active={activeId === script.id}
                 setActive={setActiveId}
-                onAddSegmentCollection={(name: string, numSegments: number) =>
-                  handleAddSegmentCollection(script.id, name, numSegments, positions[script.id])
-                }
+                onAddSegmentCollection={async (name: string, numSegments: number) => {
+                  console.log("Attempting to add segment collection", { scriptId: script.id, name, numSegments, position: positions[script.id] });
+                  await handleAddCollection(script.id, name, numSegments, positions[script.id]);
+                  console.log("Segment collection add complete");
+                }}
                 isSaving={!!script.isSaving}
                 deleting={!!script.deleting}
-                pendingSegmentCollection={!!pendingSegmentCollection[script.id]}
                 dragDelta={activeId === script.id && isDragging ? activeDragDelta : null}
               />
             </div>
           ))}
           
           {/* SegmentCollectionCards */}
-          {Object.values(segmentCollections).map((col: any) => (
+          {Object.values(collections).map((col: any) => (
             <div key={col.id} onClick={stopPropagation}>
               <DraggableSegmentCollectionCard
                 col={col}
                 position={segColPositions[col.id] || { x: 600, y: 200 }}
                 active={activeId === col.id}
                 setActive={setActiveId}
-                onNameChange={handleEditSegmentCollectionName}
+                onNameChange={handleEditCollectionName}
                 onSegmentChange={handleEditSegmentText}
-                onDelete={handleDeleteSegmentCollection}
+                onDelete={handleDeleteCollection}
                 isSaving={!!col.isSaving}
                 deleting={!!col.deleting}
                 dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
+                pendingVisualDirection={!!pendingVisualDirection[col.id]}
                 onGenerateVisualDirections={async () => {
                   // Show blue indicator
                   if (!col.segments || col.segments.length === 0) return;
                   try {
-                    pendingVisualDirection[col.id] = true;
+                    // pendingVisualDirection[col.id] = true; // Remove or refactor as needed
                     const parentPos = segColPositions[col.id] || { x: 600, y: 200 };
                     const offsetX = 380;
                     const offsetY = 120;
@@ -381,7 +382,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                       () => `Generated-Visual-${random4Digit()}`
                     );
                     const segmentIds = col.segments.map((segment: any) => segment.id);
-                    await handleAddVisualDirection(
+                    await handleAdd(
                       col.id,
                       segmentIds,
                       contents,
@@ -389,10 +390,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                       visualSet.id
                     );
                   } finally {
-                    pendingVisualDirection[col.id] = false;
+                    // pendingVisualDirection[col.id] = false; // Remove or refactor as needed
                   }
                 }}
-                pendingVisualDirection={!!pendingVisualDirection[col.id]}
+                // pendingVisualDirection={!!pendingVisualDirection[col.id]} // Remove or refactor as needed
               />
               {/* Render all VisualDirectionCards for this collection */}
               {Object.values(visualDirections)
@@ -432,8 +433,8 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                       active={activeId === vd.id}
                       setActive={setActiveId}
                       onNameChange={() => {}}
-                      onVisualChange={handleEditVisualDirectionContent}
-                      onDelete={handleDeleteVisualDirection}
+                      onVisualChange={handleEdit}
+                      onDelete={handleDelete}
                       isSaving={!!vd.isSaving}
                       deleting={!!vd.deleting}
                       dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
@@ -495,7 +496,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
         </Box>
       )}
       
-      {error && Object.keys(segmentCollections).length === 0 && scripts.length === 0 && (
+      {error && Object.keys(collections).length === 0 && scripts.length === 0 && (
         <Box color="error.main" sx={{ mt: 2 }}>
           {error}
         </Box>
