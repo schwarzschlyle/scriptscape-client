@@ -3,6 +3,7 @@ import CustomCard from "../../../../components/CustomCard";
 import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import StoryboardSketchGenerationModal from "./StoryboardSketchGenerationModal";
 
 interface VisualDirection {
   id?: string;
@@ -26,6 +27,8 @@ interface VisualDirectionCardProps {
   onVisualChange?: (visualId: string, newContent: string, index: number) => void;
   onDelete?: () => void;
   pendingVisualDirection?: boolean;
+  onGenerateStoryboardSketches?: (instructions?: string) => void;
+  pendingStoryboardSketches?: boolean;
 }
 
 const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
@@ -43,6 +46,8 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   onVisualChange,
   onDelete,
   pendingVisualDirection = false,
+  onGenerateStoryboardSketches,
+  pendingStoryboardSketches = false,
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
@@ -51,6 +56,8 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
     name: name || "",
     visuals: visuals.map(v => ({ content: v.content || "" })),
   });
+
+  const [showGenerateStoryboardModal, setShowGenerateStoryboardModal] = useState(false);
 
   React.useEffect(() => {
     setLocalName(name || "");
@@ -138,15 +145,20 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: "default",
-          opacity: 0.5,
+          cursor: isSaving || pendingStoryboardSketches ? "not-allowed" : "pointer",
+          opacity: isSaving || pendingStoryboardSketches ? 0.5 : 1,
           padding: 0,
           margin: 0,
           outline: "none",
           zIndex: 2,
         }}
-        aria-label="Generate Visual Directions (placeholder)"
-        disabled
+        onClick={() => {
+          if (!isSaving && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
+            setShowGenerateStoryboardModal(true);
+          }
+        }}
+        aria-label="Generate Storyboard Sketches"
+        disabled={isSaving || pendingStoryboardSketches || !onGenerateStoryboardSketches}
       >
         <img
           src={AiPromptIcon}
@@ -155,10 +167,21 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
             width: 22,
             height: 22,
             display: "block",
-            filter: "grayscale(1) opacity(0.5)",
+            filter: isSaving || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
           }}
         />
       </button>
+
+      {showGenerateStoryboardModal && (
+        <StoryboardSketchGenerationModal
+          open={showGenerateStoryboardModal}
+          onClose={() => setShowGenerateStoryboardModal(false)}
+          onGenerate={(instructions?: string) => {
+            setShowGenerateStoryboardModal(false);
+            onGenerateStoryboardSketches?.(instructions);
+          }}
+        />
+      )}
     </div>
   );
 };

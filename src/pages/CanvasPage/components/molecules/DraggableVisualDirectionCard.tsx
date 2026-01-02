@@ -17,6 +17,8 @@ interface DraggableVisualDirectionCardProps {
   deleting?: boolean;
   dragDelta?: { x: number; y: number } | null;
   pendingVisualDirection?: boolean;
+  onGenerateStoryboardSketches?: (instructions?: string) => void;
+  pendingStoryboardSketches?: boolean;
 }
 
 const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> = ({
@@ -31,6 +33,8 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   deleting,
   dragDelta,
   pendingVisualDirection,
+  onGenerateStoryboardSketches,
+  pendingStoryboardSketches,
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: visual.id,
@@ -68,6 +72,8 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         onVisualChange={(visualId, newContent, idx) => onVisualChange(visualId, newContent, idx)}
         onDelete={() => onDelete(visual.id)}
         pendingVisualDirection={pendingVisualDirection}
+        onGenerateStoryboardSketches={onGenerateStoryboardSketches}
+        pendingStoryboardSketches={pendingStoryboardSketches}
         dragAttributes={attributes}
         dragListeners={listeners}
       />

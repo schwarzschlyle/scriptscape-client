@@ -16,6 +16,8 @@ import DraggableSegmentCollectionCard from "../molecules/DraggableSegmentCollect
 import DraggableVisualDirectionCard from "../molecules/DraggableVisualDirectionCard";
 import { useVisualDirectionCanvasAreaLogic } from "@hooks/useVisualDirectionCanvasAreaLogic";
 import { useCreateVisualSet } from "@api/visual_sets/mutations";
+import { useStoryboardCanvasAreaLogic } from "@hooks/useStoryboardCanvasAreaLogic";
+import DraggableStoryboardSketchCard from "../molecules/DraggableStoryboardSketchCard";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -72,6 +74,31 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handlePositionChange,
   } = useVisualDirectionCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
+  // Storyboards / Sketches logic
+  const {
+    storyboards,
+    positions: storyboardPositions,
+    pendingStoryboard,
+    loading: storyboardsLoading,
+    error: storyboardsError,
+    syncing: storyboardsSyncing,
+    handleAddStoryboardWithSketches,
+    handleEditStoryboardName,
+    handleDeleteStoryboard,
+    handleStoryboardPositionChange,
+  } = useStoryboardCanvasAreaLogic({
+    organizationId,
+    projectId,
+    visualSetIds: Array.from(
+      new Set(
+        Object.values(visualDirections)
+          .flatMap((vd: any) => vd?.visuals?.map((v: any) => v?.visualSetId) || [])
+          .filter(Boolean)
+      )
+    ),
+    onSyncChange,
+  });
+
   // Visual Set creation mutation
   const createVisualSet = useCreateVisualSet();
 
@@ -79,10 +106,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const [pendingVisualSet, setPendingVisualSet] = React.useState<{ [colId: string]: boolean }>({});
 
   // Compose loading and error states
-  const loading = scriptsLoading || segsLoading || visualsLoading;
-  const error = scriptsError || segsError || visualsError;
+  const loading = scriptsLoading || segsLoading || visualsLoading || storyboardsLoading;
+  const error = scriptsError || segsError || visualsError || storyboardsError;
   const anyPendingVisualSet = Object.values(pendingVisualSet).some(Boolean);
-  const syncing = scriptsSyncing || segsSyncing || visualsSyncing || anyPendingVisualSet;
+  const syncing = scriptsSyncing || segsSyncing || visualsSyncing || storyboardsSyncing || anyPendingVisualSet;
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
@@ -159,12 +186,19 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       const newX = maybeSnapToGrid(rawX);
       const newY = Math.max(minY, maybeSnapToGrid(rawY));
       handlePositionChange(id, newX, newY);
+    } else if (storyboardPositions[id]) {
+      const oldPos = storyboardPositions[id];
+      const rawX = oldPos.x + worldDelta.x;
+      const rawY = oldPos.y + worldDelta.y;
+      const newX = maybeSnapToGrid(rawX);
+      const newY = Math.max(minY, maybeSnapToGrid(rawY));
+      handleStoryboardPositionChange(id, newX, newY);
     }
     setActiveDragDelta(null);
     setIsDragging(false);
   };
 
-const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visualDirection") => {
+const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visualDirection" | "storyboard") => {
   let basePos;
   if (type === "script") {
     basePos = positions[id];
@@ -172,6 +206,8 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
     basePos = segColPositions[id];
   } else if (type === "visualDirection") {
     basePos = visualDirectionsPositions[id];
+  } else if (type === "storyboard") {
+    basePos = storyboardPositions[id];
   }
   if (!basePos) return { x: 0, y: 0 };
   const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
@@ -245,6 +281,30 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
         return (
           <CardConnector
             key={`connector-vd-${vd.id}`}
+            from={from}
+            to={to}
+            canvasSize={CANVAS_SIZE}
+            stroke="#fff"
+            strokeWidth={1}
+            opacity={0.92}
+            style={{
+              filter: "drop-shadow(0 1px 2px #0008)",
+              strokeLinejoin: "round",
+            }}
+          />
+        );
+      })
+      .filter(Boolean),
+    // VisualDirection to StoryboardSketch connectors
+    ...Object.values(storyboards)
+      .map((sb: any) => {
+        const parentId = sb.parentVisualDirectionId;
+        if (!parentId) return null;
+        const from = getCardCenter(parentId, "visualDirection");
+        const to = getCardCenter(sb.id, "storyboard");
+        return (
+          <CardConnector
+            key={`connector-sb-${sb.id}`}
             from={from}
             to={to}
             canvasSize={CANVAS_SIZE}
@@ -446,8 +506,48 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                     isSaving={!!vd.isSaving}
                     deleting={!!vd.deleting}
                     dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
+                    pendingStoryboardSketches={!!pendingStoryboard[vd.id]}
+                    onGenerateStoryboardSketches={async (instructions?: string) => {
+                      // Place storyboard card to the right of the visual direction card
+                      const parentPos = visualDirectionsPositions[vd.id] || {
+                        x: (segColPositions[col.id]?.x || 600) + 380,
+                        y: (segColPositions[col.id]?.y || 200) + 120,
+                      };
+                      const offsetX = 380;
+                      const offsetY = 120;
+                      const visualSetId = vd?.visuals?.[0]?.visualSetId || projectId;
+                      await handleAddStoryboardWithSketches(
+                        vd.id,
+                        visualSetId,
+                        vd.visuals || [],
+                        instructions,
+                        { x: parentPos.x + offsetX, y: parentPos.y + offsetY }
+                      );
+                    }}
                   />
                 ))}
+
+              {Object.values(visualDirections)
+                .filter((vd: any) => vd.parentSegmentCollectionId === col.id)
+                .flatMap((vd: any) =>
+                  Object.values(storyboards)
+                    .filter((sb: any) => sb.parentVisualDirectionId === vd.id)
+                    .map((sb: any) => (
+                      <DraggableStoryboardSketchCard
+                        key={sb.id}
+                        storyboard={sb}
+                        position={storyboardPositions[sb.id] || { x: (visualDirectionsPositions[vd.id]?.x || 980) + 380, y: (visualDirectionsPositions[vd.id]?.y || 320) + 120 }}
+                        active={activeId === sb.id}
+                        setActive={setActiveId}
+                        onNameChange={handleEditStoryboardName}
+                        onDelete={handleDeleteStoryboard}
+                        isSaving={!!sb.isSaving}
+                        deleting={!!sb.deleting}
+                        dragDelta={activeId === sb.id && isDragging ? activeDragDelta : null}
+                        pendingSketches={!!pendingStoryboard[vd.id]}
+                      />
+                    ))
+                )}
             </div>
           ))}
         </Box>
