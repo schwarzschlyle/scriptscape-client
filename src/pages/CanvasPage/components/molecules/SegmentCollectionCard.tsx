@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
-import CustomCardBody from "../../../../components/CustomCardBody";
+import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
 import Box from "@mui/material/Box";
-import CardTypography from "../molecules/CardTypography";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface Segment {
   id?: string;
@@ -49,7 +49,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
-  const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
+  // Removed editingSegmentIndex state (unused after refactor)
   const [lastSaved, setLastSaved] = useState<{ name: string; segments: { text: string }[] }>({
     name: name || "",
     segments: segments.map(s => ({ text: s.text || "" })),
@@ -113,108 +113,51 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
         />
       }
       body={
-        <Box sx={{ pt: 2, pb: 2 }}>
-          {localSegments.map((segment, idx) => (
-            <Box key={segments[idx]?.id || idx} sx={{ display: "flex", alignItems: "center", mb: idx === localSegments.length - 1 ? 0 : 1 }}>
-              <CustomCardBody
-                editable={editingSegmentIndex === idx && !isSaving && !deleting}
-                style={{
-                  minHeight: 48,
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginTop: 0,
-                }}
-              >
-                {editingSegmentIndex === idx ? (
-                  <textarea
-                    value={localSegments[idx].text}
-                    onChange={e => {
-                      setLocalSegments(ls =>
-                        ls.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
-                      );
-                    }}
-                    onBlur={() => {
-                      setEditingSegmentIndex(null);
-                      // For existing collections, call onSegmentChange on blur
-                      if (onSegmentChange) {
-                        const segmentId = segments[idx]?.id || "";
-                        if (segmentId) {
-                          onSegmentChange(segmentId, localSegments[idx].text, idx);
-                        }
-                      }
-                    }}
-                    style={{
-                      width: "100%",
-                      minHeight: 40,
-                      background: "transparent",
-                      color: "#fff",
-                      border: "none",
-                      outline: "none",
-                      resize: "vertical",
-                      fontFamily: "monospace",
-                      fontSize: 14,
-                      padding: "4px 0",
-                    }}
-                    disabled={isSaving || deleting}
-                    placeholder={`Segment ${idx + 1}`}
-                    autoFocus
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      minHeight: 40,
-                      color: "#fff",
-                      fontFamily: "monospace",
-                      fontSize: 14,
-                      padding: "4px 0",
-                      cursor: editable && !isSaving && !deleting ? "pointer" : "default",
-                      whiteSpace: "pre-wrap",
-                    }}
-                    onDoubleClick={() => {
-                      if (editable && !isSaving && !deleting) setEditingSegmentIndex(idx);
-                    }}
-                  >
-                    {segment.text ? (
-                      <CardTypography variant="cardBody">{segment.text}</CardTypography>
-                    ) : (
-                      <span style={{ color: "#888" }}>Double-click to edit</span>
-                    )}
-                  </div>
-                )}
-                {error && idx === 0 && (
-                  <Box sx={{ mt: 1, px: 2 }}>
-                    <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-                  </Box>
-                )}
-              </CustomCardBody>
-            </Box>
-          ))}
+        <>
+          <SegmentCollectionCardBody
+            segments={segments}
+            editable={editable && !isSaving && !deleting}
+            isSaving={isSaving}
+            deleting={deleting}
+            error={error}
+            onSegmentChange={onSegmentChange}
+          />
           {/* Single button to generate all visual directions */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
             <button
               style={{
-                background: "#2196f3",
-                color: "#fff",
+                background: "none",
                 border: "none",
-                borderRadius: 4,
-                padding: "6px 14px",
-                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: isSaving ? "not-allowed" : "pointer",
                 opacity: isSaving ? 0.5 : 1,
-                fontSize: 14,
+                padding: 0,
+                margin: 0,
+                outline: "none",
               }}
               onClick={() => {
-                if (onGenerateVisualDirections) {
+                if (!isSaving && onGenerateVisualDirections) {
                   onGenerateVisualDirections();
                 }
               }}
+              aria-label="Generate Visual Directions"
               disabled={isSaving}
             >
-              + Visual Directions
+              <img
+                src={AiPromptIcon}
+                alt="AI Prompt"
+                style={{
+                  width: 22,
+                  height: 22,
+                  display: "block",
+                  filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+                }}
+              />
             </button>
           </Box>
-        </Box>
+        </>
       }
       minHeight={180}
       active={active}

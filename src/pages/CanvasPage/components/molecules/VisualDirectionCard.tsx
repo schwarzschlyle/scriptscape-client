@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
-import CustomCardBody from "../../../../components/CustomCardBody";
+import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
-import Box from "@mui/material/Box";
-import CardTypography from "../molecules/CardTypography";
 
 interface VisualDirection {
   id?: string;
@@ -47,7 +45,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
-  const [editingVisualIndex, setEditingVisualIndex] = useState<number | null>(null);
+  // Removed editingVisualIndex state (unused after refactor)
   const [lastSaved, setLastSaved] = useState<{ name: string; visuals: { content: string }[] }>({
     name: name || "",
     visuals: visuals.map(v => ({ content: v.content || "" })),
@@ -111,83 +109,14 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
         />
       }
       body={
-        <Box sx={{ pt: 2, pb: 2 }}>
-          {localVisuals.map((visual, idx) => (
-            <CustomCardBody
-              key={visuals[idx]?.id || idx}
-              editable={editingVisualIndex === idx && !isSaving && !deleting}
-              style={{
-                minHeight: 48,
-                width: "100%",
-                boxSizing: "border-box",
-                marginBottom: idx === localVisuals.length - 1 ? 0 : 1,
-                marginTop: 0,
-              }}
-            >
-              {editingVisualIndex === idx ? (
-                <textarea
-                  value={localVisuals[idx].content}
-                  onChange={e => {
-                    setLocalVisuals(lv =>
-                      lv.map((v, i) => (i === idx ? { ...v, content: e.target.value } : v))
-                    );
-                  }}
-                  onBlur={() => {
-                    setEditingVisualIndex(null);
-                    if (onVisualChange) {
-                      const visualId = visuals[idx]?.id || "";
-                      if (visualId) {
-                        onVisualChange(visualId, localVisuals[idx].content, idx);
-                      }
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    minHeight: 40,
-                    background: "transparent",
-                    color: "#fff",
-                    border: "none",
-                    outline: "none",
-                    resize: "vertical",
-                    fontFamily: "monospace",
-                    fontSize: 14,
-                    padding: "4px 0",
-                  }}
-                  disabled={isSaving || deleting}
-                  placeholder={`Visual Direction ${idx + 1}`}
-                  autoFocus
-                />
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    minHeight: 40,
-                    color: "#fff",
-                    fontFamily: "monospace",
-                    fontSize: 14,
-                    padding: "4px 0",
-                    cursor: editable && !isSaving && !deleting ? "pointer" : "default",
-                    whiteSpace: "pre-wrap",
-                  }}
-                  onDoubleClick={() => {
-                    if (editable && !isSaving && !deleting) setEditingVisualIndex(idx);
-                  }}
-                >
-                  {visual.content ? (
-                    <CardTypography variant="cardBody">{visual.content}</CardTypography>
-                  ) : (
-                    <span style={{ color: "#888" }}>Double-click to edit</span>
-                  )}
-                </div>
-              )}
-              {error && idx === 0 && (
-                <Box sx={{ mt: 1, px: 2 }}>
-                  <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
-                </Box>
-              )}
-            </CustomCardBody>
-          ))}
-        </Box>
+        <VisualDirectionCardBody
+          visuals={visuals}
+          editable={editable && !isSaving && !deleting}
+          isSaving={isSaving}
+          deleting={deleting}
+          error={error}
+          onVisualChange={onVisualChange}
+        />
       }
       minHeight={180}
       active={active}
