@@ -4,7 +4,6 @@ import CustomCard from "../../../../components/CustomCard";
 import ScriptCardHeader from "../atoms/ScriptCardHeader";
 import ScriptCardBody from "../atoms/ScriptCardBody";
 import Box from "@mui/material/Box";
-import CardActionsArea from "../../../../components/CardActionsArea";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 

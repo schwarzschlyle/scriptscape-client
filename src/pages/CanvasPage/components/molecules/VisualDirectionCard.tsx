@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
-import CardActionsArea from "../../../../components/CardActionsArea";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface VisualDirection {

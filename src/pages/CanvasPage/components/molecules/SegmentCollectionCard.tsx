@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
-import Box from "@mui/material/Box";
-import CardActionsArea from "../../../../components/CardActionsArea";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface Segment {
