@@ -32,11 +32,10 @@ const SegmentCollectionAdditionModal: React.FC<SegmentCollectionAdditionModalPro
   onGenerate,
 }) => {
   const [numSegments, setNumSegments] = useState(1);
-  const [name, setName] = useState("");
 
   const handleGenerate = () => {
-    if (numSegments > 0 && name.trim()) {
-      onGenerate(name.trim(), numSegments);
+    if (numSegments > 0) {
+      onGenerate("Segments", numSegments);
     }
   };
 
@@ -46,14 +45,6 @@ const SegmentCollectionAdditionModal: React.FC<SegmentCollectionAdditionModalPro
         <Typography variant="h6" sx={{ mb: 2 }}>
           Create New Segment Collection
         </Typography>
-        <TextField
-          type="text"
-          label="Collection Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          fullWidth
-          sx={{ mb: 2 }}
-        />
         <TextField
           type="number"
           label="Number of Segments"

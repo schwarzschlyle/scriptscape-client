@@ -16,10 +16,7 @@ export function useCreateSegment() {
       const payload = {
         segment_index: data.segmentIndex,
         text: data.text,
-        metadata: (data as any).metadata,
-        segmentCollectionId: collectionId,
-        createdAt: (data as any).createdAt,
-        updatedAt: (data as any).updatedAt,
+        meta: (data as any).meta || {},
       };
       const response = await api.post<Segment>(
         `/segment-collections/${collectionId}/segments`,

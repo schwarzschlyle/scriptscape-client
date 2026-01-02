@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
-import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
-import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
+import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
+import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
-interface Segment {
+interface VisualDirection {
   id?: string;
   tempId?: string;
-  text: string;
-  segmentIndex?: number;
+  content: string;
+  visualIndex?: number;
 }
 
-interface SegmentCollectionCardProps {
+interface VisualDirectionCardProps {
   name: string;
-  segments: Segment[];
+  visuals: VisualDirection[];
   isSaving?: boolean;
   deleting?: boolean;
   error?: string | null;
@@ -23,15 +23,14 @@ interface SegmentCollectionCardProps {
   dragListeners?: any;
   onClick?: () => void;
   onNameChange?: (name: string) => void;
-  onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
+  onVisualChange?: (visualId: string, newContent: string, index: number) => void;
   onDelete?: () => void;
-  onGenerateVisualDirections?: () => void;
   pendingVisualDirection?: boolean;
 }
 
-const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
+const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   name,
-  segments,
+  visuals,
   isSaving = false,
   deleting = false,
   error = null,
@@ -41,55 +40,54 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   dragListeners,
   onClick,
   onNameChange,
-  onSegmentChange,
+  onVisualChange,
   onDelete,
-  onGenerateVisualDirections,
-  pendingVisualDirection,
+  pendingVisualDirection = false,
 }) => {
   const [localName, setLocalName] = useState(name || "");
-  const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
-  // Removed editingSegmentIndex state (unused after refactor)
-  const [lastSaved, setLastSaved] = useState<{ name: string; segments: { text: string }[] }>({
+  const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
+  // Removed editingVisualIndex state (unused after refactor)
+  const [lastSaved, setLastSaved] = useState<{ name: string; visuals: { content: string }[] }>({
     name: name || "",
-    segments: segments.map(s => ({ text: s.text || "" })),
+    visuals: visuals.map(v => ({ content: v.content || "" })),
   });
 
   React.useEffect(() => {
     setLocalName(name || "");
-    setLocalSegments(segments.map(s => ({ text: s.text || "" })));
+    setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
     setLastSaved({
       name: name || "",
-      segments: segments.map(s => ({ text: s.text || "" })),
+      visuals: visuals.map(v => ({ content: v.content || "" })),
     });
-  }, [name, segments]);
+  }, [name, visuals]);
 
   React.useEffect(() => {
-    if (segments && segments.length === localSegments.length) {
-      setLocalSegments(segments.map(s => ({ text: s.text || "" })));
+    if (visuals && visuals.length === localVisuals.length) {
+      setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+  }, [visuals]);
 
   React.useEffect(() => {
     if (
       !active &&
       (localName !== lastSaved.name ||
-        localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
+        localVisuals.some((v, i) => v.content !== (lastSaved.visuals[i]?.content ?? "")))
     ) {
       if (onNameChange && localName !== lastSaved.name) {
         onNameChange(localName);
       }
-      if (onSegmentChange) {
-        localSegments.forEach((seg, idx) => {
-          if (seg.text !== (lastSaved.segments[idx]?.text ?? "")) {
-            const segmentId = segments[idx]?.id || "";
-            if (segmentId) {
-              onSegmentChange(segmentId, seg.text, idx);
+      if (onVisualChange) {
+        localVisuals.forEach((vis, idx) => {
+          if (vis.content !== (lastSaved.visuals[idx]?.content ?? "")) {
+            const visualId = visuals[idx]?.id || "";
+            if (visualId) {
+              onVisualChange(visualId, vis.content, idx);
             }
           }
         });
       }
-      setLastSaved({ name: localName, segments: [...localSegments] });
+      setLastSaved({ name: localName, visuals: [...localVisuals] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -98,12 +96,12 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
     <div style={{ position: "relative" }}>
       <CustomCard
         header={
-          <SegmentCollectionHeader
+          <VisualDirectionCardHeader
             name={localName}
             onNameChange={setLocalName}
             deleting={deleting}
             isSaving={isSaving}
-            segmentsCount={segments.length}
+            visualsCount={visuals.length}
             onDelete={onDelete}
             dragAttributes={dragAttributes}
             dragListeners={dragListeners}
@@ -113,13 +111,13 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           />
         }
         body={
-          <SegmentCollectionCardBody
-            segments={segments}
+          <VisualDirectionCardBody
+            visuals={visuals}
             editable={editable && !isSaving && !deleting}
             isSaving={isSaving}
             deleting={deleting}
             error={error}
-            onSegmentChange={onSegmentChange}
+            onVisualChange={onVisualChange}
             extraBottomPadding
           />
         }
@@ -140,20 +138,15 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: isSaving || pendingVisualDirection ? "not-allowed" : "pointer",
-          opacity: isSaving || pendingVisualDirection ? 0.5 : 1,
+          cursor: "default",
+          opacity: 0.5,
           padding: 0,
           margin: 0,
           outline: "none",
           zIndex: 2,
         }}
-        onClick={() => {
-          if (!isSaving && !pendingVisualDirection && onGenerateVisualDirections) {
-            onGenerateVisualDirections();
-          }
-        }}
-        aria-label="Generate Visual Directions"
-        disabled={isSaving || pendingVisualDirection}
+        aria-label="Generate Visual Directions (placeholder)"
+        disabled
       >
         <img
           src={AiPromptIcon}
@@ -162,7 +155,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             width: 22,
             height: 22,
             display: "block",
-            filter: isSaving || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
+            filter: "grayscale(1) opacity(0.5)",
           }}
         />
       </button>
@@ -170,4 +163,4 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   );
 };
 
-export default SegmentCollectionCard;
+export default VisualDirectionCard;

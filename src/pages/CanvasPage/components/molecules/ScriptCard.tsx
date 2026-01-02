@@ -86,84 +86,86 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   };
 
   return (
-    <CustomCard
-      header={
-      <ScriptCardHeader
-        name={name}
-        onNameChange={setName}
-        deleting={deleting}
-        isSaving={isSaving}
-        onDelete={handleDelete}
-        dragAttributes={dragAttributes}
-        dragListeners={dragListeners}
-        active={active}
-        editable={!isSaving && !deleting}
-        pendingSegmentCollection={pendingSegmentCollection}
-      />
-      }
-      body={
-        <>
-          <ScriptCardBody
-            text={text}
-            onTextChange={setText}
-            editable={editingBody && !isSaving && !deleting}
-            onRequestEditBody={() => setEditingBody(true)}
-            onBodyBlur={() => setEditingBody(false)}
-          >
+    <div style={{ position: "relative" }}>
+      <CustomCard
+        header={
+          <ScriptCardHeader
+            name={name}
+            onNameChange={setName}
+            deleting={deleting}
+            isSaving={isSaving}
+            onDelete={handleDelete}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            active={active}
+            editable={!isSaving && !deleting}
+            pendingSegmentCollection={pendingSegmentCollection}
+          />
+        }
+        body={
+          <>
+            <ScriptCardBody
+              text={text}
+              onTextChange={setText}
+              editable={editingBody && !isSaving && !deleting}
+              onRequestEditBody={() => setEditingBody(true)}
+              onBodyBlur={() => setEditingBody(false)}
+              extraBottomPadding
+            />
             {error && (
               <Box sx={{ mt: 1, px: 2 }}>
                 <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
               </Box>
             )}
-          </ScriptCardBody>
-          {/* + Button for adding segment collection */}
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                opacity: isSaving ? 0.5 : 1,
-                padding: 0,
-                margin: 0,
-                outline: "none",
-              }}
-              onClick={() => {
-                if (!isSaving) setShowAddSegmentCollectionModal(true);
-              }}
-              aria-label="Generate Segments"
-              disabled={isSaving}
-            >
-              <img
-                src={AiPromptIcon}
-                alt="AI Prompt"
-                style={{
-                  width: 22,
-                  height: 22,
-                  display: "block",
-                  filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
-                }}
+            {showAddSegmentCollectionModal && (
+              <SegmentCollectionAdditionModal
+                open={showAddSegmentCollectionModal}
+                onClose={() => setShowAddSegmentCollectionModal(false)}
+                onGenerate={handleAddSegmentCollection}
               />
-            </button>
-          </Box>
-
-          {showAddSegmentCollectionModal && (
-            <SegmentCollectionAdditionModal
-              open={showAddSegmentCollectionModal}
-              onClose={() => setShowAddSegmentCollectionModal(false)}
-              onGenerate={handleAddSegmentCollection}
-            />
-          )}
-        </>
-      }
-      minHeight={220}
-      active={active}
-      onClick={onClick}
-      style={{ opacity: deleting ? 0.5 : 1 }}
-    />
+            )}
+          </>
+        }
+        minHeight={220}
+        active={active}
+        onClick={onClick}
+        style={{ opacity: deleting ? 0.5 : 1 }}
+      />
+      <button
+        style={{
+          position: "absolute",
+          right: 2,
+          bottom: 2,
+          background: "none",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: isSaving || pendingSegmentCollection ? "not-allowed" : "pointer",
+          opacity: isSaving || pendingSegmentCollection ? 0.5 : 1,
+          padding: 0,
+          margin: 0,
+          outline: "none",
+          zIndex: 2,
+        }}
+        onClick={() => {
+          if (!isSaving && !pendingSegmentCollection) setShowAddSegmentCollectionModal(true);
+        }}
+        aria-label="Generate Segments"
+        disabled={isSaving || pendingSegmentCollection}
+      >
+        <img
+          src={AiPromptIcon}
+          alt="AI Prompt"
+          style={{
+            width: 22,
+            height: 22,
+            display: "block",
+            filter: isSaving || pendingSegmentCollection ? "grayscale(1) opacity(0.5)" : "none",
+          }}
+        />
+      </button>
+    </div>
   );
 };
 
