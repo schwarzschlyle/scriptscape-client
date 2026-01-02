@@ -479,7 +479,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
       <ScriptGenerationModal
         open={showScriptGenerationModal}
         onClose={() => setShowScriptGenerationModal(false)}
-        onGenerate={() => {
+        onCreate={(title, text) => {
           const vw = window.innerWidth;
           const vh = window.innerHeight;
           const left = (-offset.x) / zoom;
@@ -488,9 +488,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
           const bottom = top + vh / zoom - 220;
           const randX = left + Math.random() * Math.max(0, right - left);
           const randY = top + Math.random() * Math.max(0, bottom - top);
-          // TODO: [AI INTEGRATION] The following random id and generated script content will be replaced by AI-generated content from the API.
-          const id = Math.floor(1000 + Math.random() * 9000).toString();
-          handleAddScript(`Generated-Script-Title-${id}`, `Generated-Script-Text=${id}`, { x: randX, y: randY });
+          handleAddScript(title, text, { x: randX, y: randY });
           setShowScriptGenerationModal(false);
         }}
       />

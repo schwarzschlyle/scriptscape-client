@@ -46,3 +46,28 @@ export function useGenerateScriptSegmentsAIMutation() {
     },
   });
 }
+
+// --- Script AI mutation ---
+export interface GenerateScriptAIRequest {
+  project_brief: string;
+  branding: string;
+  duration: string;
+}
+export interface GenerateScriptAIResponse {
+  job_id: string;
+}
+export function useGenerateScriptAIMutation() {
+  return useMutation({
+    mutationFn: async ({ project_brief, branding, duration }: GenerateScriptAIRequest) => {
+      const aiApiUrl = import.meta.env.VITE_AI_API_URL;
+      const resp = await fetch(`${aiApiUrl}/run-generate-script`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_brief, branding, duration }),
+      });
+      if (!resp.ok) throw new Error("Failed to start script generation.");
+      const data = await resp.json();
+      return data as GenerateScriptAIResponse;
+    },
+  });
+}

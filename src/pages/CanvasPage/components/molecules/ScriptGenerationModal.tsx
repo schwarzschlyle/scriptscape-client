@@ -4,11 +4,12 @@ import Modal from "@mui/material/Modal";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
+import { useGenerateScriptAI } from "../../../../hooks/useGenerateScriptAI";
 
 interface ScriptGenerationModalProps {
   open: boolean;
   onClose: () => void;
-  onGenerate: () => void;
+  onCreate: (title: string, text: string) => void;
 }
 
 const style = {
@@ -29,11 +30,13 @@ const style = {
 const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
   open,
   onClose,
-  onGenerate,
+  onCreate,
 }) => {
   const [brief, setBrief] = useState("");
   const [branding, setBranding] = useState("");
   const [duration, setDuration] = useState("");
+  const [generatedScript, setGeneratedScript] = useState("");
+  const { generate, loading, error } = useGenerateScriptAI();
 
   const canGenerate = brief.trim() && branding.trim() && duration.trim();
 
@@ -42,8 +45,24 @@ const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
       setBrief("");
       setBranding("");
       setDuration("");
+      setGeneratedScript("");
     }
   }, [open]);
+
+  const handleGenerate = async () => {
+    setGeneratedScript("");
+    try {
+      const script = await generate(brief, branding, duration);
+      setGeneratedScript(script);
+      if (onCreate) {
+        // Use the first line or a default as the title, and the full script as text
+        const title = script.split("\n")[0] || "Generated Script";
+        onCreate(title, script);
+      }
+    } catch (e: any) {
+      // error is handled by the hook
+    }
+  };
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -78,17 +97,33 @@ const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
           required
           sx={{ mb: 2 }}
         />
+        {error && (
+          <Box sx={{ mt: 1, px: 2 }}>
+            <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+          </Box>
+        )}
+        {generatedScript && (
+          <TextField
+            label="Generated Script"
+            value={generatedScript}
+            multiline
+            minRows={4}
+            fullWidth
+            sx={{ mt: 2 }}
+            InputProps={{ readOnly: true }}
+          />
+        )}
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-          <Button onClick={onClose} variant="outlined" color="secondary">
+          <Button onClick={onClose} variant="outlined" color="secondary" disabled={loading}>
             Cancel
           </Button>
           <Button
-            onClick={onGenerate}
+            onClick={handleGenerate}
             variant="contained"
             color="primary"
-            disabled={!canGenerate}
+            disabled={!canGenerate || loading}
           >
-            GENERATE
+            {loading ? "GENERATING..." : "GENERATE"}
           </Button>
         </Box>
       </Box>

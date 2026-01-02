@@ -29,6 +29,9 @@ export function useGenerateScriptVisualsAI(): UseGenerateScriptVisualsAIResult {
       const wsBase = aiApiUrl.replace(/^http(s?):\/\//, "");
       const wsUrl = `${wsProtocol}://${wsBase}/ws/generate-script-visuals-result/${job_id}`;
 
+      // Log the websocket URL before opening
+      console.log("[AI VISUAL GENERATION] Opening WebSocket:", wsUrl);
+
       return await new Promise<string[]>((resolve, reject) => {
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
