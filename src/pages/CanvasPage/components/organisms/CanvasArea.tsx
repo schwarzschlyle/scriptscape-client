@@ -74,10 +74,14 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   // Visual Set creation mutation
   const createVisualSet = useCreateVisualSet();
 
+  // Local pending state for visual set creation
+  const [pendingVisualSet, setPendingVisualSet] = React.useState<{ [colId: string]: boolean }>({});
+
   // Compose loading and error states
   const loading = scriptsLoading || segsLoading || visualsLoading;
   const error = scriptsError || segsError || visualsError;
-  const syncing = scriptsSyncing || segsSyncing || visualsSyncing;
+  const anyPendingVisualSet = Object.values(pendingVisualSet).some(Boolean);
+  const syncing = scriptsSyncing || segsSyncing || visualsSyncing || anyPendingVisualSet;
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
@@ -395,12 +399,11 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                 isSaving={!!col.isSaving}
                 deleting={!!col.deleting}
                 dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
-                pendingVisualDirection={!!pendingVisualDirection[col.id]}
+                pendingVisualDirection={!!pendingVisualDirection[col.id] || !!pendingVisualSet[col.id]}
                 onGenerateVisualDirections={async () => {
-                  // Show blue indicator
                   if (!col.segments || col.segments.length === 0) return;
+                  setPendingVisualSet(prev => ({ ...prev, [col.id]: true }));
                   try {
-                    // pendingVisualDirection[col.id] = true; // Remove or refactor as needed
                     const parentPos = segColPositions[col.id] || { x: 600, y: 200 };
                     const offsetX = 380;
                     const offsetY = 120;
@@ -426,7 +429,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                       visualSet.id
                     );
                   } finally {
-                    // pendingVisualDirection[col.id] = false; // Remove or refactor as needed
+                    setPendingVisualSet(prev => ({ ...prev, [col.id]: false }));
                   }
                 }}
                 // pendingVisualDirection={!!pendingVisualDirection[col.id]} // Remove or refactor as needed
