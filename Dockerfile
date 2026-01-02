@@ -12,11 +12,15 @@ RUN npm ci
 # Copy source code and .env
 COPY . .
 
-# Build arg for API URL
+# Build args for API URLs
 ARG VITE_API_URL=/api/v1
+ARG VITE_AI_API_URL=/ai-api
+ARG VITE_AI_API_WEBSOCKET_URL=/ai-api
 
-# Set environment variable for build
+# Set environment variables for build
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_AI_API_URL=${VITE_AI_API_URL}
+ENV VITE_AI_API_WEBSOCKET_URL=${VITE_AI_API_WEBSOCKET_URL}
 
 # Build the app
 RUN npm run build

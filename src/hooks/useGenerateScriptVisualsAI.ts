@@ -24,10 +24,14 @@ export function useGenerateScriptVisualsAI(): UseGenerateScriptVisualsAIResult {
     try {
       // Start the AI job
       const { job_id } = await mutation.mutateAsync({ segments });
-      const aiApiUrl = import.meta.env.VITE_AI_API_URL;
-      const wsProtocol = aiApiUrl.startsWith("https") ? "wss" : "ws";
-      const wsBase = aiApiUrl.replace(/^http(s?):\/\//, "");
-      const wsUrl = `${wsProtocol}://${wsBase}/ws/generate-script-visuals-result/${job_id}`;
+      const wsBase = import.meta.env.VITE_AI_API_WEBSOCKET_URL;
+      let wsUrl: string;
+      if (wsBase.startsWith("ws://") || wsBase.startsWith("wss://")) {
+        wsUrl = `${wsBase}/ws/generate-script-visuals-result/${job_id}`;
+      } else {
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        wsUrl = `${wsProtocol}://${window.location.host}${wsBase}/ws/generate-script-visuals-result/${job_id}`;
+      }
 
       // Log the websocket URL before opening
       console.log("[AI VISUAL GENERATION] Opening WebSocket:", wsUrl);
