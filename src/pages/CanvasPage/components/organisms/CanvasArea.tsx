@@ -46,6 +46,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const {
     collections,
     positions: segColPositions,
+    pendingSegmentCollection,
     loading: segsLoading,
     error: segsError,
     syncing: segsSyncing,
@@ -341,6 +342,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
                 isSaving={!!script.isSaving}
                 deleting={!!script.deleting}
                 dragDelta={activeId === script.id && isDragging ? activeDragDelta : null}
+                pendingSegmentCollection={!!pendingSegmentCollection[script.id]}
               />
             </div>
           ))}

@@ -38,11 +38,11 @@ export function useSegmentsCanvasAreaLogic({
 }: UseSegmentsCanvasAreaLogicProps) {
   const [collections, setCollections] = useState<CollectionsState>({});
   const [positions, setPositions] = useState<PositionsState>({});
+  const [pendingSegmentCollection, setPendingSegmentCollection] = useState<{ [scriptId: string]: boolean }>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // FIX: Move mutation hooks to top level
   const createSegmentCollectionMutation = useCreateSegmentCollection();
   const createSegmentMutation = useCreateSegment();
   const updateCollectionMutation = useUpdateSegmentCollection();
@@ -101,6 +101,7 @@ export function useSegmentsCanvasAreaLogic({
       numSegments: number,
       parentScriptPosition?: { x: number; y: number }
     ) => {
+      setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
@@ -153,6 +154,7 @@ export function useSegmentsCanvasAreaLogic({
       } catch (e: any) {
         setError(e?.message || "Failed to create segment collection.");
       } finally {
+        setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: false }));
         setSyncing(false);
         if (onSyncChange) onSyncChange(false);
       }
@@ -333,6 +335,7 @@ export function useSegmentsCanvasAreaLogic({
   return {
     collections,
     positions,
+    pendingSegmentCollection,
     loading,
     error,
     syncing,
