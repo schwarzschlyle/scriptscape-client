@@ -100,14 +100,18 @@ export function useVisualDirectionCanvasAreaLogic({
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
-        // Create all visuals in backend
-        // Create visuals in parallel
+        // Placeholder: simulate AI content generation delay and AI output
+        await new Promise(res => setTimeout(res, 1000));
+        // Mocked AI output: array of visual contents
+        // TODO: Replace this block with actual AI integration
+        const aiVisuals: string[] = contents.map((_, i) => `AI-Visual-${i + 1}`);
+        // Create visuals in parallel using the AI output
         const visuals: Visual[] = await Promise.all(
-          contents.map((content, i) =>
+          aiVisuals.map((aiContent, i) =>
             createVisualMutation.mutateAsync({
               visualSetId: visualSetIdOverride || projectId,
               segmentId: segmentIds[i],
-              content,
+              content: aiContent,
             })
           )
         );

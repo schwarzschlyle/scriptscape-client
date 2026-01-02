@@ -114,13 +114,18 @@ export function useSegmentsCanvasAreaLogic({
         function random4Digit() {
           return Math.floor(1000 + Math.random() * 9000).toString();
         }
-        // Create segments in parallel
+        // Placeholder: simulate AI content generation delay and AI output
+        await new Promise(res => setTimeout(res, 1000));
+        // Mocked AI output: array of segment texts
+        // TODO: Replace this block with actual AI integration
+        const aiSegments: string[] = Array.from({ length: numSegments }).map((_, i) => `AI-Segment-${i + 1}`);
+        // Create segments in parallel using the AI output
         const createdSegments: Segment[] = await Promise.all(
-          Array.from({ length: numSegments }).map((_, i) =>
+          aiSegments.map((text, i) =>
             createSegmentMutation.mutateAsync({
               collectionId: collection.id,
               segmentIndex: i,
-              text: `Generated-Segment-${random4Digit()}`,
+              text,
             })
           )
         );
