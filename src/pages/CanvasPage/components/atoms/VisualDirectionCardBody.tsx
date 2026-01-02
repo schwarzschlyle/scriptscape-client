@@ -9,6 +9,7 @@ export interface VisualDirectionCardBodyProps {
   deleting?: boolean;
   error?: string | null;
   onVisualChange?: (visualId: string, newContent: string, index: number) => void;
+  extraBottomPadding?: boolean;
 }
 
 const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
@@ -18,6 +19,7 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
   deleting = false,
   error = null,
   onVisualChange,
+  extraBottomPadding = false,
 }) => {
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [localVisuals, setLocalVisuals] = React.useState(visuals.map(v => v.content || ""));
@@ -28,9 +30,17 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
   }, [visuals]);
 
   return (
-    <Box sx={{ pt: 2, pb: 2 }}>
+    <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2 }}>
       {visuals.map((visual, idx) => (
-        <Box key={visual.id || idx} sx={{ display: "flex", alignItems: "center", mb: idx === visuals.length - 1 ? 0 : 1 }}>
+        <Box
+          key={visual.id || idx}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            px: 2,
+            mb: idx === visuals.length - 1 ? 0 : "2px",
+          }}
+        >
           <EditableCardContentArea
             value={localVisuals[idx]}
             editable={editingIndex === idx && !isSaving && !deleting}

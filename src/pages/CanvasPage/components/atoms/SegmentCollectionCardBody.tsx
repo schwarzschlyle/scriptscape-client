@@ -9,6 +9,7 @@ export interface SegmentCollectionCardBodyProps {
   deleting?: boolean;
   error?: string | null;
   onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
+  extraBottomPadding?: boolean;
 }
 
 const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
@@ -18,6 +19,7 @@ const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
   deleting = false,
   error = null,
   onSegmentChange,
+  extraBottomPadding = false,
 }) => {
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [localSegments, setLocalSegments] = React.useState(segments.map(s => s.text || ""));
@@ -28,9 +30,17 @@ const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
   }, [segments]);
 
   return (
-    <Box sx={{ pt: 2, pb: 2 }}>
+    <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2 }}>
       {segments.map((segment, idx) => (
-        <Box key={segment.id || idx} sx={{ display: "flex", alignItems: "center", mb: idx === segments.length - 1 ? 0 : 1 }}>
+        <Box
+          key={segment.id || idx}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            px: 2,
+            mb: idx === segments.length - 1 ? 0 : "2px",
+          }}
+        >
           <EditableCardContentArea
             value={localSegments[idx]}
             editable={editingIndex === idx && !isSaving && !deleting}

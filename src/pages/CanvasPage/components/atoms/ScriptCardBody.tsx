@@ -8,6 +8,7 @@ interface ScriptCardBodyProps {
   editable?: boolean;
   onRequestEditBody?: () => void;
   onBodyBlur?: () => void;
+  extraBottomPadding?: boolean;
 }
 
 const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
@@ -16,9 +17,10 @@ const ScriptCardBody: React.FC<ScriptCardBodyProps> = ({
   onTextChange,
   onRequestEditBody,
   onBodyBlur,
+  extraBottomPadding = false,
   ...rest
 }) => (
-  <Box sx={{ pt: 2, pb: 2 }}>
+  <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2, px: 2 }}>
     <EditableCardContentArea
       value={text}
       editable={!!editable}

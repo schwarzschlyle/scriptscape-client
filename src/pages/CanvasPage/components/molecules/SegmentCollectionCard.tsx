@@ -97,24 +97,24 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   }, [active]);
 
   return (
-    <CustomCard
-      header={
-        <SegmentCollectionHeader
-          name={localName}
-          onNameChange={setLocalName}
-          deleting={deleting}
-          isSaving={isSaving}
-          segmentsCount={segments.length}
-          onDelete={onDelete}
-          dragAttributes={dragAttributes}
-          dragListeners={dragListeners}
-          active={active}
-          editable={editable && !isSaving && !deleting}
-          pendingVisualDirection={pendingVisualDirection}
-        />
-      }
-      body={
-        <>
+    <div style={{ position: "relative" }}>
+      <CustomCard
+        header={
+          <SegmentCollectionHeader
+            name={localName}
+            onNameChange={setLocalName}
+            deleting={deleting}
+            isSaving={isSaving}
+            segmentsCount={segments.length}
+            onDelete={onDelete}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            active={active}
+            editable={editable && !isSaving && !deleting}
+            pendingVisualDirection={pendingVisualDirection}
+          />
+        }
+        body={
           <SegmentCollectionCardBody
             segments={segments}
             editable={editable && !isSaving && !deleting}
@@ -122,50 +122,53 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             deleting={deleting}
             error={error}
             onSegmentChange={onSegmentChange}
+            extraBottomPadding
           />
-          <CardActionsArea>
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: isSaving ? "not-allowed" : "pointer",
-                opacity: isSaving ? 0.5 : 1,
-                padding: 0,
-                margin: 0,
-                outline: "none",
-              }}
-              onClick={() => {
-                if (!isSaving && onGenerateVisualDirections) {
-                  onGenerateVisualDirections();
-                }
-              }}
-              aria-label="Generate Visual Directions"
-              disabled={isSaving}
-            >
-              <img
-                src={AiPromptIcon}
-                alt="AI Prompt"
-                style={{
-                  width: 22,
-                  height: 22,
-                  display: "block",
-                  filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
-                }}
-              />
-            </button>
-          </CardActionsArea>
-        </>
-      }
-      minHeight={220}
-      active={active}
-      style={{
-        marginTop: 16,
-      }}
-      onClick={onClick}
-    />
+        }
+        minHeight={220}
+        active={active}
+        style={{
+          marginTop: 16,
+        }}
+        onClick={onClick}
+      />
+      <button
+        style={{
+          position: "absolute",
+          right: 2,
+          bottom: 2,
+          background: "none",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: isSaving ? "not-allowed" : "pointer",
+          opacity: isSaving ? 0.5 : 1,
+          padding: 0,
+          margin: 0,
+          outline: "none",
+          zIndex: 2,
+        }}
+        onClick={() => {
+          if (!isSaving && onGenerateVisualDirections) {
+            onGenerateVisualDirections();
+          }
+        }}
+        aria-label="Generate Visual Directions"
+        disabled={isSaving}
+      >
+        <img
+          src={AiPromptIcon}
+          alt="AI Prompt"
+          style={{
+            width: 22,
+            height: 22,
+            display: "block",
+            filter: isSaving ? "grayscale(1) opacity(0.5)" : "none",
+          }}
+        />
+      </button>
+    </div>
   );
 };
 

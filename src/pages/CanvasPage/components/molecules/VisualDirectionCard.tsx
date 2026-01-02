@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
+import CardActionsArea from "../../../../components/CardActionsArea";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface VisualDirection {
   id?: string;
@@ -92,39 +94,73 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   }, [active]);
 
   return (
-    <CustomCard
-      header={
-        <VisualDirectionCardHeader
-          name={localName}
-          onNameChange={setLocalName}
-          deleting={deleting}
-          isSaving={isSaving}
-          visualsCount={visuals.length}
-          onDelete={onDelete}
-          dragAttributes={dragAttributes}
-          dragListeners={dragListeners}
-          active={active}
-          editable={editable && !isSaving && !deleting}
-          pendingVisualDirection={pendingVisualDirection}
+    <div style={{ position: "relative" }}>
+      <CustomCard
+        header={
+          <VisualDirectionCardHeader
+            name={localName}
+            onNameChange={setLocalName}
+            deleting={deleting}
+            isSaving={isSaving}
+            visualsCount={visuals.length}
+            onDelete={onDelete}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            active={active}
+            editable={editable && !isSaving && !deleting}
+            pendingVisualDirection={pendingVisualDirection}
+          />
+        }
+        body={
+          <VisualDirectionCardBody
+            visuals={visuals}
+            editable={editable && !isSaving && !deleting}
+            isSaving={isSaving}
+            deleting={deleting}
+            error={error}
+            onVisualChange={onVisualChange}
+            extraBottomPadding
+          />
+        }
+        minHeight={220}
+        active={active}
+        style={{
+          marginTop: 16,
+        }}
+        onClick={onClick}
+      />
+      <button
+        style={{
+          position: "absolute",
+          right: 2,
+          bottom: 2,
+          background: "none",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "default",
+          opacity: 0.5,
+          padding: 0,
+          margin: 0,
+          outline: "none",
+          zIndex: 2,
+        }}
+        aria-label="Generate Visual Directions (placeholder)"
+        disabled
+      >
+        <img
+          src={AiPromptIcon}
+          alt="AI Prompt"
+          style={{
+            width: 22,
+            height: 22,
+            display: "block",
+            filter: "grayscale(1) opacity(0.5)",
+          }}
         />
-      }
-      body={
-        <VisualDirectionCardBody
-          visuals={visuals}
-          editable={editable && !isSaving && !deleting}
-          isSaving={isSaving}
-          deleting={deleting}
-          error={error}
-          onVisualChange={onVisualChange}
-        />
-      }
-      minHeight={220}
-      active={active}
-      style={{
-        marginTop: 16,
-      }}
-      onClick={onClick}
-    />
+      </button>
+    </div>
   );
 };
 
