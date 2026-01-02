@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCreateVisual, useUpdateVisual, useDeleteVisual } from "@api/visuals/mutations";
 import type { Visual } from "@api/visuals/types";
+import { useGenerateScriptVisualsAI } from "./useGenerateScriptVisualsAI";
 
 type VisualDirection = {
   id: string;
@@ -41,6 +42,7 @@ export function useVisualDirectionCanvasAreaLogic({
   const createVisualMutation = useCreateVisual();
   const updateVisualMutation = useUpdateVisual();
   const deleteVisualMutation = useDeleteVisual();
+  const { generate: generateVisualsAI } = useGenerateScriptVisualsAI();
 
   function updateCache(directions: DirectionsState) {
     const cacheKey = getCacheKey(organizationId, projectId);
@@ -100,11 +102,16 @@ export function useVisualDirectionCanvasAreaLogic({
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
-        // Placeholder: simulate AI content generation delay and AI output
-        await new Promise(res => setTimeout(res, 1000));
-        // Mocked AI output: array of visual contents
-        // TODO: Replace this block with actual AI integration
-        const aiVisuals: string[] = contents.map((_, i) => `AI-Visual-${i + 1}`);
+        // Use AI hook to generate visuals
+        let aiVisuals: string[] = [];
+        try {
+          console.log("Calling generateVisualsAI with:", contents);
+          aiVisuals = await generateVisualsAI(contents);
+          console.log("AI visuals generated:", aiVisuals);
+        } catch (err: any) {
+          setError(err?.message || "Failed to generate visuals from AI.");
+          throw err;
+        }
         // Create visuals in parallel using the AI output
         const visuals: Visual[] = await Promise.all(
           aiVisuals.map((aiContent, i) =>
@@ -151,7 +158,7 @@ export function useVisualDirectionCanvasAreaLogic({
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, createVisualMutation, onSyncChange]
+    [organizationId, projectId, createVisualMutation, onSyncChange, generateVisualsAI]
   );
 
   // Edit direction content

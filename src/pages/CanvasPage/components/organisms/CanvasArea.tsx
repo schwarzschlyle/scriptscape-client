@@ -414,13 +414,8 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                       description: "",
                       metadata: {},
                     });
-                    // Create all visuals (one per segment)
-                    function random4Digit() {
-                      return Math.floor(1000 + Math.random() * 9000).toString();
-                    }
-                    const contents = col.segments.map(
-                      () => `Generated-Visual-${random4Digit()}`
-                    );
+                    // Use real segment text for AI visual generation
+                    const contents = col.segments.map((segment: any) => segment.text);
                     const segmentIds = col.segments.map((segment: any) => segment.id);
                     await handleAdd(
                       col.id,
