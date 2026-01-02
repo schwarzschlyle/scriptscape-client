@@ -159,68 +159,102 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     setIsDragging(false);
   };
 
-  const getCardCenter = (id: string, isScript: boolean) => {
-    const basePos = isScript ? positions[id] : segColPositions[id];
-    if (!basePos) return { x: 0, y: 0 };
-    const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
-    return {
-      x: basePos.x + delta.x + CARD_WIDTH / 2,
-      y: basePos.y + delta.y + 90,
-    };
+const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visualDirection") => {
+  let basePos;
+  if (type === "script") {
+    basePos = positions[id];
+  } else if (type === "segmentCollection") {
+    basePos = segColPositions[id];
+  } else if (type === "visualDirection") {
+    basePos = visualDirectionsPositions[id];
+  }
+  if (!basePos) return { x: 0, y: 0 };
+  const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
+  return {
+    x: basePos.x + delta.x + CARD_WIDTH / 2,
+    y: basePos.y + delta.y + 90,
   };
+};
 
-  const links = Object.values(collections)
-    .map((col) => {
-      const segColId = col.id || "";
-      const parentId = col.parentScriptId;
-      if (!parentId || !segColId) return null;
-      const scriptPos = positions[parentId];
-      const segColPos = segColPositions[segColId];
-      if (!scriptPos || !segColPos) return null;
-      const isValidPos = (pos: any) => {
+  const links = [
+    // Script to SegmentCollection connectors
+    ...Object.values(collections)
+      .map((col) => {
+        const segColId = col.id || "";
+        const parentId = col.parentScriptId;
+        if (!parentId || !segColId) return null;
+        const scriptPos = positions[parentId];
+        const segColPos = segColPositions[segColId];
+        if (!scriptPos || !segColPos) return null;
+        const isValidPos = (pos: any) => {
+          return (
+            pos &&
+            typeof pos.x === "number" &&
+            typeof pos.y === "number" &&
+            isFinite(pos.x) &&
+            isFinite(pos.y)
+          );
+        };
+        if (!isValidPos(scriptPos) || !isValidPos(segColPos)) return null;
+        const from = getCardCenter(parentId, "script");
+        const to = getCardCenter(segColId, "segmentCollection");
+        if (!isValidPos(from) || !isValidPos(to)) return null;
+        let adjustedTo = { ...to };
+        if (Math.abs(from.x - to.x) < 1 && Math.abs(from.y - to.y) < 1) {
+          adjustedTo.x += 40;
+          adjustedTo.y += 40;
+        }
+        const clamp = (val: number, min: number, max: number) =>
+          Math.max(min, Math.min(max, val));
+        const CANVAS_MIN = -1000;
+        const CANVAS_MAX = CANVAS_SIZE + 1000;
+        const fx = clamp(from.x, CANVAS_MIN, CANVAS_MAX);
+        const fy = clamp(from.y, CANVAS_MIN, CANVAS_MAX);
+        const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
+        const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
+
         return (
-          pos &&
-          typeof pos.x === "number" &&
-          typeof pos.y === "number" &&
-          isFinite(pos.x) &&
-          isFinite(pos.y)
+          <CardConnector
+            key={`link-${segColId}`}
+            from={{ x: fx, y: fy }}
+            to={{ x: tx, y: ty }}
+            canvasSize={CANVAS_SIZE}
+            stroke="#fff"
+            strokeWidth={1}
+            opacity={0.92}
+            style={{
+              filter: "drop-shadow(0 1px 2px #0008)",
+              strokeLinejoin: "round",
+            }}
+          />
         );
-      };
-      if (!isValidPos(scriptPos) || !isValidPos(segColPos)) return null;
-      const from = getCardCenter(parentId, true);
-      const to = getCardCenter(segColId, false);
-      if (!isValidPos(from) || !isValidPos(to)) return null;
-      let adjustedTo = { ...to };
-      if (Math.abs(from.x - to.x) < 1 && Math.abs(from.y - to.y) < 1) {
-        adjustedTo.x += 40;
-        adjustedTo.y += 40;
-      }
-      const clamp = (val: number, min: number, max: number) =>
-        Math.max(min, Math.min(max, val));
-      const CANVAS_MIN = -1000;
-      const CANVAS_MAX = CANVAS_SIZE + 1000;
-      const fx = clamp(from.x, CANVAS_MIN, CANVAS_MAX);
-      const fy = clamp(from.y, CANVAS_MIN, CANVAS_MAX);
-      const tx = clamp(adjustedTo.x, CANVAS_MIN, CANVAS_MAX);
-      const ty = clamp(adjustedTo.y, CANVAS_MIN, CANVAS_MAX);
-
-      return (
-        <CardConnector
-          key={`link-${segColId}`}
-          from={{ x: fx, y: fy }}
-          to={{ x: tx, y: ty }}
-          canvasSize={CANVAS_SIZE}
-          stroke="#fff"
-          strokeWidth={1}
-          opacity={0.92}
-          style={{
-            filter: "drop-shadow(0 1px 2px #0008)",
-            strokeLinejoin: "round",
-          }}
-        />
-      );
-    })
-    .filter(Boolean);
+      })
+      .filter(Boolean),
+    // SegmentCollection to VisualDirection connectors
+    ...Object.values(visualDirections)
+      .map((vd: any) => {
+        const parentId = vd.parentSegmentCollectionId;
+        if (!parentId) return null;
+        const from = getCardCenter(parentId, "segmentCollection");
+        const to = getCardCenter(vd.id, "visualDirection");
+        return (
+          <CardConnector
+            key={`connector-vd-${vd.id}`}
+            from={from}
+            to={to}
+            canvasSize={CANVAS_SIZE}
+            stroke="#fff"
+            strokeWidth={1}
+            opacity={0.92}
+            style={{
+              filter: "drop-shadow(0 1px 2px #0008)",
+              strokeLinejoin: "round",
+            }}
+          />
+        );
+      })
+      .filter(Boolean),
+  ];
 
   const handleCanvasBackgroundClick = () => {
     if (activeId !== null) {
@@ -317,7 +351,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
           }}
           onClick={handleCanvasBackgroundClick}
         >
-          {/* SVG for curves */}
+          {/* SVG for all connectors */}
           <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
             {links}
           </svg>
@@ -401,47 +435,19 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
               {Object.values(visualDirections)
                 .filter((vd: any) => vd.parentSegmentCollectionId === col.id)
                 .map((vd: any) => (
-                  <React.Fragment key={vd.id}>
-                    {/* Bezier curve from SegmentCollectionCard to VisualDirectionCard */}
-                    <svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 0 }}>
-                      <CardConnector
-                        from={{
-                          x: (segColPositions[col.id]?.x || 600) + CARD_WIDTH / 2,
-                          y: (segColPositions[col.id]?.y || 200) + 90,
-                        }}
-                        to={{
-                          x:
-                            (visualDirectionsPositions[vd.id]?.x || ((segColPositions[col.id]?.x || 600) + 380)) +
-                            (activeId === vd.id && isDragging && activeDragDelta ? activeDragDelta.x : 0) +
-                            CARD_WIDTH / 2,
-                          y:
-                            (visualDirectionsPositions[vd.id]?.y || ((segColPositions[col.id]?.y || 200) + 120)) +
-                            (activeId === vd.id && isDragging && activeDragDelta ? activeDragDelta.y : 0) +
-                            90,
-                        }}
-                        canvasSize={CANVAS_SIZE}
-                        stroke="#fff"
-                        strokeWidth={1}
-                        opacity={0.92}
-                        style={{
-                          filter: "drop-shadow(0 1px 2px #0008)",
-                          strokeLinejoin: "round",
-                        }}
-                      />
-                    </svg>
-                    <DraggableVisualDirectionCard
-                      visual={vd}
-                      position={visualDirectionsPositions[vd.id] || { x: (segColPositions[col.id]?.x || 600) + 380, y: (segColPositions[col.id]?.y || 200) + 120 }}
-                      active={activeId === vd.id}
-                      setActive={setActiveId}
-                      onNameChange={() => {}}
-                      onVisualChange={handleEdit}
-                      onDelete={handleDelete}
-                      isSaving={!!vd.isSaving}
-                      deleting={!!vd.deleting}
-                      dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
-                    />
-                  </React.Fragment>
+                  <DraggableVisualDirectionCard
+                    key={vd.id}
+                    visual={vd}
+                    position={visualDirectionsPositions[vd.id] || { x: (segColPositions[col.id]?.x || 600) + 380, y: (segColPositions[col.id]?.y || 200) + 120 }}
+                    active={activeId === vd.id}
+                    setActive={setActiveId}
+                    onNameChange={() => {}}
+                    onVisualChange={handleEdit}
+                    onDelete={handleDelete}
+                    isSaving={!!vd.isSaving}
+                    deleting={!!vd.deleting}
+                    dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
+                  />
                 ))}
             </div>
           ))}
