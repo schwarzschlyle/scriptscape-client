@@ -61,6 +61,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
         isSaving={isSaving}
         deleting={deleting}
         error={storyboard.error}
+        loadingSketches={!!storyboard.loadingSketches}
         dragAttributes={attributes}
         dragListeners={listeners}
         active={active}
@@ -75,4 +76,3 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
 };
 
 export default DraggableStoryboardSketchCard;
-

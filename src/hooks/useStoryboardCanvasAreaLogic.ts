@@ -20,6 +20,7 @@ type StoryboardCard = Storyboard & {
   isSaving?: boolean;
   deleting?: boolean;
   error?: string | null;
+  loadingSketches?: boolean;
 };
 
 type StoryboardsState = {
@@ -27,6 +28,8 @@ type StoryboardsState = {
 };
 
 type PositionsState = { [id: string]: { x: number; y: number } };
+const getCacheKey = (organizationId: string, projectId: string) =>
+  `storyboards-cache-${organizationId}-${projectId}`;
 const getPositionsKey = (organizationId: string, projectId: string) =>
   `storyboards-positions-${organizationId}-${projectId}`;
 
@@ -61,13 +64,57 @@ export function useStoryboardCanvasAreaLogic({
 
   const { generate: generateSketchAI } = useGenerateScriptSketchesAI();
 
+  function updateCache(next: StoryboardsState) {
+    // Cache the storyboard container only (no sketches/image_base64)
+    const lite: Record<string, any> = {};
+    Object.entries(next).forEach(([id, sb]) => {
+      lite[id] = {
+        id: sb.id,
+        visualSetId: sb.visualSetId,
+        name: sb.name,
+        description: sb.description,
+        meta: sb.meta,
+        parentVisualDirectionId: sb.parentVisualDirectionId,
+      };
+    });
+    try {
+      localStorage.setItem(getCacheKey(organizationId, projectId), JSON.stringify(lite));
+    } catch {
+      // ignore quota errors; base64 is not cached, but user may have small quota
+    }
+  }
+
   function updatePositionsCache(next: PositionsState) {
     localStorage.setItem(getPositionsKey(organizationId, projectId), JSON.stringify(next));
   }
 
-  // Load positions from cache first (DO NOT cache sketches/images; they exceed storage quota)
+  // Load storyboards (container only) + positions from cache first
   useEffect(() => {
     setLoading(true);
+
+    const cacheKey = getCacheKey(organizationId, projectId);
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === "object") {
+          const fromCache: StoryboardsState = {};
+          Object.values(parsed).forEach((sb: any) => {
+            if (!sb?.id) return;
+            fromCache[sb.id] = {
+              ...(sb as Storyboard),
+              parentVisualDirectionId: sb.parentVisualDirectionId || (sb.meta as any)?.parentVisualDirectionId || "",
+              sketches: [],
+              isSaving: false,
+              deleting: false,
+              error: null,
+              loadingSketches: true,
+            };
+          });
+          setStoryboards(fromCache);
+        }
+      } catch {}
+    }
 
     const positionsKey = getPositionsKey(organizationId, projectId);
     const cachedPositions = localStorage.getItem(positionsKey);
@@ -80,6 +127,29 @@ export function useStoryboardCanvasAreaLogic({
 
     setLoading(false);
   }, [organizationId, projectId]);
+
+  // Ensure a default position exists for any storyboard that doesn't have one yet.
+  // This is critical for connector visibility, and mirrors the behavior of scripts.
+  useEffect(() => {
+    setPositions((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      Object.values(storyboards).forEach((sb) => {
+        if (!sb?.id) return;
+        if (!next[sb.id]) {
+          // Default placement; in most cases we set an explicit position at creation time.
+          next[sb.id] = { x: 1200, y: 300 };
+          changed = true;
+        }
+      });
+      if (changed) {
+        updatePositionsCache(next);
+        return next;
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(storyboards).join("|")]);
 
   // Load storyboards + sketches from backend whenever visible visual set ids change.
   // This keeps data canonical and avoids localStorage quota issues.
@@ -98,21 +168,25 @@ export function useStoryboardCanvasAreaLogic({
           boardsByVisualSet.flatMap(({ boards }) =>
             (boards || []).map(async (b) => {
               const parentVisualDirectionId = (b.meta as any)?.parentVisualDirectionId || "";
-              const sketches = await getStoryboardSketches(b.id).catch(() => []);
               nextStoryboards[b.id] = {
                 ...b,
                 parentVisualDirectionId,
-                sketches,
+                sketches: [],
                 isSaving: false,
                 deleting: false,
                 error: null,
+                loadingSketches: true,
               };
             })
           )
         );
 
         if (!mounted) return;
-        setStoryboards(nextStoryboards);
+        setStoryboards((prev) => {
+          const next = { ...prev, ...nextStoryboards };
+          updateCache(next);
+          return next;
+        });
       } catch (e: any) {
         if (mounted) setError(e?.message || "Failed to load storyboards.");
       } finally {
@@ -123,6 +197,63 @@ export function useStoryboardCanvasAreaLogic({
       mounted = false;
     };
   }, [visualSetIds.join("|"), organizationId, projectId]);
+
+  // Fetch storyboard sketches (including base64) from backend on every refresh.
+  // We DO NOT cache these in localStorage.
+  useEffect(() => {
+    let mounted = true;
+    const storyboardIds = Object.keys(storyboards);
+    if (storyboardIds.length === 0) return;
+
+    (async () => {
+      await Promise.all(
+        storyboardIds.map(async (id) => {
+          try {
+            if (!mounted) return;
+            setStoryboards((prev) => {
+              const sb = prev[id];
+              if (!sb) return prev;
+              return {
+                ...prev,
+                [id]: { ...sb, loadingSketches: true },
+              };
+            });
+
+            const sketches = await getStoryboardSketches(id);
+            if (!mounted) return;
+            setStoryboards((prev) => {
+              const sb = prev[id];
+              if (!sb) return prev;
+              return {
+                ...prev,
+                [id]: { ...sb, sketches, loadingSketches: false },
+              };
+            });
+          } catch (e: any) {
+            if (!mounted) return;
+            setStoryboards((prev) => {
+              const sb = prev[id];
+              if (!sb) return prev;
+              return {
+                ...prev,
+                [id]: {
+                  ...sb,
+                  sketches: [],
+                  loadingSketches: false,
+                  error: e?.message || "Failed to load storyboard sketches.",
+                },
+              };
+            });
+          }
+        })
+      );
+    })();
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(storyboards).join("|")]);
 
   useEffect(() => {
     onSyncChange?.(syncing);
@@ -194,9 +325,14 @@ export function useStoryboardCanvasAreaLogic({
           isSaving: false,
           deleting: false,
           error: null,
+          loadingSketches: false,
         };
 
-        setStoryboards((prev) => ({ ...prev, [storyboard.id]: card }));
+        setStoryboards((prev) => {
+          const next = { ...prev, [storyboard.id]: card };
+          updateCache(next);
+          return next;
+        });
 
         if (position) {
           setPositions((prev) => {
@@ -225,6 +361,7 @@ export function useStoryboardCanvasAreaLogic({
           ...prev,
           [storyboardId]: { ...sb, name: newName, isSaving: true, error: null },
         };
+        updateCache(next);
         return next;
       });
       setSyncing(true);
@@ -237,6 +374,7 @@ export function useStoryboardCanvasAreaLogic({
             ...prev,
             [storyboardId]: { ...sb, name: newName, isSaving: false, error: null },
           };
+          updateCache(next);
           return next;
         });
       } catch (e: any) {
@@ -247,6 +385,7 @@ export function useStoryboardCanvasAreaLogic({
             ...prev,
             [storyboardId]: { ...sb, isSaving: false, error: e?.message || "Failed to update storyboard." },
           };
+          updateCache(next);
           return next;
         });
       } finally {
@@ -262,6 +401,7 @@ export function useStoryboardCanvasAreaLogic({
     setStoryboards((prev) => {
       prevStoryboard = prev[storyboardId];
       const { [storyboardId]: _, ...rest } = prev;
+      updateCache(rest as any);
       return rest as any;
     });
     setPositions((prev) => {
@@ -287,6 +427,7 @@ export function useStoryboardCanvasAreaLogic({
       if (prevStoryboard) {
         setStoryboards((prev) => {
           const next = { ...prev, [storyboardId]: prevStoryboard as any };
+          updateCache(next);
           return next;
         });
       }

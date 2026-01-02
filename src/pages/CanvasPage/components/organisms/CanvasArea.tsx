@@ -533,8 +533,8 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                   Object.values(storyboards)
                     .filter((sb: any) => sb.parentVisualDirectionId === vd.id)
                     .map((sb: any) => (
+                      <div key={sb.id} onClick={stopPropagation}>
                       <DraggableStoryboardSketchCard
-                        key={sb.id}
                         storyboard={sb}
                         position={storyboardPositions[sb.id] || { x: (visualDirectionsPositions[vd.id]?.x || 980) + 380, y: (visualDirectionsPositions[vd.id]?.y || 320) + 120 }}
                         active={activeId === sb.id}
@@ -546,6 +546,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                         dragDelta={activeId === sb.id && isDragging ? activeDragDelta : null}
                         pendingSketches={!!pendingStoryboard[vd.id]}
                       />
+                      </div>
                     ))
                 )}
             </div>
