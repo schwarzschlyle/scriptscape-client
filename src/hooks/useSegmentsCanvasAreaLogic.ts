@@ -111,18 +111,19 @@ export function useSegmentsCanvasAreaLogic({
           name,
         });
         // Create segments in backend
-        const createdSegments: Segment[] = [];
         function random4Digit() {
           return Math.floor(1000 + Math.random() * 9000).toString();
         }
-        for (let i = 0; i < numSegments; i++) {
-          const seg = await createSegmentMutation.mutateAsync({
-            collectionId: collection.id,
-            segmentIndex: i,
-            text: `Generated-Segment-${random4Digit()}`,
-          });
-          createdSegments.push(seg);
-        }
+        // Create segments in parallel
+        const createdSegments: Segment[] = await Promise.all(
+          Array.from({ length: numSegments }).map((_, i) =>
+            createSegmentMutation.mutateAsync({
+              collectionId: collection.id,
+              segmentIndex: i,
+              text: `Generated-Segment-${random4Digit()}`,
+            })
+          )
+        );
         // Add the new collection to state and localStorage only after all API calls succeed
         setCollections((prev) => {
           const updated = {

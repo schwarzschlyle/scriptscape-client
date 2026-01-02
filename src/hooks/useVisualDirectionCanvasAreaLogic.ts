@@ -101,17 +101,16 @@ export function useVisualDirectionCanvasAreaLogic({
       if (onSyncChange) onSyncChange(true);
       try {
         // Create all visuals in backend
-        const visuals: Visual[] = [];
-        for (let i = 0; i < contents.length; i++) {
-          const content = contents[i];
-          const segmentId = segmentIds[i];
-          const visual = await createVisualMutation.mutateAsync({
-            visualSetId: visualSetIdOverride || projectId,
-            segmentId,
-            content,
-          });
-          visuals.push(visual);
-        }
+        // Create visuals in parallel
+        const visuals: Visual[] = await Promise.all(
+          contents.map((content, i) =>
+            createVisualMutation.mutateAsync({
+              visualSetId: visualSetIdOverride || projectId,
+              segmentId: segmentIds[i],
+              content,
+            })
+          )
+        );
         // Add the new direction (with all visuals) to state and localStorage only after all API calls succeed
         const newId = visuals[0]?.id || `${parentSegmentCollectionId}-visual-direction-${Date.now()}`;
         setDirections((prev) => {
