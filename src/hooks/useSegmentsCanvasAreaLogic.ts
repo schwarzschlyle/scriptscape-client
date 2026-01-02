@@ -5,6 +5,7 @@ import {
   useDeleteSegmentCollection,
 } from "@api/segment_collections/mutations";
 import { useCreateSegment, useUpdateSegment } from "@api/segments/mutations";
+import { useGenerateScriptSegmentsAI } from "./useGenerateScriptSegmentsAI";
 import type { SegmentCollection } from "@api/segment_collections/types";
 import type { Segment as BaseSegment } from "@api/segments/types";
 
@@ -29,12 +30,14 @@ export interface UseSegmentsCanvasAreaLogicProps {
   organizationId: string;
   projectId: string;
   onSyncChange?: (syncing: boolean) => void;
+  getScriptById?: (id: string) => { id: string; name: string; text: string } | undefined;
 }
 
 export function useSegmentsCanvasAreaLogic({
   organizationId,
   projectId,
   onSyncChange,
+  getScriptById,
 }: UseSegmentsCanvasAreaLogicProps) {
   const [collections, setCollections] = useState<CollectionsState>({});
   const [positions, setPositions] = useState<PositionsState>({});
@@ -48,6 +51,7 @@ export function useSegmentsCanvasAreaLogic({
   const updateCollectionMutation = useUpdateSegmentCollection();
   const deleteCollectionMutation = useDeleteSegmentCollection();
   const updateSegmentMutation = useUpdateSegment();
+  const { generate: generateSegmentsAI } = useGenerateScriptSegmentsAI();
 
   function updateCache(collections: CollectionsState) {
     const cacheKey = getCacheKey(organizationId, projectId);
@@ -110,24 +114,45 @@ export function useSegmentsCanvasAreaLogic({
           scriptId: parentScriptId,
           name,
         });
-        // Create segments in backend
-        function random4Digit() {
-          return Math.floor(1000 + Math.random() * 9000).toString();
+        // Create segments in backend using AI API
+        // Get parent script text
+        let scriptText = "";
+        if (getScriptById) {
+          const script = getScriptById(parentScriptId);
+          scriptText = script?.text || "";
         }
-        // Placeholder: simulate AI content generation delay and AI output
-        await new Promise(res => setTimeout(res, 1000));
-        // Mocked AI output: array of segment texts
-        // TODO: Replace this block with actual AI integration
-        const aiSegments: string[] = Array.from({ length: numSegments }).map((_, i) => `AI-Segment-${i + 1}`);
+        if (!scriptText) {
+          setError("Parent script text not found.");
+          throw new Error("Parent script text not found.");
+        }
+        // Use AI hook to generate segments
+        let aiSegments: string[] = [];
+        try {
+          console.log("Calling generateSegmentsAI with:", { scriptText, numSegments });
+          aiSegments = await generateSegmentsAI(scriptText, numSegments);
+          console.log("AI segments generated:", aiSegments);
+        } catch (err: any) {
+          setError(err?.message || "Failed to generate segments from AI.");
+          throw err;
+        }
         // Create segments in parallel using the AI output
         const createdSegments: Segment[] = await Promise.all(
-          aiSegments.map((text, i) =>
-            createSegmentMutation.mutateAsync({
-              collectionId: collection.id,
-              segmentIndex: i,
-              text,
-            })
-          )
+          aiSegments.map(async (text, i) => {
+            try {
+              const result = await createSegmentMutation.mutateAsync({
+                collectionId: collection.id,
+                segmentIndex: i,
+                text,
+              });
+              // Debug: log successful segment creation
+              console.log("Created segment:", result);
+              return result;
+            } catch (err) {
+              // Debug: log error
+              console.error("Error creating segment:", err);
+              throw err;
+            }
+          })
         );
         // Add the new collection to state and localStorage only after all API calls succeed
         setCollections((prev) => {

@@ -43,6 +43,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   } = useScriptsCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
   // Segments logic
+  const getScriptById = (id: string) => scripts.find((s: any) => s.id === id);
   const {
     collections,
     positions: segColPositions,
@@ -55,7 +56,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleEditSegmentText,
     handleDeleteCollection,
     handleCollectionPositionChange,
-  } = useSegmentsCanvasAreaLogic({ organizationId, projectId, onSyncChange });
+  } = useSegmentsCanvasAreaLogic({ organizationId, projectId, onSyncChange, getScriptById });
 
   // Visual Directions logic
   const {
