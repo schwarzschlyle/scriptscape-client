@@ -71,3 +71,27 @@ export function useGenerateScriptAIMutation() {
     },
   });
 }
+
+// --- Storyboard Sketch AI mutation ---
+export interface GenerateScriptSketchAIRequest {
+  visual_direction: string;
+  instructions?: string;
+}
+export interface GenerateScriptSketchAIResponse {
+  job_id: string;
+}
+export function useGenerateScriptSketchAIMutation() {
+  return useMutation({
+    mutationFn: async ({ visual_direction, instructions = "" }: GenerateScriptSketchAIRequest) => {
+      const aiApiUrl = import.meta.env.VITE_AI_API_URL;
+      const resp = await fetch(`${aiApiUrl}/run-generate-storyboard-sketch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visual_direction, instructions }),
+      });
+      if (!resp.ok) throw new Error("Failed to start storyboard sketch generation.");
+      const data = await resp.json();
+      return data as GenerateScriptSketchAIResponse;
+    },
+  });
+}
