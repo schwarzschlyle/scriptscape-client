@@ -131,6 +131,7 @@ export function useVisualDirectionCanvasAreaLogic({
               id: newId,
               parentSegmentCollectionId,
               visuals,
+              title: "Visual Direction",
               isSaving: false,
               deleting: false,
               error: null,

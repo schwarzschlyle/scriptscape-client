@@ -110,7 +110,7 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
                     Visual Directions{typeof visualsCount === "number" ? ` (${visualsCount})` : ""}
                   </CardTypography>
                   <CardTypography variant="cardTitle">
-                    {localName || "Untitled Visual Direction"}
+                    {localName || "Visual Direction"}
                   </CardTypography>
                 </span>
               )
