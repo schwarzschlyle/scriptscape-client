@@ -16,7 +16,6 @@ interface StoryboardSketchCardHeaderProps {
   dragListeners?: any;
   active?: boolean;
   editable?: boolean;
-  pendingSketches?: boolean;
 }
 
 const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
@@ -30,7 +29,6 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
   dragListeners,
   active = false,
   editable = false,
-  pendingSketches = false,
 }) => {
   const {
     value: localName,
@@ -46,25 +44,7 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
     if (editable) startEditing();
   };
 
-  const blinkBlueDot = keyframes`
-    0% { opacity: 1; }
-    100% { opacity: 0.3; }
-  `;
-  const blueDot = (
-    <Box
-      sx={{
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        background: "linear-gradient(135deg, #2196f3 60%, #21cbf3 100%)",
-        marginRight: 0,
-        border: "1.5px solid #232523",
-        animation: `${blinkBlueDot} 1s infinite alternate`,
-        transition: "background 0.2s",
-        display: "inline-block",
-      }}
-    />
-  );
+  // NOTE: storyboard sketch cards are children; per rules, only the parent card shows the blue dot while generating.
 
   return (
     <div onDoubleClick={handleDoubleClick}>
@@ -112,21 +92,17 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
         inputRef={inputRef}
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
-            {pendingSketches ? (
-              blueDot
-            ) : (
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: isSaving ? "#ff9800" : active ? "#abf43e" : "#6a6967",
-                  marginRight: 0,
-                  border: "1.5px solid #232523",
-                  transition: "background 0.2s",
-                }}
-              />
-            )}
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: isSaving ? "#ff9800" : active ? "#abf43e" : "#6a6967",
+                marginRight: 0,
+                border: "1.5px solid #232523",
+                transition: "background 0.2s",
+              }}
+            />
           </div>
         }
       />
@@ -135,4 +111,3 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
 };
 
 export default StoryboardSketchCardHeader;
-

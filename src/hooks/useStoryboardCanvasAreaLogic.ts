@@ -15,6 +15,44 @@ import {
 import { useGenerateScriptSketchesAI } from "./useGenerateScriptSketchesAI";
 import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
 
+async function base64ToBlob(base64: string): Promise<Blob> {
+  // Accepts either raw base64 or a data URL
+  const dataUrl = base64.startsWith("data:") ? base64 : `data:image/png;base64,${base64}`;
+  const res = await fetch(dataUrl);
+  return await res.blob();
+}
+
+async function sketchesToCachePayload(sketches: StoryboardSketch[]) {
+  // Cache image data as Blob for performance + memory. Keep meta for rendering segment text.
+  return Promise.all(
+    (sketches || []).map(async (s) => {
+      const blob = s?.image_base64 ? await base64ToBlob(s.image_base64) : null;
+      return {
+        id: s.id,
+        name: s.name,
+        meta: s.meta,
+        blob,
+      };
+    })
+  );
+}
+
+async function cachePayloadToSketches(payload: any[]): Promise<StoryboardSketch[]> {
+  return (payload || []).map((p: any) => {
+    const blob: Blob | null = p?.blob || null;
+    const image_base64 = blob ? URL.createObjectURL(blob) : "";
+    return {
+      id: p.id,
+      storyboardId: "",
+      name: p.name,
+      image_base64,
+      meta: p.meta,
+      createdAt: "",
+      updatedAt: "",
+    } as any;
+  });
+}
+
 type StoryboardCard = Storyboard & {
   parentVisualDirectionId: string;
   sketches: StoryboardSketch[];
@@ -220,16 +258,17 @@ export function useStoryboardCanvasAreaLogic({
       await Promise.all(
         storyboardIds.map(async (id) => {
           try {
-            const cached = await idbGet<StoryboardSketch[]>(`storyboard-sketches:${id}`);
+            const cached = await idbGet<any[]>(`storyboard-sketches:${id}`);
 
             // If we have cache, render immediately and do NOT fetch.
             if (mounted && cached && cached.length > 0) {
+              const sketches = await cachePayloadToSketches(cached);
               setStoryboards((prev) => {
                 const sb = prev[id];
                 if (!sb) return prev;
                 return {
                   ...prev,
-                  [id]: { ...sb, sketches: cached, loadingSketches: false },
+                  [id]: { ...sb, sketches, loadingSketches: false },
                 };
               });
               return;
@@ -247,7 +286,9 @@ export function useStoryboardCanvasAreaLogic({
             });
 
             const sketches = await getStoryboardSketches(id);
-            await idbSet(`storyboard-sketches:${id}`, sketches).catch(() => undefined);
+            // Cache as blobs (not base64) for quick reload.
+            const payload = await sketchesToCachePayload(sketches);
+            await idbSet(`storyboard-sketches:${id}`, payload).catch(() => undefined);
             if (!mounted) return;
             setStoryboards((prev) => {
               const sb = prev[id];
@@ -300,19 +341,32 @@ export function useStoryboardCanvasAreaLogic({
       onSyncChange?.(true);
       setError(null);
       try {
+        const visualMeta = (visualDirections || []).map((v: any, idx: number) => {
+          const segmentId = v?.segmentId || v?.segment_id || v?.meta?.segmentId || v?.meta?.segment_id;
+          const segmentText = v?.meta?.segmentText || v?.meta?.segment_text || "";
+          return {
+            index: idx,
+            visualId: v?.id,
+            segmentId,
+            segmentText,
+          };
+        });
+
         const storyboard = await createStoryboard(visualSetId, {
           name: "Storyboard",
           description: "",
           meta: {
             parentVisualDirectionId,
             instructions: instructions || "",
+            // mapping for traceability
+            visuals: visualMeta,
           },
         });
 
         // Generate images in parallel
         const images: string[] = await Promise.all(
           visualDirections.map(async (vd) => {
-            const dir = vd.content || "";
+            const dir = (vd as any)?.content || "";
             if (!dir.trim()) return "";
             const imageBase64 = await generateSketchAI(dir, instructions || "");
             return imageBase64;
@@ -323,6 +377,7 @@ export function useStoryboardCanvasAreaLogic({
         const createdSketches: StoryboardSketch[] = await Promise.all(
           images.map(async (image_base64, idx) => {
             const name = `Sketch ${idx + 1}`;
+            const meta = visualMeta[idx] || { index: idx };
             // If generation failed for a particular direction, still store an empty marker? For now, skip.
             if (!image_base64) {
               return {
@@ -330,7 +385,7 @@ export function useStoryboardCanvasAreaLogic({
                 storyboardId: storyboard.id,
                 name,
                 image_base64: "",
-                meta: { skipped: true },
+                meta: { ...meta, skipped: true },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               } as any;
@@ -341,6 +396,7 @@ export function useStoryboardCanvasAreaLogic({
               meta: {
                 parentVisualDirectionId,
                 visualDirectionIndex: idx,
+                ...meta,
               },
             });
           })
@@ -363,7 +419,8 @@ export function useStoryboardCanvasAreaLogic({
         });
 
         // Cache images to IndexedDB (not localStorage)
-        await idbSet(`storyboard-sketches:${storyboard.id}`, card.sketches).catch(() => undefined);
+        const payload = await sketchesToCachePayload(card.sketches);
+        await idbSet(`storyboard-sketches:${storyboard.id}`, payload).catch(() => undefined);
 
         if (position) {
           setPositions((prev) => {

@@ -23,7 +23,7 @@ interface StoryboardSketchCardProps {
   onClick?: () => void;
   onNameChange?: (name: string) => void;
   onDelete?: () => void;
-  pendingSketches?: boolean;
+  // no pending indicator on child cards (parent shows blue dot while generating)
 }
 
 const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
@@ -39,7 +39,6 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onClick,
   onNameChange,
   onDelete,
-  pendingSketches = false,
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
@@ -72,7 +71,6 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
             dragListeners={dragListeners}
             active={active}
             editable={editable && !isSaving && !deleting}
-            pendingSketches={pendingSketches}
           />
         }
         body={

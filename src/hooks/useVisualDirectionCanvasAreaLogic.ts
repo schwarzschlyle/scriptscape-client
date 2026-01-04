@@ -102,24 +102,34 @@ export function useVisualDirectionCanvasAreaLogic({
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
-        // Use AI hook to generate visuals
-        let aiVisuals: string[] = [];
-        try {
-          console.log("Calling generateVisualsAI with:", contents);
-          aiVisuals = await generateVisualsAI(contents);
-          console.log("AI visuals generated:", aiVisuals);
-        } catch (err: any) {
-          setError(err?.message || "Failed to generate visuals from AI.");
-          throw err;
-        }
-        // Create visuals in parallel using the AI output
+        // Generate visuals with strict 1:1 mapping to segments.
+        // We use one AI call per segment (in parallel) to avoid any indexing/misalignment issues.
+        const aiVisuals: string[] = await Promise.all(
+          contents.map(async (segmentText, i) => {
+            try {
+              const res = await generateVisualsAI([segmentText]);
+              return res?.[0] || "";
+            } catch (err: any) {
+              console.error("Failed to generate visual for segment", { i, segmentId: segmentIds[i] }, err);
+              return "";
+            }
+          })
+        );
+
+        // Create visuals in parallel using the AI output.
+        // Store mapping info in Visual.meta so child storyboard sketches can reliably trace their grandparent segment.
         const visuals: Visual[] = await Promise.all(
           aiVisuals.map((aiContent, i) =>
             createVisualMutation.mutateAsync({
               visualSetId: visualSetIdOverride || projectId,
               segmentId: segmentIds[i],
               content: aiContent,
-            })
+              metadata: {
+                parentSegmentCollectionId,
+                segmentIndex: i,
+                segmentText: contents[i] || "",
+              },
+            } as any)
           )
         );
         // Add the new direction (with all visuals) to state and localStorage only after all API calls succeed

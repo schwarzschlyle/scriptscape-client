@@ -545,7 +545,6 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                         isSaving={!!sb.isSaving}
                         deleting={!!sb.deleting}
                         dragDelta={activeId === sb.id && isDragging ? activeDragDelta : null}
-                        pendingSketches={!!pendingStoryboard[vd.id]}
                       />
                       </div>
                     ))

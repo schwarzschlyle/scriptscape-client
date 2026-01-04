@@ -115,6 +115,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
             active={active}
             editable={editable && !isSaving && !deleting}
             pendingVisualDirection={pendingVisualDirection}
+            pendingStoryboardSketches={pendingStoryboardSketches}
           />
         }
         body={
