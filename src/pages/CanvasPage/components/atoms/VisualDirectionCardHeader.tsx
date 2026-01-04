@@ -18,6 +18,7 @@ interface VisualDirectionCardHeaderProps {
   active?: boolean;
   editable?: boolean;
   pendingVisualDirection?: boolean;
+  pendingStoryboardSketches?: boolean;
 }
 
 const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
@@ -32,6 +33,7 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
   active = false,
   editable = false,
   pendingVisualDirection = false,
+  pendingStoryboardSketches = false,
 }) => {
   const {
     value: localName,
@@ -127,7 +129,7 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
         inputRef={inputRef}
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
-            {pendingVisualDirection ? (
+            {pendingVisualDirection || pendingStoryboardSketches ? (
               blueDot
             ) : (
               <div

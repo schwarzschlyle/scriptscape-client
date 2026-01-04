@@ -159,6 +159,12 @@ export function useCanvasAreaNavigation() {
 
   // Scroll-to-zoom handler
   const handleWheel = React.useCallback((e: React.WheelEvent) => {
+    // If wheel happens while pointer is inside any canvas card, don't zoom the canvas.
+    // (We want the card scroll to be independent from canvas navigation.)
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest && target.closest(".canvas-card")) {
+      return;
+    }
     if (e.ctrlKey) return;
     const minZoom = getMinZoom();
     const delta = e.deltaY < 0 ? ZOOM_SPEED : -ZOOM_SPEED;
@@ -231,6 +237,11 @@ export function useCanvasAreaNavigation() {
     };
 
     const wheelHandler = (e: WheelEvent) => {
+      // Skip syncing while user is interacting with card scroll areas.
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest && target.closest(".canvas-card")) {
+        return;
+      }
       if (!e.ctrlKey) {
         handleWheelEnd();
       }

@@ -47,6 +47,7 @@ const DraggableScriptCard: React.FC<DraggableScriptCardProps> = ({
   return (
     <Box
       ref={setNodeRef}
+      onPointerDown={() => setActive(script.id)}
       sx={{
         position: "absolute",
         left: x,
@@ -55,7 +56,7 @@ const DraggableScriptCard: React.FC<DraggableScriptCardProps> = ({
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: active ? 100 : 1,
+        zIndex: active ? 1000 : 50,
         boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",

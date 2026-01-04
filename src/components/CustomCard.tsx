@@ -8,6 +8,7 @@ export interface CustomCardProps {
   body?: React.ReactNode;
   children?: React.ReactNode;
   minHeight?: number | string;
+  height?: number | string;
   active?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
@@ -19,6 +20,7 @@ const CustomCard: React.FC<CustomCardProps> = ({
   body,
   children,
   minHeight = 220,
+  height,
   active = false,
   onClick,
   style,
@@ -26,8 +28,10 @@ const CustomCard: React.FC<CustomCardProps> = ({
 }) => (
   <Box sx={{ position: "relative" }} style={style}>
     <Card
+      className="canvas-card"
       sx={{
-        minHeight,
+        minHeight: height ?? minHeight,
+        height: height ?? "auto",
         display: "flex",
         flexDirection: "column",
         outline: active ? "2.5px solid #abf43e" : "none",
@@ -44,7 +48,7 @@ const CustomCard: React.FC<CustomCardProps> = ({
       {header}
       {header && <Divider sx={{ mb: 0, bgcolor: "#1f211f", height: 2 }} />}
       {body ? (
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0, overflow: "hidden" }}>
           {body}
         </Box>
       ) : (

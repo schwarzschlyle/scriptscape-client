@@ -102,24 +102,34 @@ export function useVisualDirectionCanvasAreaLogic({
       setSyncing(true);
       if (onSyncChange) onSyncChange(true);
       try {
-        // Use AI hook to generate visuals
-        let aiVisuals: string[] = [];
-        try {
-          console.log("Calling generateVisualsAI with:", contents);
-          aiVisuals = await generateVisualsAI(contents);
-          console.log("AI visuals generated:", aiVisuals);
-        } catch (err: any) {
-          setError(err?.message || "Failed to generate visuals from AI.");
-          throw err;
-        }
-        // Create visuals in parallel using the AI output
+        // Generate visuals with strict 1:1 mapping to segments.
+        // We use one AI call per segment (in parallel) to avoid any indexing/misalignment issues.
+        const aiVisuals: string[] = await Promise.all(
+          contents.map(async (segmentText, i) => {
+            try {
+              const res = await generateVisualsAI([segmentText]);
+              return res?.[0] || "";
+            } catch (err: any) {
+              console.error("Failed to generate visual for segment", { i, segmentId: segmentIds[i] }, err);
+              return "";
+            }
+          })
+        );
+
+        // Create visuals in parallel using the AI output.
+        // Store mapping info in Visual.meta so child storyboard sketches can reliably trace their grandparent segment.
         const visuals: Visual[] = await Promise.all(
           aiVisuals.map((aiContent, i) =>
             createVisualMutation.mutateAsync({
               visualSetId: visualSetIdOverride || projectId,
               segmentId: segmentIds[i],
               content: aiContent,
-            })
+              metadata: {
+                parentSegmentCollectionId,
+                segmentIndex: i,
+                segmentText: contents[i] || "",
+              },
+            } as any)
           )
         );
         // Add the new direction (with all visuals) to state and localStorage only after all API calls succeed
@@ -162,42 +172,56 @@ export function useVisualDirectionCanvasAreaLogic({
     [organizationId, projectId, createVisualMutation, onSyncChange, generateVisualsAI]
   );
 
-  // Edit direction content
+  // Edit a single visual (by visualId) inside a VisualDirection card.
   const handleEdit = useCallback(
     async (visualId: string, newContent: string) => {
-      setDirections((prev) => ({
-        ...prev,
-        [visualId]: {
-          ...prev[visualId],
-          content: newContent,
-          isSaving: true,
-          error: null,
-        },
-      }));
+      let directionIdForVisual: string | null = null;
+
+      setDirections((prev) => {
+        // Find the direction that contains this visual.
+        const directionId =
+          Object.keys(prev).find((id) => prev[id]?.visuals?.some((v) => v.id === visualId)) || null;
+        directionIdForVisual = directionId;
+        if (!directionId) return prev;
+
+        const dir = prev[directionId];
+        const visuals = (dir.visuals || []).map((v) => (v.id === visualId ? { ...v, content: newContent } : v));
+        const next = {
+          ...prev,
+          [directionId]: { ...dir, visuals, isSaving: true, error: null },
+        };
+        updateCache(next);
+        return next;
+      });
+
       setSyncing(true);
       try {
         await updateVisualMutation.mutateAsync({
           id: visualId,
           data: { content: newContent },
         });
-        setDirections((prev) => ({
-          ...prev,
-          [visualId]: {
-            ...prev[visualId],
-            content: newContent,
-            isSaving: false,
-            error: null,
-          },
-        }));
+        if (directionIdForVisual) {
+          setDirections((prev) => {
+            const dir = prev[directionIdForVisual!];
+            if (!dir) return prev;
+            const next = { ...prev, [directionIdForVisual!]: { ...dir, isSaving: false, error: null } };
+            updateCache(next);
+            return next;
+          });
+        }
       } catch (e: any) {
-        setDirections((prev) => ({
-          ...prev,
-          [visualId]: {
-            ...prev[visualId],
-            isSaving: false,
-            error: e?.message || "Failed to update visual direction.",
-          },
-        }));
+        if (directionIdForVisual) {
+          setDirections((prev) => {
+            const dir = prev[directionIdForVisual!];
+            if (!dir) return prev;
+            const next = {
+              ...prev,
+              [directionIdForVisual!]: { ...dir, isSaving: false, error: e?.message || "Failed to update visual." },
+            };
+            updateCache(next);
+            return next;
+          });
+        }
       } finally {
         setSyncing(false);
       }
@@ -205,52 +229,53 @@ export function useVisualDirectionCanvasAreaLogic({
     [updateVisualMutation]
   );
 
-  // Delete direction (optimistic)
+  // Delete a VisualDirection card (optimistic).
+  // IMPORTANT: a VisualDirection card is a *group* of visuals, so we delete ALL of them.
   const handleDelete = useCallback(
-    async (visualId: string) => {
-      let prevDirection: any;
+    async (visualDirectionId: string) => {
+      let prevDirection: VisualDirection | undefined;
+
+      // Optimistic remove from UI
       setDirections((prev) => {
-        prevDirection = prev[visualId];
-        const { [visualId]: _, ...rest } = prev;
+        prevDirection = prev[visualDirectionId];
+        const { [visualDirectionId]: _, ...rest } = prev;
         updateCache(rest);
         return rest;
       });
       setPositions((prev) => {
-        const { [visualId]: _, ...rest } = prev;
+        const { [visualDirectionId]: _, ...rest } = prev;
         updatePositionsCache(rest);
         return rest;
       });
+
       setSyncing(true);
       try {
-        await deleteVisualMutation.mutateAsync(visualId);
-        setError(null); // Clear error after successful delete
+        const visuals = prevDirection?.visuals || [];
+        await Promise.all(
+          visuals
+            .map((v) => v?.id)
+            .filter(Boolean)
+            .map((id) => deleteVisualMutation.mutateAsync(id as string).catch(() => undefined))
+        );
+        setError(null);
       } catch (e: any) {
         // Rollback on error
-        setDirections((prev) => {
-          const updated = {
-            ...prev,
-            [visualId]: {
-              ...prevDirection,
-              deleting: false,
-              error: e?.message || "Failed to delete visual direction.",
-            },
-          };
-          updateCache(updated);
-          return updated;
-        });
-        setPositions((prev) => {
-          const updated = {
-            ...prev,
-            [visualId]: prevDirection && prevDirection.position ? prevDirection.position : { x: 600, y: 200 },
-          };
-          updatePositionsCache(updated);
-          return updated;
-        });
+        if (prevDirection) {
+          setDirections((prev) => {
+            const next = {
+              ...prev,
+              [visualDirectionId]: { ...prevDirection!, deleting: false, error: e?.message || "Failed to delete visual direction." },
+            };
+            updateCache(next);
+            return next;
+          });
+        }
+        setError(e?.message || "Failed to delete visual direction.");
       } finally {
         setSyncing(false);
       }
     },
-    [deleteVisualMutation, organizationId, projectId]
+    [deleteVisualMutation]
   );
 
   // Update position of a direction card and cache

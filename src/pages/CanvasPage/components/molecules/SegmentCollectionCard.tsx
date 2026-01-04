@@ -3,6 +3,8 @@ import CustomCard from "../../../../components/CustomCard";
 import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import Box from "@mui/material/Box";
+import CardFooter from "@components/CardFooter";
 
 interface Segment {
   id?: string;
@@ -46,6 +48,9 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onGenerateVisualDirections,
   pendingVisualDirection,
 }) => {
+  const CARD_WIDTH = 340;
+  const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
+  const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
   // Removed editingSegmentIndex state (unused after refactor)
@@ -113,59 +118,99 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           />
         }
         body={
-          <SegmentCollectionCardBody
-            segments={segments}
-            editable={editable && !isSaving && !deleting}
-            isSaving={isSaving}
-            deleting={deleting}
-            error={error}
-            onSegmentChange={onSegmentChange}
-            extraBottomPadding
-          />
+          <>
+            <Box
+              className={isFullHeight ? undefined : "canvas-scrollbar"}
+              sx={{
+                flex: 1,
+                overflowY: isFullHeight ? "visible" : "auto",
+              }}
+            >
+              <SegmentCollectionCardBody
+                segments={segments}
+                editable={editable && !isSaving && !deleting}
+                isSaving={isSaving}
+                deleting={deleting}
+                error={error}
+                onSegmentChange={onSegmentChange}
+              />
+            </Box>
+            <CardFooter
+              left={null}
+              center={
+                <button
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFullHeight((v) => !v);
+                  }}
+                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
+                >
+                  <img
+                    src={AiPromptIcon}
+                    alt="Expand/Collapse"
+                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
+                  />
+                </button>
+              }
+              right={
+                <>
+                  {/* Generate Visual Directions */}
+                  <button
+                    style={{
+                      background: "none",
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: isSaving || pendingVisualDirection ? "not-allowed" : "pointer",
+                      opacity: isSaving || pendingVisualDirection ? 0.5 : 1,
+                      padding: 0,
+                      margin: 0,
+                      outline: "none",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isSaving && !pendingVisualDirection && onGenerateVisualDirections) {
+                        onGenerateVisualDirections();
+                      }
+                    }}
+                    aria-label="Generate Visual Directions"
+                    disabled={isSaving || pendingVisualDirection}
+                  >
+                    <img
+                      src={AiPromptIcon}
+                      alt="AI Prompt"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        display: "block",
+                        filter: isSaving || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
+                      }}
+                    />
+                  </button>
+                </>
+              }
+            />
+          </>
         }
-        minHeight={220}
+        height={isFullHeight ? "auto" : FIXED_HEIGHT}
         active={active}
         style={{
           marginTop: 16,
         }}
         onClick={onClick}
       />
-      <button
-        style={{
-          position: "absolute",
-          right: 2,
-          bottom: 2,
-          background: "none",
-          border: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: isSaving || pendingVisualDirection ? "not-allowed" : "pointer",
-          opacity: isSaving || pendingVisualDirection ? 0.5 : 1,
-          padding: 0,
-          margin: 0,
-          outline: "none",
-          zIndex: 2,
-        }}
-        onClick={() => {
-          if (!isSaving && !pendingVisualDirection && onGenerateVisualDirections) {
-            onGenerateVisualDirections();
-          }
-        }}
-        aria-label="Generate Visual Directions"
-        disabled={isSaving || pendingVisualDirection}
-      >
-        <img
-          src={AiPromptIcon}
-          alt="AI Prompt"
-          style={{
-            width: 22,
-            height: 22,
-            display: "block",
-            filter: isSaving || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
-          }}
-        />
-      </button>
     </div>
   );
 };

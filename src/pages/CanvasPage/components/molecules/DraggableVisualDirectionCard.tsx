@@ -17,6 +17,8 @@ interface DraggableVisualDirectionCardProps {
   deleting?: boolean;
   dragDelta?: { x: number; y: number } | null;
   pendingVisualDirection?: boolean;
+  onGenerateStoryboardSketches?: (instructions?: string) => void;
+  pendingStoryboardSketches?: boolean;
 }
 
 const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> = ({
@@ -31,6 +33,8 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   deleting,
   dragDelta,
   pendingVisualDirection,
+  onGenerateStoryboardSketches,
+  pendingStoryboardSketches,
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: visual.id,
@@ -42,6 +46,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   return (
     <Box
       ref={setNodeRef}
+      onPointerDown={() => setActive(visual.id)}
       sx={{
         position: "absolute",
         left: x,
@@ -50,7 +55,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: 50,
+        zIndex: active ? 1000 : 50,
         boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",
@@ -68,6 +73,8 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         onVisualChange={(visualId, newContent, idx) => onVisualChange(visualId, newContent, idx)}
         onDelete={() => onDelete(visual.id)}
         pendingVisualDirection={pendingVisualDirection}
+        onGenerateStoryboardSketches={onGenerateStoryboardSketches}
+        pendingStoryboardSketches={pendingStoryboardSketches}
         dragAttributes={attributes}
         dragListeners={listeners}
       />

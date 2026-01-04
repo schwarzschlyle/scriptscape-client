@@ -351,6 +351,48 @@ export function useSegmentsCanvasAreaLogic({
     [deleteCollectionMutation]
   );
 
+  /**
+   * Cascade delete for an entire script:
+   * - delete all segment collections for that script (backend should cascade segments)
+   * - remove from local state + positions
+   *
+   * NOTE: VisualDirections + Storyboards are handled in their respective hooks,
+   * but in the current architecture those are visual-id based and live in CanvasArea.
+   * CanvasArea will coordinate those additional cascades.
+   */
+  const handleDeleteCollectionsByScriptId = useCallback(
+    async (scriptId: string) => {
+      const colIds = Object.values(collections)
+        .filter((c: any) => c?.parentScriptId === scriptId)
+        .map((c: any) => c.id)
+        .filter(Boolean);
+
+      // Optimistic UI removal
+      if (colIds.length) {
+        setCollections((prev) => {
+          const next = { ...prev };
+          colIds.forEach((id) => {
+            delete (next as any)[id];
+          });
+          updateCache(next as any);
+          return next as any;
+        });
+        setPositions((prev) => {
+          const next = { ...prev };
+          colIds.forEach((id) => {
+            delete (next as any)[id];
+          });
+          updatePositionsCache(next as any);
+          return next as any;
+        });
+      }
+
+      // Backend deletes
+      await Promise.all(colIds.map((id) => deleteCollectionMutation.mutateAsync(id).catch(() => undefined)));
+    },
+    [collections, deleteCollectionMutation]
+  );
+
   // Update position of a collection card and cache
   const handleCollectionPositionChange = useCallback((id: string, x: number, y: number) => {
     setPositions((prev) => {
@@ -374,6 +416,7 @@ export function useSegmentsCanvasAreaLogic({
     handleEditCollectionName,
     handleEditSegmentText,
     handleDeleteCollection,
+    handleDeleteCollectionsByScriptId,
     handleCollectionPositionChange,
     clearError,
   };
