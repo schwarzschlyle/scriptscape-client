@@ -201,6 +201,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
 const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visualDirection" | "storyboard") => {
   let basePos;
+  let width = CARD_WIDTH;
   if (type === "script") {
     basePos = positions[id];
   } else if (type === "segmentCollection") {
@@ -209,11 +210,14 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
     basePos = visualDirectionsPositions[id];
   } else if (type === "storyboard") {
     basePos = storyboardPositions[id];
+    const sketchesLen = Array.isArray((storyboards as any)?.[id]?.sketches) ? (storyboards as any)[id].sketches.length : 0;
+    const cols = Math.max(1, Math.min(3, sketchesLen || 1));
+    width = CARD_WIDTH * cols;
   }
   if (!basePos) return { x: 0, y: 0 };
   const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
   return {
-    x: basePos.x + delta.x + CARD_WIDTH / 2,
+    x: basePos.x + delta.x + width / 2,
     y: basePos.y + delta.y + 90,
   };
 };

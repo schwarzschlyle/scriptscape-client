@@ -12,6 +12,15 @@ import CanvasArea from "./components/organisms/CanvasArea";
 import { useState, useCallback } from "react";
 
 export default function CanvasPage() {
+  React.useEffect(() => {
+    // Canvas requires fixed viewport without browser scrolling.
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
   const { organizationId = "", projectId = "" } = useParams();
 
   const { data: user, isLoading: userLoading } = useCurrentUser();

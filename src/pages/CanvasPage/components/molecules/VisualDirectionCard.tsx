@@ -4,6 +4,7 @@ import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import StoryboardSketchGenerationModal from "./StoryboardSketchGenerationModal";
+import Box from "@mui/material/Box";
 
 interface VisualDirection {
   id?: string;
@@ -49,6 +50,8 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   onGenerateStoryboardSketches,
   pendingStoryboardSketches = false,
 }) => {
+  const CARD_WIDTH = 340;
+  const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [localName, setLocalName] = useState(name || "");
   const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
   // Removed editingVisualIndex state (unused after refactor)
@@ -119,17 +122,19 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
           />
         }
         body={
-          <VisualDirectionCardBody
-            visuals={visuals}
-            editable={editable && !isSaving && !deleting}
-            isSaving={isSaving}
-            deleting={deleting}
-            error={error}
-            onVisualChange={onVisualChange}
-            extraBottomPadding
-          />
+          <Box className="canvas-scrollbar" sx={{ flex: 1, overflowY: "auto" }}>
+            <VisualDirectionCardBody
+              visuals={visuals}
+              editable={editable && !isSaving && !deleting}
+              isSaving={isSaving}
+              deleting={deleting}
+              error={error}
+              onVisualChange={onVisualChange}
+              extraBottomPadding
+            />
+          </Box>
         }
-        minHeight={220}
+        height={FIXED_HEIGHT}
         active={active}
         style={{
           marginTop: 16,

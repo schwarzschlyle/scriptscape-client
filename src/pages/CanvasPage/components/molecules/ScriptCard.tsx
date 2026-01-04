@@ -38,6 +38,8 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   deleting = false,
   pendingSegmentCollection = false,
 }) => {
+  const CARD_WIDTH = 340;
+  const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [text, setText] = useState(script.text || "");
   const [name, setName] = useState(script.name || "");
 
@@ -103,7 +105,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
           />
         }
         body={
-          <>
+          <Box className="canvas-scrollbar" sx={{ flex: 1, overflowY: "auto" }}>
             <ScriptCardBody
               text={text}
               onTextChange={setText}
@@ -124,9 +126,9 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
                 onGenerate={handleAddSegmentCollection}
               />
             )}
-          </>
+          </Box>
         }
-        minHeight={220}
+        height={FIXED_HEIGHT}
         active={active}
         onClick={onClick}
         style={{ opacity: deleting ? 0.5 : 1 }}

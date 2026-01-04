@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import { useDraggable } from "@dnd-kit/core";
 import StoryboardSketchCard from "./StoryboardSketchCard";
 
-const CARD_WIDTH = 340;
+const BASE_CARD_WIDTH = 340;
 
 interface DraggableStoryboardSketchCardProps {
   storyboard: any;
@@ -32,6 +32,10 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
     id: storyboard.id,
   });
 
+  const sketchesLen = Array.isArray(storyboard?.sketches) ? storyboard.sketches.length : 0;
+  const columns = Math.max(1, Math.min(3, sketchesLen || 1));
+  const cardWidth = BASE_CARD_WIDTH * columns;
+
   const x = position.x + (dragDelta?.x ?? 0);
   const y = position.y + (dragDelta?.y ?? 0);
 
@@ -42,7 +46,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
         position: "absolute",
         left: x,
         top: y,
-        width: CARD_WIDTH,
+        width: cardWidth,
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",

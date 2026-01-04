@@ -3,6 +3,7 @@ import CustomCard from "../../../../components/CustomCard";
 import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import Box from "@mui/material/Box";
 
 interface Segment {
   id?: string;
@@ -46,6 +47,8 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onGenerateVisualDirections,
   pendingVisualDirection,
 }) => {
+  const CARD_WIDTH = 340;
+  const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [localName, setLocalName] = useState(name || "");
   const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
   // Removed editingSegmentIndex state (unused after refactor)
@@ -113,17 +116,19 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
           />
         }
         body={
-          <SegmentCollectionCardBody
-            segments={segments}
-            editable={editable && !isSaving && !deleting}
-            isSaving={isSaving}
-            deleting={deleting}
-            error={error}
-            onSegmentChange={onSegmentChange}
-            extraBottomPadding
-          />
+          <Box className="canvas-scrollbar" sx={{ flex: 1, overflowY: "auto" }}>
+            <SegmentCollectionCardBody
+              segments={segments}
+              editable={editable && !isSaving && !deleting}
+              isSaving={isSaving}
+              deleting={deleting}
+              error={error}
+              onSegmentChange={onSegmentChange}
+              extraBottomPadding
+            />
+          </Box>
         }
-        minHeight={220}
+        height={FIXED_HEIGHT}
         active={active}
         style={{
           marginTop: 16,

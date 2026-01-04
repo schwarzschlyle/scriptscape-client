@@ -10,7 +10,6 @@ import {
 import {
   createStoryboardSketch,
   deleteStoryboardSketch,
-  getStoryboardSketches,
 } from "@api/storyboard_sketches/queries";
 import { useGenerateScriptSketchesAI } from "./useGenerateScriptSketchesAI";
 import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
@@ -246,8 +245,8 @@ export function useStoryboardCanvasAreaLogic({
   }, [visualSetIds.join("|"), organizationId, projectId]);
 
   // Fetch storyboard sketches (including base64) from backend on every refresh.
-  // We cache base64 in IndexedDB (large payload).
-  // On refresh: load from IndexedDB immediately; only fetch from backend when cache is missing.
+  // We cache image data in IndexedDB.
+  // For now: DO NOT fetch from backend (cache-only) to avoid overwriting/clearing cached images.
   useEffect(() => {
     let mounted = true;
     const storyboardIds = Object.keys(storyboards);
@@ -274,28 +273,14 @@ export function useStoryboardCanvasAreaLogic({
               return;
             }
 
-            // No cache => fetch from backend and cache it.
+            // Cache-only mode: if no cache found, just stop loading.
             if (!mounted) return;
             setStoryboards((prev) => {
               const sb = prev[id];
               if (!sb) return prev;
               return {
                 ...prev,
-                [id]: { ...sb, loadingSketches: true },
-              };
-            });
-
-            const sketches = await getStoryboardSketches(id);
-            // Cache as blobs (not base64) for quick reload.
-            const payload = await sketchesToCachePayload(sketches);
-            await idbSet(`storyboard-sketches:${id}`, payload).catch(() => undefined);
-            if (!mounted) return;
-            setStoryboards((prev) => {
-              const sb = prev[id];
-              if (!sb) return prev;
-              return {
-                ...prev,
-                [id]: { ...sb, sketches, loadingSketches: false },
+                [id]: { ...sb, sketches: [], loadingSketches: false },
               };
             });
           } catch (e: any) {
