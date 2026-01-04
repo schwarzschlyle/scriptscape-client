@@ -97,6 +97,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
       )
     ),
     onSyncChange,
+    getVisualDirectionPosition: (id: string) => visualDirectionsPositions[id],
   });
 
   // Visual Set creation mutation

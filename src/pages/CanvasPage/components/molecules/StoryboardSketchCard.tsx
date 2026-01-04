@@ -24,7 +24,6 @@ interface StoryboardSketchCardProps {
   onNameChange?: (name: string) => void;
   onDelete?: () => void;
   pendingSketches?: boolean;
-  loadingSketches?: boolean;
 }
 
 const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
@@ -41,7 +40,6 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onNameChange,
   onDelete,
   pendingSketches = false,
-  loadingSketches = false,
 }) => {
   const [localName, setLocalName] = useState(name || "");
   const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
@@ -84,7 +82,6 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
               isSaving={isSaving}
               deleting={deleting}
               error={error}
-              loading={loadingSketches}
               extraBottomPadding
             />
             {error && (

@@ -1,6 +1,5 @@
 import React from "react";
 import Box from "@mui/material/Box";
-import LoadingSpinner from "@components/LoadingSpinner";
 
 export interface StoryboardSketchCardBodyProps {
   sketches: { id?: string; name?: string; image_base64: string }[];
@@ -8,7 +7,6 @@ export interface StoryboardSketchCardBodyProps {
   deleting?: boolean;
   error?: string | null;
   extraBottomPadding?: boolean;
-  loading?: boolean;
 }
 
 const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
@@ -17,23 +15,15 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   deleting = false,
   error = null,
   extraBottomPadding = false,
-  loading = false,
 }) => {
   return (
     <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2, px: 2 }}>
-      {loading && (
-        <Box sx={{ width: "100%", display: "flex", justifyContent: "center", py: 3 }}>
-          <LoadingSpinner size={24} label="" />
-        </Box>
-      )}
-
       {/* Simple responsive-ish grid inside fixed-width card */}
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: 1,
-          opacity: loading ? 0.4 : 1,
         }}
       >
         {sketches.map((s, idx) => {
@@ -54,22 +44,18 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
               }}
               title={s.name || `Sketch ${idx + 1}`}
             >
-              {!base64 && loading ? (
-                <LoadingSpinner size={18} label="" />
-              ) : (
-                <img
-                  src={src}
-                  alt={s.name || `Sketch ${idx + 1}`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    opacity: deleting ? 0.5 : 1,
-                    filter: isSaving ? "grayscale(0.1)" : "none",
-                  }}
-                />
-              )}
+              <img
+                src={src}
+                alt={s.name || `Sketch ${idx + 1}`}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  opacity: deleting ? 0.5 : 1,
+                  filter: isSaving ? "grayscale(0.1)" : "none",
+                }}
+              />
             </Box>
           );
         })}

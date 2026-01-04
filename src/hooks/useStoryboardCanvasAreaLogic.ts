@@ -13,6 +13,7 @@ import {
   getStoryboardSketches,
 } from "@api/storyboard_sketches/queries";
 import { useGenerateScriptSketchesAI } from "./useGenerateScriptSketchesAI";
+import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
 
 type StoryboardCard = Storyboard & {
   parentVisualDirectionId: string;
@@ -39,6 +40,8 @@ export interface UseStoryboardCanvasAreaLogicProps {
   /** Visual set ids currently present on the canvas (derived from VisualDirection visuals). */
   visualSetIds: string[];
   onSyncChange?: (syncing: boolean) => void;
+  /** Optional lookup for the parent visual direction position to seed default storyboard positions */
+  getVisualDirectionPosition?: (visualDirectionId: string) => { x: number; y: number } | undefined;
 }
 
 /**
@@ -54,6 +57,7 @@ export function useStoryboardCanvasAreaLogic({
   projectId,
   visualSetIds,
   onSyncChange,
+  getVisualDirectionPosition,
 }: UseStoryboardCanvasAreaLogicProps) {
   const [storyboards, setStoryboards] = useState<StoryboardsState>({});
   const [positions, setPositions] = useState<PositionsState>({});
@@ -137,8 +141,13 @@ export function useStoryboardCanvasAreaLogic({
       Object.values(storyboards).forEach((sb) => {
         if (!sb?.id) return;
         if (!next[sb.id]) {
-          // Default placement; in most cases we set an explicit position at creation time.
-          next[sb.id] = { x: 1200, y: 300 };
+          // Default placement: spawn near parent visual direction for parity.
+          const parentPos = getVisualDirectionPosition?.(sb.parentVisualDirectionId);
+          const offsetX = 380;
+          const offsetY = 120;
+          next[sb.id] = parentPos
+            ? { x: parentPos.x + offsetX, y: parentPos.y + offsetY }
+            : { x: 1200, y: 300 };
           changed = true;
         }
       });
@@ -149,7 +158,7 @@ export function useStoryboardCanvasAreaLogic({
       return prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [Object.keys(storyboards).join("|")]);
+  }, [Object.keys(storyboards).join("|"), getVisualDirectionPosition]);
 
   // Load storyboards + sketches from backend whenever visible visual set ids change.
   // This keeps data canonical and avoids localStorage quota issues.
@@ -199,16 +208,34 @@ export function useStoryboardCanvasAreaLogic({
   }, [visualSetIds.join("|"), organizationId, projectId]);
 
   // Fetch storyboard sketches (including base64) from backend on every refresh.
-  // We DO NOT cache these in localStorage.
+  // We cache base64 in IndexedDB (large payload).
+  // On refresh: load from IndexedDB immediately; only fetch from backend when cache is missing.
   useEffect(() => {
     let mounted = true;
     const storyboardIds = Object.keys(storyboards);
     if (storyboardIds.length === 0) return;
 
     (async () => {
+      // Cache-first per storyboard
       await Promise.all(
         storyboardIds.map(async (id) => {
           try {
+            const cached = await idbGet<StoryboardSketch[]>(`storyboard-sketches:${id}`);
+
+            // If we have cache, render immediately and do NOT fetch.
+            if (mounted && cached && cached.length > 0) {
+              setStoryboards((prev) => {
+                const sb = prev[id];
+                if (!sb) return prev;
+                return {
+                  ...prev,
+                  [id]: { ...sb, sketches: cached, loadingSketches: false },
+                };
+              });
+              return;
+            }
+
+            // No cache => fetch from backend and cache it.
             if (!mounted) return;
             setStoryboards((prev) => {
               const sb = prev[id];
@@ -220,6 +247,7 @@ export function useStoryboardCanvasAreaLogic({
             });
 
             const sketches = await getStoryboardSketches(id);
+            await idbSet(`storyboard-sketches:${id}`, sketches).catch(() => undefined);
             if (!mounted) return;
             setStoryboards((prev) => {
               const sb = prev[id];
@@ -334,6 +362,9 @@ export function useStoryboardCanvasAreaLogic({
           return next;
         });
 
+        // Cache images to IndexedDB (not localStorage)
+        await idbSet(`storyboard-sketches:${storyboard.id}`, card.sketches).catch(() => undefined);
+
         if (position) {
           setPositions((prev) => {
             const next = { ...prev, [storyboard.id]: position };
@@ -421,6 +452,8 @@ export function useStoryboardCanvasAreaLogic({
         );
       }
       await deleteStoryboard(storyboardId);
+      // best-effort remove IDB cache
+      await idbDel(`storyboard-sketches:${storyboardId}`).catch(() => undefined);
       setError(null);
     } catch (e: any) {
       // rollback
