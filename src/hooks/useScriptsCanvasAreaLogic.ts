@@ -222,6 +222,18 @@ export function useScriptsCanvasAreaLogic({
     [organizationId, projectId]
   );
 
+  /** Optimistically remove script positions too (and cache). */
+  const handleDeleteScriptPosition = useCallback(
+    (id: string) => {
+      setPositions((prev) => {
+        const { [id]: _, ...rest } = prev;
+        updatePositionsCache(rest);
+        return rest;
+      });
+    },
+    [organizationId, projectId]
+  );
+
   // Update position of a script card and cache
   const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
     setPositions((prev) => {
@@ -286,6 +298,7 @@ export function useScriptsCanvasAreaLogic({
     handleRemoveDraftScript,
     handleEditScript,
     handleDeleteScript,
+    handleDeleteScriptPosition,
     handleCardPositionChange,
     clearError,
   };

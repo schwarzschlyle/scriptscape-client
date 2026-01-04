@@ -26,7 +26,7 @@ interface CanvasAreaProps {
 }
 
 const CARD_WIDTH = 340;
-const STORYBOARD_BASE_CARD_WIDTH = 300;
+const STORYBOARD_BASE_CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 
 import CanvasHeader from "../molecules/CanvasHeader";
@@ -42,6 +42,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleAddScript,
     handleEditScript,
     handleDeleteScript,
+    handleDeleteScriptPosition,
     handleCardPositionChange,
   } = useScriptsCanvasAreaLogic({ organizationId, projectId, onSyncChange });
 
@@ -58,6 +59,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleEditCollectionName,
     handleEditSegmentText,
     handleDeleteCollection,
+    handleDeleteCollectionsByScriptId,
     handleCollectionPositionChange,
   } = useSegmentsCanvasAreaLogic({ organizationId, projectId, onSyncChange, getScriptById });
 
@@ -86,6 +88,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     handleAddStoryboardWithSketches,
     handleEditStoryboardName,
     handleDeleteStoryboard,
+    handleDeleteStoryboardsByParentVisualDirectionId,
     handleStoryboardPositionChange,
   } = useStoryboardCanvasAreaLogic({
     organizationId,
@@ -140,9 +143,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
 
+  // Tracks expanded state for StoryboardSketch cards so connector math stays correct.
+  const [storyboardExpanded, setStoryboardExpanded] = React.useState<Record<string, boolean>>({});
+
   const handleDragStart = (event: DragStartEvent) => {
     const id = event.active?.id as string;
     if (id) {
+      // Always activate the card on drag start (so you can drag without pre-click).
       setActiveId(id);
       setIsDragging(true);
       setActiveDragDelta(null);
@@ -150,6 +157,72 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   };
 
   const [activeDragDelta, setActiveDragDelta] = React.useState<{ x: number; y: number } | null>(null);
+
+  // --- Cascading deletion orchestrators (script -> collections -> visual directions -> storyboards) ---
+  const deleteStoryboardsForVisualDirection = React.useCallback(
+    async (visualDirectionId: string) => {
+      await handleDeleteStoryboardsByParentVisualDirectionId(visualDirectionId).catch(() => undefined);
+      // Clear expand-state cache
+      setStoryboardExpanded((prev) => {
+        const next = { ...prev };
+        Object.values(storyboards)
+          .filter((sb: any) => sb.parentVisualDirectionId === visualDirectionId)
+          .forEach((sb: any) => {
+            if (sb?.id) delete next[sb.id];
+          });
+        return next;
+      });
+    },
+    [handleDeleteStoryboardsByParentVisualDirectionId, storyboards]
+  );
+
+  const deleteVisualDirectionWithChildren = React.useCallback(
+    async (visualDirectionId: string) => {
+      // Delete storyboards first
+      await deleteStoryboardsForVisualDirection(visualDirectionId);
+      // Then delete the VisualDirection card (deletes all visuals under it)
+      await handleDelete(visualDirectionId);
+    },
+    [deleteStoryboardsForVisualDirection, handleDelete]
+  );
+
+  const deleteScriptCascade = React.useCallback(
+    async (scriptId: string) => {
+      // Find segment collections for this script (before we remove them).
+      const collectionIds = Object.values(collections)
+        .filter((c: any) => c?.parentScriptId === scriptId)
+        .map((c: any) => c?.id)
+        .filter(Boolean) as string[];
+
+      // Find VisualDirection ids tied to those collections.
+      const visualDirectionIds = Object.values(visualDirections)
+        .filter((vd: any) => collectionIds.includes(vd?.parentSegmentCollectionId))
+        .map((vd: any) => vd?.id)
+        .filter(Boolean) as string[];
+
+      // Delete storyboards for each VisualDirection, then delete those visual directions.
+      await Promise.all(
+        visualDirectionIds.map(async (vdId) => {
+          await deleteVisualDirectionWithChildren(vdId).catch(() => undefined);
+        })
+      );
+
+      // Delete segment collections (backend should cascade segments)
+      await handleDeleteCollectionsByScriptId(scriptId).catch(() => undefined);
+
+      // Finally delete the script and its saved position.
+      handleDeleteScriptPosition(scriptId);
+      await handleDeleteScript(scriptId);
+    },
+    [
+      collections,
+      visualDirections,
+      deleteVisualDirectionWithChildren,
+      handleDeleteCollectionsByScriptId,
+      handleDeleteScriptPosition,
+      handleDeleteScript,
+    ]
+  );
 
   const handleDragMove = (event: DragMoveEvent) => {
     if (!event.delta) return;
@@ -213,7 +286,10 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
     basePos = storyboardPositions[id];
     const sketchesLen = Array.isArray((storyboards as any)?.[id]?.sketches) ? (storyboards as any)[id].sketches.length : 0;
     const cols = Math.max(1, Math.min(3, sketchesLen || 1));
-    width = STORYBOARD_BASE_CARD_WIDTH * cols;
+    // In compact mode, storyboard cards are fixed-width like other cards.
+    // In expanded mode, the card grows to show multiple columns.
+    const isExpanded = !!storyboardExpanded[id];
+    width = isExpanded ? STORYBOARD_BASE_CARD_WIDTH * cols : STORYBOARD_BASE_CARD_WIDTH;
   }
   if (!basePos) return { x: 0, y: 0 };
   const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };
@@ -436,7 +512,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                 organizationId={organizationId}
                 projectId={projectId}
                 onSave={(name, text) => handleEditScript(script.id, name, text)}
-                onDelete={() => handleDeleteScript(script.id)}
+                onDelete={() => deleteScriptCascade(script.id)}
                 active={activeId === script.id}
                 setActive={setActiveId}
                 onAddSegmentCollection={async (name: string, numSegments: number) => {
@@ -508,7 +584,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                     setActive={setActiveId}
                     onNameChange={() => {}}
                     onVisualChange={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={(visualDirectionId: string) => deleteVisualDirectionWithChildren(visualDirectionId)}
                     isSaving={!!vd.isSaving}
                     deleting={!!vd.deleting}
                     dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
@@ -550,6 +626,10 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                         isSaving={!!sb.isSaving}
                         deleting={!!sb.deleting}
                         dragDelta={activeId === sb.id && isDragging ? activeDragDelta : null}
+                        expanded={!!storyboardExpanded[sb.id]}
+                        onExpandedChange={(expanded) =>
+                          setStoryboardExpanded((prev) => ({ ...prev, [sb.id]: expanded }))
+                        }
                       />
                       </div>
                     ))

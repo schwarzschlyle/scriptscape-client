@@ -32,9 +32,7 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
           width: "100%",
           height: "100%",
           minHeight,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: "block",
         }}
       >
         <textarea
@@ -53,9 +51,7 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
             fontFamily: "monospace",
             fontSize: 12,
             padding: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            textAlign: "justify",
           }}
           autoFocus
         />
@@ -68,10 +64,7 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
           width: "100%",
           height: "100%",
           minHeight,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
+          textAlign: "justify",
         }}
       >
         <CardTypography variant="cardBody">{value}</CardTypography>

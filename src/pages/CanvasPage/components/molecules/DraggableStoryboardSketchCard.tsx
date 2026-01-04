@@ -3,15 +3,15 @@ import Box from "@mui/material/Box";
 import { useDraggable } from "@dnd-kit/core";
 import StoryboardSketchCard from "./StoryboardSketchCard";
 
-// Storyboard cards can get very wide when showing 2-3 sketches.
-// Keep them slightly narrower than standard cards so they stay readable on the canvas.
-const BASE_CARD_WIDTH = 300;
+const BASE_CARD_WIDTH = 340;
 
 interface DraggableStoryboardSketchCardProps {
   storyboard: any;
   position: { x: number; y: number };
   active: boolean;
   setActive: (id: string) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   onNameChange: (storyboardId: string, newName: string) => void;
   onDelete: (storyboardId: string) => void;
   isSaving?: boolean;
@@ -24,6 +24,8 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
   position,
   active,
   setActive,
+  expanded,
+  onExpandedChange,
   onNameChange,
   onDelete,
   isSaving,
@@ -34,9 +36,8 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
     id: storyboard.id,
   });
 
-  const sketchesLen = Array.isArray(storyboard?.sketches) ? storyboard.sketches.length : 0;
-  const columns = Math.max(1, Math.min(3, sketchesLen || 1));
-  const cardWidth = BASE_CARD_WIDTH * columns;
+  // Width is controlled by the card itself (collapsed=340, expanded=340*cols)
+  const cardWidth = BASE_CARD_WIDTH;
 
   const x = position.x + (dragDelta?.x ?? 0);
   const y = position.y + (dragDelta?.y ?? 0);
@@ -44,6 +45,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
   return (
     <Box
       ref={setNodeRef}
+      onPointerDown={() => setActive(storyboard.id)}
       sx={{
         position: "absolute",
         left: x,
@@ -52,7 +54,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: 50,
+        zIndex: active ? 1000 : 50,
         boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",
@@ -60,7 +62,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
       }}
     >
       <StoryboardSketchCard
-        name={storyboard.name || "Storyboard"}
+        name={storyboard.name || "Storyboard Sketches"}
         sketches={storyboard.sketches || []}
         isSaving={isSaving}
         deleting={deleting}
@@ -72,6 +74,8 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
         onClick={() => setActive(storyboard.id)}
         onNameChange={(newName) => onNameChange(storyboard.id, newName)}
         onDelete={() => onDelete(storyboard.id)}
+        expanded={expanded}
+        onExpandedChange={onExpandedChange}
       />
     </Box>
   );

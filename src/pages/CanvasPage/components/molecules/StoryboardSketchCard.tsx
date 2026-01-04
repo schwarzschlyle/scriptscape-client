@@ -25,6 +25,9 @@ interface StoryboardSketchCardProps {
   onClick?: () => void;
   onNameChange?: (name: string) => void;
   onDelete?: () => void;
+  /** Controlled expand state (optional) so CanvasArea can compute connector width correctly. */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   // no pending indicator on child cards (parent shows blue dot while generating)
 }
 
@@ -41,12 +44,17 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onClick,
   onNameChange,
   onDelete,
+  expanded: controlledExpanded,
+  onExpandedChange,
 }) => {
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
-  const [isFullHeight, setIsFullHeight] = useState(false);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const expanded = typeof controlledExpanded === "boolean" ? controlledExpanded : uncontrolledExpanded;
   const [localName, setLocalName] = useState(name || "");
   const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
+
+  const columns = Math.max(1, Math.min(3, sketches.length || 1));
 
   React.useEffect(() => {
     setLocalName(name || "");
@@ -81,10 +89,13 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
         body={
           <>
             <Box
-              className={isFullHeight ? undefined : "canvas-scrollbar"}
+              className={expanded ? undefined : "canvas-scrollbar"}
               sx={{
                 flex: 1,
-                overflowY: isFullHeight ? "visible" : "auto",
+                // When compact, allow scrolling inside the card body to access all rows.
+                // When expanded, we want full height (no card-level scroll).
+                overflowY: expanded ? "visible" : "auto",
+                overflowX: "hidden",
               }}
             >
               <StoryboardSketchCardBody
@@ -92,6 +103,7 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
                 isSaving={isSaving}
                 deleting={deleting}
                 error={error}
+                compact={!expanded}
               />
             </Box>
 
@@ -112,9 +124,11 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsFullHeight((v) => !v);
+                    const next = !expanded;
+                    if (onExpandedChange) onExpandedChange(next);
+                    else setUncontrolledExpanded(next);
                   }}
-                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
+                  aria-label={expanded ? "Collapse" : "Expand"}
                 >
                   <img
                     src={AiPromptIcon}
@@ -132,10 +146,14 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
             )}
           </>
         }
-        height={isFullHeight ? "auto" : FIXED_HEIGHT}
+        height={expanded ? "auto" : FIXED_HEIGHT}
+        style={{
+          ...(expanded ? { width: CARD_WIDTH * columns } : { width: CARD_WIDTH }),
+          opacity: deleting ? 0.5 : 1,
+          marginTop: 16,
+        }}
         active={active}
         onClick={onClick}
-        style={{ opacity: deleting ? 0.5 : 1, marginTop: 16 }}
       />
     </div>
   );

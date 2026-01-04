@@ -30,16 +30,17 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       mt: 0,
       mb: 0,
       cursor: editable ? "text" : "pointer",
-      textAlign: !editable ? "center" : "left",
-      alignItems: !editable ? "center" : "stretch",
-      justifyContent: !editable ? "center" : "flex-start",
+      // Card bodies should be text-friendly by default.
+      textAlign: "left",
+      alignItems: "stretch",
+      justifyContent: "flex-start",
       overflow: "auto",
       wordBreak: "break-word",
       maxWidth: "100%",
       fontFamily: "monospace",
       fontSize: 14,
       color: "#fff",
-      padding: "8px",
+      padding: "12px",
       ...style,
     }}
     className={className}

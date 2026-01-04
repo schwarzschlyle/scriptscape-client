@@ -46,6 +46,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   return (
     <Box
       ref={setNodeRef}
+      onPointerDown={() => setActive(visual.id)}
       sx={{
         position: "absolute",
         left: x,
@@ -54,7 +55,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: 50,
+        zIndex: active ? 1000 : 50,
         boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",

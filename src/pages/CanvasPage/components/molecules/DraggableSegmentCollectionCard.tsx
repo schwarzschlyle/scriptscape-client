@@ -44,6 +44,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
   return (
     <Box
       ref={setNodeRef}
+      onPointerDown={() => setActive(col.id)}
       sx={{
         position: "absolute",
         left: x,
@@ -52,7 +53,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
         minWidth: 0,
         m: 0,
         flex: "0 1 auto",
-        zIndex: 50,
+        zIndex: active ? 1000 : 50,
         boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",

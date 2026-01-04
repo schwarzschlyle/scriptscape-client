@@ -2,6 +2,7 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
+import ScriptIcon from "../../../../assets/script-icon.svg";
 
 interface StoryboardSketchCardHeaderProps {
   name: string;
@@ -69,6 +70,17 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
             />
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <img
+                src={ScriptIcon}
+                alt="Storyboard Icon"
+                style={{
+                  width: 16,
+                  height: 16,
+                  marginRight: 4,
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                }}
+              />
               <CardTypography variant="cardType">
                 {localName || "Storyboard Sketches"}
                 {typeof sketchesCount === "number" ? ` (${sketchesCount})` : ""}

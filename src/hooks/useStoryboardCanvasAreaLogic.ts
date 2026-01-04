@@ -352,7 +352,7 @@ export function useStoryboardCanvasAreaLogic({
         });
 
         const storyboard = await createStoryboard(visualSetId, {
-          name: "Storyboard",
+          name: "Storyboard Sketches",
           description: "",
           meta: {
             parentVisualDirectionId,
@@ -526,6 +526,16 @@ export function useStoryboardCanvasAreaLogic({
     }
   }, []);
 
+  /** Cascade delete storyboards that belong to a given parentVisualDirectionId. */
+  const handleDeleteStoryboardsByParentVisualDirectionId = useCallback(
+    async (parentVisualDirectionId: string) => {
+      const boards = Object.values(storyboards).filter((sb) => sb.parentVisualDirectionId === parentVisualDirectionId);
+      const ids = boards.map((b) => b.id).filter(Boolean);
+      await Promise.all(ids.map((id) => handleDeleteStoryboard(id).catch(() => undefined)));
+    },
+    [storyboards, handleDeleteStoryboard]
+  );
+
   const handleStoryboardPositionChange = useCallback(
     (id: string, x: number, y: number) => {
       setPositions((prev) => {
@@ -549,6 +559,7 @@ export function useStoryboardCanvasAreaLogic({
     handleAddStoryboardWithSketches,
     handleEditStoryboardName,
     handleDeleteStoryboard,
+    handleDeleteStoryboardsByParentVisualDirectionId,
     handleStoryboardPositionChange,
     clearError,
   };

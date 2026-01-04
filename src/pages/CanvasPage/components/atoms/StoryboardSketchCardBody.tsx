@@ -8,6 +8,8 @@ export interface StoryboardSketchCardBodyProps {
   deleting?: boolean;
   error?: string | null;
   extraBottomPadding?: boolean;
+  /** Compact gallery mode: smaller images, no captions. */
+  compact?: boolean;
 }
 
 const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
@@ -16,6 +18,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   deleting = false,
   error = null,
   extraBottomPadding = false,
+  compact = false,
 }) => {
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
   // Caption is fixed-height to keep the grid consistent.
@@ -67,15 +70,16 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                 alt={s.name || `Sketch ${idx + 1}`}
                 style={{
                   width: "100%",
-                  // Keep tiles compact (not too tall) while leaving room for captions.
-                  aspectRatio: "4 / 3",
+                  // Compact gallery mode keeps thumbnails smaller but aspect preserved.
+                  aspectRatio: compact ? "16 / 10" : "4 / 3",
                   objectFit: "cover",
                   display: "block",
                   opacity: deleting ? 0.5 : 1,
                   filter: isSaving ? "grayscale(0.1)" : "none",
                 }}
               />
-              {!!segmentText && (
+
+              {!compact && !!segmentText && (
                 <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>
                   {/* Use the exact same container component styling as other cards */}
                   <Box
@@ -86,11 +90,10 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                     }}
                     title={segmentText}
                   >
-                    <EditableCardContentArea
-                      value={segmentText}
-                      editable={false}
-                      minHeight={textBoxHeight}
-                    />
+                    {/* Scroll inside caption box when expanded */}
+                    <div className="canvas-scrollbar" style={{ height: textBoxHeight, overflowY: "auto" }}>
+                      <EditableCardContentArea value={segmentText} editable={false} minHeight={textBoxHeight} />
+                    </div>
                   </Box>
                 </Box>
               )}
