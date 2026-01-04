@@ -1,7 +1,6 @@
 import React from "react";
 import Box from "@mui/material/Box";
-import CustomCardBody from "../../../../components/CustomCardBody";
-import CardTypography from "../molecules/CardTypography";
+import EditableCardContentArea from "./EditableCardContentArea";
 
 export interface StoryboardSketchCardBodyProps {
   sketches: { id?: string; name?: string; image_base64: string; meta?: Record<string, any> }[];
@@ -19,7 +18,9 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   extraBottomPadding = false,
 }) => {
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
-  const textBoxHeight = 60; // ~3 lines at current typography size
+  // Caption is fixed-height to keep the grid consistent.
+  // Give it a bit more room than strict 3 lines so nothing gets visually clipped.
+  const textBoxHeight = 66;
 
   return (
     <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2, px: 2 }}>
@@ -66,9 +67,8 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                 alt={s.name || `Sketch ${idx + 1}`}
                 style={{
                   width: "100%",
-                  // Reserve space for 3 lines of text by making the image a bit shorter.
-                  // (Keeps all tiles uniform across the grid)
-                  aspectRatio: "1 / 0.82",
+                  // Keep tiles compact (not too tall) while leaving room for captions.
+                  aspectRatio: "4 / 3",
                   objectFit: "cover",
                   display: "block",
                   opacity: deleting ? 0.5 : 1,
@@ -76,40 +76,23 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                 }}
               />
               {!!segmentText && (
-                <CustomCardBody
-                  style={{
-                    minHeight: textBoxHeight,
-                    height: textBoxHeight,
-                    width: "100%",
-                    background: "transparent",
-                    border: "none",
-                    borderRadius: 0,
-                    padding: 0,
-                    overflow: "hidden",
-                  }}
-                >
+                <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>
+                  {/* Use the exact same container component styling as other cards */}
                   <Box
                     sx={{
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
                       width: "100%",
                       height: textBoxHeight,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textAlign: "center",
-                      px: 1,
-                      py: 0.5,
                       overflow: "hidden",
-                      // 3-line clamp (uniform height across all tiles)
-                      displayWebkitBox: "-webkit-box",
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: "vertical",
                     }}
+                    title={segmentText}
                   >
-                    <CardTypography variant="cardBody">{segmentText}</CardTypography>
+                    <EditableCardContentArea
+                      value={segmentText}
+                      editable={false}
+                      minHeight={textBoxHeight}
+                    />
                   </Box>
-                </CustomCardBody>
+                </Box>
               )}
             </Box>
           );

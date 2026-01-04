@@ -26,6 +26,7 @@ interface CanvasAreaProps {
 }
 
 const CARD_WIDTH = 340;
+const STORYBOARD_BASE_CARD_WIDTH = 300;
 const CANVAS_SIZE = 10000;
 
 import CanvasHeader from "../molecules/CanvasHeader";
@@ -212,7 +213,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
     basePos = storyboardPositions[id];
     const sketchesLen = Array.isArray((storyboards as any)?.[id]?.sketches) ? (storyboards as any)[id].sketches.length : 0;
     const cols = Math.max(1, Math.min(3, sketchesLen || 1));
-    width = CARD_WIDTH * cols;
+    width = STORYBOARD_BASE_CARD_WIDTH * cols;
   }
   if (!basePos) return { x: 0, y: 0 };
   const delta = (id === activeId && isDragging && activeDragDelta) ? activeDragDelta : { x: 0, y: 0 };

@@ -2,8 +2,6 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import Box from "@mui/material/Box";
-import { keyframes } from "@mui/system";
 
 interface StoryboardSketchCardHeaderProps {
   name: string;

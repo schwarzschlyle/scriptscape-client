@@ -38,7 +38,8 @@ body {
 /* Modern translucent dark scrollbar (used for fixed-height canvas cards) */
 .canvas-scrollbar {
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(171, 244, 62, 0.32) rgba(0, 0, 0, 0.18);
+  /* Dark gray thumb, subtle dark track */
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(0, 0, 0, 0.18);
 }
 
 .canvas-scrollbar::-webkit-scrollbar {

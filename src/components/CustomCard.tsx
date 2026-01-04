@@ -28,6 +28,7 @@ const CustomCard: React.FC<CustomCardProps> = ({
 }) => (
   <Box sx={{ position: "relative" }} style={style}>
     <Card
+      className="canvas-card"
       sx={{
         minHeight: height ?? minHeight,
         height: height ?? "auto",

@@ -3,7 +3,9 @@ import Box from "@mui/material/Box";
 import { useDraggable } from "@dnd-kit/core";
 import StoryboardSketchCard from "./StoryboardSketchCard";
 
-const BASE_CARD_WIDTH = 340;
+// Storyboard cards can get very wide when showing 2-3 sketches.
+// Keep them slightly narrower than standard cards so they stay readable on the canvas.
+const BASE_CARD_WIDTH = 300;
 
 interface DraggableStoryboardSketchCardProps {
   storyboard: any;

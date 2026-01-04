@@ -229,7 +229,21 @@ export function useStoryboardCanvasAreaLogic({
 
         if (!mounted) return;
         setStoryboards((prev) => {
-          const next = { ...prev, ...nextStoryboards };
+          // IMPORTANT: preserve already-loaded sketches from IndexedDB.
+          // Otherwise, when storyboards refresh from backend, it replaces the storyboard entry
+          // (same id) and can clear `sketches` without re-triggering the cache-load effect.
+          const merged: StoryboardsState = { ...prev };
+          Object.entries(nextStoryboards).forEach(([id, incoming]) => {
+            const existing = prev[id];
+            merged[id] = {
+              ...incoming,
+              sketches: existing?.sketches?.length ? existing.sketches : incoming.sketches,
+              loadingSketches: existing?.sketches?.length ? false : incoming.loadingSketches,
+              error: incoming.error ?? existing?.error ?? null,
+            } as any;
+          });
+
+          const next = merged;
           updateCache(next);
           return next;
         });

@@ -66,7 +66,7 @@ const variantStyles: Record<CardTypographyVariant, React.CSSProperties> = {
     fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
     fontWeight: 400,
     fontStyle: "normal",
-    fontSize: "16px",
+    fontSize: "14px",
     color: "#FFFFFF",
     letterSpacing: 0,
     lineHeight: 1.2,

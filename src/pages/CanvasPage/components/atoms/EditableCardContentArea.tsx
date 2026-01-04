@@ -51,7 +51,7 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
             outline: "none",
             resize: "vertical",
             fontFamily: "monospace",
-            fontSize: 14,
+            fontSize: 12,
             padding: "8px",
             display: "flex",
             alignItems: "center",

@@ -3,6 +3,8 @@ import CustomCard from "../../../../components/CustomCard";
 import StoryboardSketchCardHeader from "../atoms/StoryboardSketchCardHeader";
 import StoryboardSketchCardBody from "../atoms/StoryboardSketchCardBody";
 import Box from "@mui/material/Box";
+import CardFooter from "@components/CardFooter";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface StoryboardSketch {
   id?: string;
@@ -40,6 +42,9 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onNameChange,
   onDelete,
 }) => {
+  const CARD_WIDTH = 340;
+  const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
+  const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
   const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
 
@@ -75,12 +80,50 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
         }
         body={
           <>
-            <StoryboardSketchCardBody
-              sketches={sketches}
-              isSaving={isSaving}
-              deleting={deleting}
-              error={error}
-              extraBottomPadding
+            <Box
+              className={isFullHeight ? undefined : "canvas-scrollbar"}
+              sx={{
+                flex: 1,
+                overflowY: isFullHeight ? "visible" : "auto",
+              }}
+            >
+              <StoryboardSketchCardBody
+                sketches={sketches}
+                isSaving={isSaving}
+                deleting={deleting}
+                error={error}
+              />
+            </Box>
+
+            <CardFooter
+              left={null}
+              center={
+                <button
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFullHeight((v) => !v);
+                  }}
+                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
+                >
+                  <img
+                    src={AiPromptIcon}
+                    alt="Expand/Collapse"
+                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
+                  />
+                </button>
+              }
+              right={null}
             />
             {error && (
               <Box sx={{ mt: 1, px: 2 }}>
@@ -89,7 +132,7 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
             )}
           </>
         }
-        minHeight={260}
+        height={isFullHeight ? "auto" : FIXED_HEIGHT}
         active={active}
         onClick={onClick}
         style={{ opacity: deleting ? 0.5 : 1, marginTop: 16 }}

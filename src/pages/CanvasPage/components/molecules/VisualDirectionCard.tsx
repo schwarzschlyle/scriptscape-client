@@ -5,6 +5,7 @@ import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import StoryboardSketchGenerationModal from "./StoryboardSketchGenerationModal";
 import Box from "@mui/material/Box";
+import CardFooter from "@components/CardFooter";
 
 interface VisualDirection {
   id?: string;
@@ -52,6 +53,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
 }) => {
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
+  const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
   const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
   // Removed editingVisualIndex state (unused after refactor)
@@ -122,62 +124,99 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
           />
         }
         body={
-          <Box className="canvas-scrollbar" sx={{ flex: 1, overflowY: "auto" }}>
-            <VisualDirectionCardBody
-              visuals={visuals}
-              editable={editable && !isSaving && !deleting}
-              isSaving={isSaving}
-              deleting={deleting}
-              error={error}
-              onVisualChange={onVisualChange}
-              extraBottomPadding
+          <>
+            <Box
+              className={isFullHeight ? undefined : "canvas-scrollbar"}
+              sx={{
+                flex: 1,
+                overflowY: isFullHeight ? "visible" : "auto",
+              }}
+            >
+              <VisualDirectionCardBody
+                visuals={visuals}
+                editable={editable && !isSaving && !deleting}
+                isSaving={isSaving}
+                deleting={deleting}
+                error={error}
+                onVisualChange={onVisualChange}
+              />
+            </Box>
+            <CardFooter
+              left={null}
+              center={
+                <button
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFullHeight((v) => !v);
+                  }}
+                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
+                >
+                  <img
+                    src={AiPromptIcon}
+                    alt="Expand/Collapse"
+                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
+                  />
+                </button>
+              }
+              right={
+                <>
+                  {/* Generate Storyboard Sketches */}
+                  <button
+                    style={{
+                      background: "none",
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: isSaving || pendingStoryboardSketches ? "not-allowed" : "pointer",
+                      opacity: isSaving || pendingStoryboardSketches ? 0.5 : 1,
+                      padding: 0,
+                      margin: 0,
+                      outline: "none",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isSaving && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
+                        setShowGenerateStoryboardModal(true);
+                      }
+                    }}
+                    aria-label="Generate Storyboard Sketches"
+                    disabled={isSaving || pendingStoryboardSketches || !onGenerateStoryboardSketches}
+                  >
+                    <img
+                      src={AiPromptIcon}
+                      alt="AI Prompt"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        display: "block",
+                        filter: isSaving || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
+                      }}
+                    />
+                  </button>
+                </>
+              }
             />
-          </Box>
+          </>
         }
-        height={FIXED_HEIGHT}
+        height={isFullHeight ? "auto" : FIXED_HEIGHT}
         active={active}
         style={{
           marginTop: 16,
         }}
         onClick={onClick}
       />
-      <button
-        style={{
-          position: "absolute",
-          right: 2,
-          bottom: 2,
-          background: "none",
-          border: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: isSaving || pendingStoryboardSketches ? "not-allowed" : "pointer",
-          opacity: isSaving || pendingStoryboardSketches ? 0.5 : 1,
-          padding: 0,
-          margin: 0,
-          outline: "none",
-          zIndex: 2,
-        }}
-        onClick={() => {
-          if (!isSaving && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
-            setShowGenerateStoryboardModal(true);
-          }
-        }}
-        aria-label="Generate Storyboard Sketches"
-        disabled={isSaving || pendingStoryboardSketches || !onGenerateStoryboardSketches}
-      >
-        <img
-          src={AiPromptIcon}
-          alt="AI Prompt"
-          style={{
-            width: 22,
-            height: 22,
-            display: "block",
-            filter: isSaving || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
-          }}
-        />
-      </button>
-
       {showGenerateStoryboardModal && (
         <StoryboardSketchGenerationModal
           open={showGenerateStoryboardModal}

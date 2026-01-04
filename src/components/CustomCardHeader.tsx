@@ -45,6 +45,8 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
 }) => {
   return (
     <Box
+      // Entire header acts as drag handle (except title + delete button areas)
+      {...(!editing && dragListeners ? { ...dragAttributes, ...dragListeners } : {})}
       sx={{
         width: "100%",
         display: "flex",
@@ -61,92 +63,65 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         borderBottom: "1px solid #1f211f",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 2px 16px 0 rgba(0,0,0,0.08)",
-        cursor: "default",
+        cursor: !editing && dragListeners ? "grab" : "default",
       }}
       tabIndex={0}
       onDoubleClick={editable && !editing ? onEditStart : undefined}
       {...rest}
     >
-      {/* Dedicated drag handle */}
-      {!editing && dragListeners && (
-        <Box
-          {...dragAttributes}
-          {...dragListeners}
-          sx={{
-            width: 18,
-            height: 18,
-            mr: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "grab",
-            color: "#888",
-            opacity: 0.7,
-            ":hover": { opacity: 1, color: "#73a32c" },
-            userSelect: "none",
-          }}
-          tabIndex={-1}
-          aria-label="Drag handle"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12">
-            <circle cx="2" cy="2" r="1.2" />
-            <circle cx="6" cy="2" r="1.2" />
-            <circle cx="10" cy="2" r="1.2" />
-            <circle cx="2" cy="6" r="1.2" />
-            <circle cx="6" cy="6" r="1.2" />
-            <circle cx="10" cy="6" r="1.2" />
-            <circle cx="2" cy="10" r="1.2" />
-            <circle cx="6" cy="10" r="1.2" />
-            <circle cx="10" cy="10" r="1.2" />
-          </svg>
-        </Box>
-      )}
       <Box sx={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
         {icon}
-        {editable && editing && onTitleChange ? (
-          <input
-            ref={inputRef}
-            value={typeof title === "string" ? title : ""}
-            onChange={e => onTitleChange(e.target.value)}
-            onBlur={onEditEnd}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: "transparent",
-              color: "#73a32c",
-              border: "none",
-              outline: "none",
-              fontWeight: 600,
-              fontSize: 16,
-              fontFamily: "inherit",
-              paddingLeft: 8,
-              paddingRight: 16,
-              textAlign: "left",
-            }}
-            disabled={deleting}
-            placeholder="Card Title"
-          />
-        ) : (
-          <Typography
-            variant="subtitle2"
-            noWrap
-            sx={{
-              fontWeight: 600,
-              color: "#73a32c",
-              fontSize: 16,
-              pl: 0,
-              pr: 2,
-              flex: 1,
-              minWidth: 0,
-              textAlign: "left",
-              userSelect: editable ? "text" : "none",
-              display: "inline-block",
-              verticalAlign: "middle",
-            }}
-          >
-            {title}
-          </Typography>
-        )}
+        <Box
+          // Title area should NOT initiate drag (to avoid conflicts with editing/selection)
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          sx={{ flex: 1, minWidth: 0, display: "flex" }}
+        >
+          {editable && editing && onTitleChange ? (
+            <input
+              ref={inputRef}
+              value={typeof title === "string" ? title : ""}
+              onChange={e => onTitleChange(e.target.value)}
+              onBlur={onEditEnd}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                color: "#73a32c",
+                border: "none",
+                outline: "none",
+                fontWeight: 600,
+                fontSize: 16,
+                fontFamily: "inherit",
+                paddingLeft: 8,
+                paddingRight: 16,
+                textAlign: "left",
+              }}
+              disabled={deleting}
+              placeholder="Card Title"
+            />
+          ) : (
+            <Typography
+              variant="subtitle2"
+              noWrap
+              sx={{
+                fontWeight: 600,
+                color: "#73a32c",
+                fontSize: 16,
+                pl: 0,
+                pr: 2,
+                flex: 1,
+                minWidth: 0,
+                textAlign: "left",
+                userSelect: editable ? "text" : "none",
+                display: "inline-block",
+                verticalAlign: "middle",
+              }}
+            >
+              {title}
+            </Typography>
+          )}
+        </Box>
         {children}
         {actions}
         {onDelete && (
@@ -155,6 +130,9 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
             onClick={deleting || isSaving ? undefined : onDelete}
             disabled={deleting || isSaving}
             aria-label="Delete"
+            // Delete button must not initiate drag.
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             sx={{
               color: deleting || isSaving ? "#bdbdbd" : "#e53935",
               cursor: deleting || isSaving ? "not-allowed" : "pointer",
