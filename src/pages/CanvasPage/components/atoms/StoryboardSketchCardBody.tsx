@@ -59,19 +59,39 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
               }}
               title={s.name || `Sketch ${idx + 1}`}
             >
-              <img
-                src={src}
-                alt={s.name || `Sketch ${idx + 1}`}
-                style={{
-                  width: "100%",
-                  // Compact gallery mode keeps thumbnails smaller but aspect preserved.
-                  aspectRatio: compact ? "16 / 10" : "4 / 3",
-                  objectFit: "cover",
-                  display: "block",
-                  opacity: deleting ? 0.5 : 1,
-                  filter: isSaving ? "grayscale(0.1)" : "none",
-                }}
-              />
+              {src ? (
+                <img
+                  src={src}
+                  alt={s.name || `Sketch ${idx + 1}`}
+                  loading="lazy"
+                  style={{
+                    width: "100%",
+                    // Compact gallery mode keeps thumbnails smaller but aspect preserved.
+                    aspectRatio: compact ? "16 / 10" : "4 / 3",
+                    objectFit: "cover",
+                    display: "block",
+                    opacity: deleting ? 0.5 : 1,
+                    filter: isSaving ? "grayscale(0.1)" : "none",
+                  }}
+                />
+              ) : (
+                // IMPORTANT: do not render <img src="">. When we only have cached metadata,
+                // image_url will be empty until the API refresh fetch returns a new presigned URL.
+                <Box
+                  sx={{
+                    width: "100%",
+                    aspectRatio: compact ? "16 / 10" : "4 / 3",
+                    bgcolor: "rgba(255,255,255,0.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: 12,
+                  }}
+                >
+                  Loading image…
+                </Box>
+              )}
 
               {!compact && !!segmentText && (
                 <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>

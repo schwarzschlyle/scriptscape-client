@@ -13,7 +13,50 @@ import {
   deleteStoryboardSketch,
 } from "@api/storyboard_sketches/queries";
 import { useGenerateScriptSketchesAI } from "./useGenerateScriptSketchesAI";
-import { idbDel } from "../utils/indexedDb";
+import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
+
+type CachedStoryboardSketch = {
+  id: string;
+  storyboardId: string;
+  name: string;
+  s3_key: string;
+  meta?: Record<string, any>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const getSketchesCacheKey = (storyboardId: string) => `storyboard-sketches:${storyboardId}`;
+
+function sketchesToCachePayload(sketches: StoryboardSketch[]): CachedStoryboardSketch[] {
+  return (sketches || [])
+    .filter((s) => !!s?.id)
+    .map((s) => ({
+      id: s.id,
+      storyboardId: s.storyboardId,
+      name: s.name,
+      s3_key: (s as any).s3_key || "",
+      meta: s.meta,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+    }));
+}
+
+function cachePayloadToSketches(payload: CachedStoryboardSketch[]): StoryboardSketch[] {
+  return (payload || []).map((p) =>
+    ({
+      id: p.id,
+      storyboardId: p.storyboardId,
+      name: p.name,
+      s3_key: p.s3_key,
+      // IMPORTANT: do not cache image bytes or presigned URLs.
+      // On refresh we always fetch fresh presigned URLs from the API (S3-backed).
+      image_url: "",
+      meta: p.meta,
+      createdAt: p.createdAt || "",
+      updatedAt: p.updatedAt || "",
+    }) as any
+  );
+}
 
 type StoryboardCard = Storyboard & {
   parentVisualDirectionId: string;
@@ -222,7 +265,9 @@ export function useStoryboardCanvasAreaLogic({
   }, [visualSetIds.join("|"), organizationId, projectId]);
 
   // Fetch storyboard sketches from backend on every refresh.
-  // No caching: images are stored in S3 and served via presigned URLs.
+  // Cache parity: we cache *metadata* (id/name/meta/s3_key) in IndexedDB.
+  // But we DO NOT cache image bytes or presigned URLs.
+  // On refresh we always fetch fresh presigned URLs from the API (S3-backed).
   useEffect(() => {
     let mounted = true;
     const storyboardIds = Object.keys(storyboards);
@@ -232,8 +277,33 @@ export function useStoryboardCanvasAreaLogic({
       await Promise.all(
         storyboardIds.map(async (id) => {
           try {
+            // 1) Cache-first metadata (so card doesn't appear empty offline / during reload)
+            try {
+              const cached = await idbGet<CachedStoryboardSketch[]>(getSketchesCacheKey(id));
+              if (mounted && cached && cached.length > 0) {
+                const cachedSketches = cachePayloadToSketches(cached);
+                setStoryboards((prev) => {
+                  const sb = prev[id];
+                  if (!sb) return prev;
+                  // Only set if we don't already have sketches in memory
+                  if (sb.sketches && sb.sketches.length > 0) return prev;
+                  return {
+                    ...prev,
+                    [id]: { ...sb, sketches: cachedSketches, loadingSketches: true },
+                  };
+                });
+              }
+            } catch {
+              // ignore IDB read errors
+            }
+
+            // 2) Always fetch fresh image_url from API (presigned S3 URL)
             const sketches = await getStoryboardSketches(id);
             if (!mounted) return;
+
+            // Update IDB cache with metadata only
+            idbSet(getSketchesCacheKey(id), sketchesToCachePayload(sketches)).catch(() => undefined);
+
             setStoryboards((prev) => {
               const sb = prev[id];
               if (!sb) return prev;
@@ -244,6 +314,8 @@ export function useStoryboardCanvasAreaLogic({
             });
           } catch (e: any) {
             if (!mounted) return;
+
+            // If API fetch fails, keep whatever cached metadata we might have shown.
             setStoryboards((prev) => {
               const sb = prev[id];
               if (!sb) return prev;
@@ -251,7 +323,6 @@ export function useStoryboardCanvasAreaLogic({
                 ...prev,
                 [id]: {
                   ...sb,
-                  sketches: [],
                   loadingSketches: false,
                   error: e?.message || "Failed to load storyboard sketches.",
                 },
@@ -363,6 +434,9 @@ export function useStoryboardCanvasAreaLogic({
           return next;
         });
 
+        // Cache sketch *metadata* only (no image bytes / no presigned URLs)
+        idbSet(getSketchesCacheKey(storyboard.id), sketchesToCachePayload(card.sketches)).catch(() => undefined);
+
         // No image caching: images are in S3.
 
         if (position) {
@@ -453,7 +527,7 @@ export function useStoryboardCanvasAreaLogic({
       }
       await deleteStoryboard(storyboardId);
       // best-effort remove legacy IDB cache
-      await idbDel(`storyboard-sketches:${storyboardId}`).catch(() => undefined);
+      await idbDel(getSketchesCacheKey(storyboardId)).catch(() => undefined);
       setError(null);
     } catch (e: any) {
       // rollback
