@@ -9,7 +9,7 @@ import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 interface StoryboardSketch {
   id?: string;
   name?: string;
-  image_base64: string;
+  image_url: string;
 }
 
 interface StoryboardSketchCardProps {

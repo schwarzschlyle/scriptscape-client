@@ -43,7 +43,6 @@ export function useUpdateStoryboardSketch() {
     }) => {
       const payload = {
         name: data.name,
-        image_base64: data.image_base64,
         meta: data.meta,
       };
       const response = await api.patch<StoryboardSketch>(

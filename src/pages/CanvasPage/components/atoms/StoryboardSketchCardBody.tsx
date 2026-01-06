@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import EditableCardContentArea from "./EditableCardContentArea";
 
 export interface StoryboardSketchCardBodyProps {
-  sketches: { id?: string; name?: string; image_base64: string; meta?: Record<string, any> }[];
+  sketches: { id?: string; name?: string; image_url: string; meta?: Record<string, any> }[];
   isSaving?: boolean;
   deleting?: boolean;
   error?: string | null;
@@ -36,13 +36,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
         }}
       >
         {sketches.map((s, idx) => {
-          const rawSrc = s.image_base64 || "";
-          // NOTE: after refresh, we load from IndexedDB as Blob and convert to a blob: URL.
-          // Avoid wrapping blob: URLs with `data:image/png;base64,`.
-          const src =
-            rawSrc.startsWith("data:") || rawSrc.startsWith("blob:") || rawSrc.startsWith("http")
-              ? rawSrc
-              : `data:image/png;base64,${rawSrc}`;
+          const src = s.image_url || "";
           const segmentText =
             (s as any)?.meta?.segmentText ||
             (s as any)?.meta?.segment_text ||
@@ -65,19 +59,39 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
               }}
               title={s.name || `Sketch ${idx + 1}`}
             >
-              <img
-                src={src}
-                alt={s.name || `Sketch ${idx + 1}`}
-                style={{
-                  width: "100%",
-                  // Compact gallery mode keeps thumbnails smaller but aspect preserved.
-                  aspectRatio: compact ? "16 / 10" : "4 / 3",
-                  objectFit: "cover",
-                  display: "block",
-                  opacity: deleting ? 0.5 : 1,
-                  filter: isSaving ? "grayscale(0.1)" : "none",
-                }}
-              />
+              {src ? (
+                <img
+                  src={src}
+                  alt={s.name || `Sketch ${idx + 1}`}
+                  loading="lazy"
+                  style={{
+                    width: "100%",
+                    // Compact gallery mode keeps thumbnails smaller but aspect preserved.
+                    aspectRatio: compact ? "16 / 10" : "4 / 3",
+                    objectFit: "cover",
+                    display: "block",
+                    opacity: deleting ? 0.5 : 1,
+                    filter: isSaving ? "grayscale(0.1)" : "none",
+                  }}
+                />
+              ) : (
+                // IMPORTANT: do not render <img src="">. When we only have cached metadata,
+                // image_url will be empty until the API refresh fetch returns a new presigned URL.
+                <Box
+                  sx={{
+                    width: "100%",
+                    aspectRatio: compact ? "16 / 10" : "4 / 3",
+                    bgcolor: "rgba(255,255,255,0.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: 12,
+                  }}
+                >
+                  Loading image…
+                </Box>
+              )}
 
               {!compact && !!segmentText && (
                 <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>

@@ -24,7 +24,7 @@ export async function createStoryboardSketch(
 
 export async function updateStoryboardSketch(
   sketchId: string,
-  data: { name?: string; image_base64?: string; meta?: Record<string, any> }
+  data: { name?: string; meta?: Record<string, any> }
 ): Promise<StoryboardSketch> {
   const response = await api.patch<StoryboardSketch>(
     `/storyboard-sketches/${sketchId}`,
