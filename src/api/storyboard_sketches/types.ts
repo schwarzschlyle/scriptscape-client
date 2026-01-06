@@ -2,7 +2,8 @@ export interface StoryboardSketch {
   id: string;
   storyboardId: string;
   name: string;
-  image_base64: string;
+  image_url: string;
+  s3_key: string;
   meta?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
@@ -16,7 +17,6 @@ export interface CreateStoryboardSketchRequest {
 
 export interface UpdateStoryboardSketchRequest {
   name?: string;
-  image_base64?: string;
   meta?: Record<string, any>;
 }
 

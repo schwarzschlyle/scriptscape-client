@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import EditableCardContentArea from "./EditableCardContentArea";
 
 export interface StoryboardSketchCardBodyProps {
-  sketches: { id?: string; name?: string; image_base64: string; meta?: Record<string, any> }[];
+  sketches: { id?: string; name?: string; image_url: string; meta?: Record<string, any> }[];
   isSaving?: boolean;
   deleting?: boolean;
   error?: string | null;
@@ -36,13 +36,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
         }}
       >
         {sketches.map((s, idx) => {
-          const rawSrc = s.image_base64 || "";
-          // NOTE: after refresh, we load from IndexedDB as Blob and convert to a blob: URL.
-          // Avoid wrapping blob: URLs with `data:image/png;base64,`.
-          const src =
-            rawSrc.startsWith("data:") || rawSrc.startsWith("blob:") || rawSrc.startsWith("http")
-              ? rawSrc
-              : `data:image/png;base64,${rawSrc}`;
+          const src = s.image_url || "";
           const segmentText =
             (s as any)?.meta?.segmentText ||
             (s as any)?.meta?.segment_text ||
