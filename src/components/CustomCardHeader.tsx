@@ -8,6 +8,7 @@ export interface CustomCardHeaderProps {
   title?: React.ReactNode;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
+  actionsLeft?: React.ReactNode;
   editable?: boolean;
   editing?: boolean;
   onEditStart?: () => void;
@@ -15,6 +16,7 @@ export interface CustomCardHeaderProps {
   onTitleChange?: (value: string) => void;
   deleting?: boolean;
   isSaving?: boolean;
+  deleteDisabled?: boolean;
   onDelete?: () => void;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
@@ -28,6 +30,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
   title,
   icon,
   actions,
+  actionsLeft,
   editable = false,
   editing = false,
   onEditStart,
@@ -35,6 +38,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
   onTitleChange,
   deleting = false,
   isSaving = false,
+  deleteDisabled = false,
   onDelete,
   dragAttributes,
   dragListeners,
@@ -123,19 +127,20 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
           )}
         </Box>
         {children}
+        {actionsLeft}
         {actions}
         {onDelete && (
           <IconButton
             size="small"
-            onClick={deleting || isSaving ? undefined : onDelete}
-            disabled={deleting || isSaving}
+            onClick={deleting || isSaving || deleteDisabled ? undefined : onDelete}
+            disabled={deleting || isSaving || deleteDisabled}
             aria-label="Delete"
             // Delete button must not initiate drag.
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             sx={{
-              color: deleting || isSaving ? "#bdbdbd" : "#e53935",
-              cursor: deleting || isSaving ? "not-allowed" : "pointer",
+              color: deleting || isSaving || deleteDisabled ? "#bdbdbd" : "#e53935",
+              cursor: deleting || isSaving || deleteDisabled ? "not-allowed" : "pointer",
             }}
             style={{ display: "inline-flex" }}
           >

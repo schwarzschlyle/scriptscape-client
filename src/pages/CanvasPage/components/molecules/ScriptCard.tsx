@@ -104,6 +104,8 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             active={active}
             editable={!isSaving && !deleting}
             pendingSegmentCollection={pendingSegmentCollection}
+            expanded={isFullHeight}
+            onExpandedChange={setIsFullHeight}
           />
         }
         body={
@@ -137,40 +139,9 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             </Box>
             <CardFooter
               left={null}
-              center={
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    padding: 0,
-                    margin: 0,
-                    outline: "none",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFullHeight((v) => !v);
-                  }}
-                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
-                >
-                  <img
-                    src={AiPromptIcon}
-                    alt="Expand/Collapse"
-                    style={{
-                      width: 22,
-                      height: 22,
-                      display: "block",
-                      opacity: 0.9,
-                    }}
-                  />
-                </button>
-              }
+              center={null}
               right={
                 <>
-                  {/* Generate Segments */}
                   <button
                     style={{
                       background: "none",

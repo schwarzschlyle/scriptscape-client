@@ -56,7 +56,9 @@ const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
               if (onSegmentChange) {
                 const segmentId = segment.id || "";
                 if (segmentId) {
-                  onSegmentChange(segmentId, localSegments[idx], idx);
+                  const nextText = localSegments[idx];
+                  const prevText = segment.text || "";
+                  if (nextText !== prevText) onSegmentChange(segmentId, nextText, idx);
                 }
               }
             }}

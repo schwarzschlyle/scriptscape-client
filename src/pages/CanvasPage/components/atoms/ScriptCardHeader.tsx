@@ -3,8 +3,9 @@ import CustomCardHeader from "../../../../components/CustomCardHeader";
 import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
 import { useEditableField } from "../../../../hooks/useEditableField";
-import { keyframes } from "@mui/system";
 import CardTypography from "../molecules/CardTypography";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import CardStatusDot from "./CardStatusDot";
 
 interface ScriptCardHeaderProps {
   name: string;
@@ -18,12 +19,16 @@ interface ScriptCardHeaderProps {
   onClick?: () => void;
   editable?: boolean;
   pendingSegmentCollection?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
   const {
     pendingSegmentCollection,
     onNameChange,
+    expanded,
+    onExpandedChange,
     ...headerProps
   } = props;
 
@@ -41,26 +46,6 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
   const handleDoubleClick = () => {
     if (props.editable) startEditing();
   };
-
-  const blinkBlueDot = keyframes`
-    0% { opacity: 1; }
-    100% { opacity: 0.3; }
-  `;
-  const blueDot = (
-    <Box
-      sx={{
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        background: "linear-gradient(135deg, #2196f3 60%, #21cbf3 100%)",
-        marginRight: 0,
-        border: "1.5px solid #232523",
-        animation: `${blinkBlueDot} 1s infinite alternate`,
-        transition: "background 0.2s",
-        display: "inline-block",
-      }}
-    />
-  );
 
   // console.log("ScriptCardHeader", props.name, "pendingSegmentCollection:", props.pendingSegmentCollection);
 
@@ -106,28 +91,42 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
           )
         }
         icon={null}
+        actionsLeft={
+          onExpandedChange ? (
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                margin: 0,
+                cursor: "pointer",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandedChange(!expanded);
+              }}
+              aria-label={expanded ? "Use fixed height" : "Use full height"}
+            >
+              <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 18, height: 18, opacity: 0.9 }} />
+            </button>
+          ) : null
+        }
         actions={
           <Box sx={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
-            {props.pendingSegmentCollection ? (
-              blueDot
-            ) : (
-              <Box
-                sx={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: props.isSaving
-                    ? "#ff9800"
-                    : props.active
-                    ? "#abf43e"
-                    : "#6a6967",
-                  marginRight: 0,
-                  border: "1.5px solid #232523",
-                  transition: "background 0.2s",
-                  display: "inline-block",
-                }}
-              />
-            )}
+            <CardStatusDot
+              status={
+                props.pendingSegmentCollection
+                  ? "pending"
+                  : props.isSaving
+                  ? "saving"
+                  : props.active
+                  ? "active"
+                  : "idle"
+              }
+            />
           </Box>
         }
         editable={props.editable}
@@ -141,3 +140,4 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
 };
 
 export default ScriptCardHeader;
+

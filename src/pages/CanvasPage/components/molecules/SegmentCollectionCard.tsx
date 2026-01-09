@@ -29,6 +29,8 @@ interface SegmentCollectionCardProps {
   onDelete?: () => void;
   onGenerateVisualDirections?: () => void;
   pendingVisualDirection?: boolean;
+  /** True while this card is generating its segments (child orange dot). */
+  generating?: boolean;
 }
 
 const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
@@ -47,54 +49,23 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onDelete,
   onGenerateVisualDirections,
   pendingVisualDirection,
+  generating = false,
 }) => {
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
-  const [localSegments, setLocalSegments] = useState<{ text: string }[]>(segments.map(s => ({ text: s.text || "" })));
-  // Removed editingSegmentIndex state (unused after refactor)
-  const [lastSaved, setLastSaved] = useState<{ name: string; segments: { text: string }[] }>({
-    name: name || "",
-    segments: segments.map(s => ({ text: s.text || "" })),
-  });
+  const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
 
   React.useEffect(() => {
     setLocalName(name || "");
-    setLocalSegments(segments.map(s => ({ text: s.text || "" })));
-    setLastSaved({
-      name: name || "",
-      segments: segments.map(s => ({ text: s.text || "" })),
-    });
-  }, [name, segments]);
+    setLastSaved({ name: name || "" });
+  }, [name]);
 
   React.useEffect(() => {
-    if (segments && segments.length === localSegments.length) {
-      setLocalSegments(segments.map(s => ({ text: s.text || "" })));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
-
-  React.useEffect(() => {
-    if (
-      !active &&
-      (localName !== lastSaved.name ||
-        localSegments.some((s, i) => s.text !== (lastSaved.segments[i]?.text ?? "")))
-    ) {
-      if (onNameChange && localName !== lastSaved.name) {
-        onNameChange(localName);
-      }
-      if (onSegmentChange) {
-        localSegments.forEach((seg, idx) => {
-          if (seg.text !== (lastSaved.segments[idx]?.text ?? "")) {
-            const segmentId = segments[idx]?.id || "";
-            if (segmentId) {
-              onSegmentChange(segmentId, seg.text, idx);
-            }
-          }
-        });
-      }
-      setLastSaved({ name: localName, segments: [...localSegments] });
+    if (!active && localName !== lastSaved.name) {
+      onNameChange?.(localName);
+      setLastSaved({ name: localName });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -115,6 +86,10 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             active={active}
             editable={editable && !isSaving && !deleting}
             pendingVisualDirection={pendingVisualDirection}
+            generating={generating}
+            deleteDisabled={!!pendingVisualDirection}
+            expanded={isFullHeight}
+            onExpandedChange={setIsFullHeight}
           />
         }
         body={
@@ -137,35 +112,9 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             </Box>
             <CardFooter
               left={null}
-              center={
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    padding: 0,
-                    margin: 0,
-                    outline: "none",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFullHeight((v) => !v);
-                  }}
-                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
-                >
-                  <img
-                    src={AiPromptIcon}
-                    alt="Expand/Collapse"
-                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
-                  />
-                </button>
-              }
+              center={null}
               right={
                 <>
-                  {/* Generate Visual Directions */}
                   <button
                     style={{
                       background: "none",
@@ -173,20 +122,20 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      cursor: isSaving || pendingVisualDirection ? "not-allowed" : "pointer",
-                      opacity: isSaving || pendingVisualDirection ? 0.5 : 1,
+                      cursor: isSaving || generating || pendingVisualDirection ? "not-allowed" : "pointer",
+                      opacity: isSaving || generating || pendingVisualDirection ? 0.5 : 1,
                       padding: 0,
                       margin: 0,
                       outline: "none",
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isSaving && !pendingVisualDirection && onGenerateVisualDirections) {
+                      if (!isSaving && !generating && !pendingVisualDirection && onGenerateVisualDirections) {
                         onGenerateVisualDirections();
                       }
                     }}
                     aria-label="Generate Visual Directions"
-                    disabled={isSaving || pendingVisualDirection}
+                    disabled={isSaving || generating || pendingVisualDirection}
                   >
                     <img
                       src={AiPromptIcon}
@@ -195,7 +144,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                         width: 22,
                         height: 22,
                         display: "block",
-                        filter: isSaving || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
+                        filter: isSaving || generating || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
                       }}
                     />
                   </button>

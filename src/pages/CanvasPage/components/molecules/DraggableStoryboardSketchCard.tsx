@@ -17,6 +17,7 @@ interface DraggableStoryboardSketchCardProps {
   isSaving?: boolean;
   deleting?: boolean;
   dragDelta?: { x: number; y: number } | null;
+  generating?: boolean;
 }
 
 const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps> = ({
@@ -31,6 +32,7 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
   isSaving,
   deleting,
   dragDelta,
+  generating,
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: storyboard.id,
@@ -72,10 +74,11 @@ const DraggableStoryboardSketchCard: React.FC<DraggableStoryboardSketchCardProps
         active={active}
         editable={!isSaving && !deleting}
         onClick={() => setActive(storyboard.id)}
-        onNameChange={(newName) => onNameChange(storyboard.id, newName)}
+        onNameChange={(newName: string) => onNameChange(storyboard.id, newName)}
         onDelete={() => onDelete(storyboard.id)}
         expanded={expanded}
         onExpandedChange={onExpandedChange}
+        generating={generating}
       />
     </Box>
   );

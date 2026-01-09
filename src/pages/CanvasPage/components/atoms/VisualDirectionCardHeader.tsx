@@ -2,9 +2,9 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import Box from "@mui/material/Box";
-import { keyframes } from "@mui/system";
 import VisualIcon from "../../../../assets/segment-icon.svg"; // Use a visual icon if available
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import CardStatusDot from "./CardStatusDot";
 
 interface VisualDirectionCardHeaderProps {
   name: string;
@@ -13,12 +13,17 @@ interface VisualDirectionCardHeaderProps {
   isSaving?: boolean;
   visualsCount?: number;
   onDelete?: () => void;
+  deleteDisabled?: boolean;
   dragAttributes?: React.HTMLAttributes<any>;
   dragListeners?: any;
   active?: boolean;
   editable?: boolean;
   pendingVisualDirection?: boolean;
   pendingStoryboardSketches?: boolean;
+  /** True while this VisualDirection card is generating its visuals (child orange dot). */
+  generating?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
@@ -28,12 +33,16 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
   isSaving = false,
   visualsCount,
   onDelete,
+  deleteDisabled = false,
   dragAttributes,
   dragListeners,
   active = false,
   editable = false,
   pendingVisualDirection = false,
   pendingStoryboardSketches = false,
+  generating = false,
+  expanded,
+  onExpandedChange,
 }) => {
   const {
     value: localName,
@@ -49,26 +58,6 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
   const handleDoubleClick = () => {
     if (editable) startEditing();
   };
-
-  const blinkBlueDot = keyframes`
-    0% { opacity: 1; }
-    100% { opacity: 0.3; }
-  `;
-  const blueDot = (
-    <Box
-      sx={{
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        background: "linear-gradient(135deg, #2196f3 60%, #21cbf3 100%)",
-        marginRight: 0,
-        border: "1.5px solid #232523",
-        animation: `${blinkBlueDot} 1s infinite alternate`,
-        transition: "background 0.2s",
-        display: "inline-block",
-      }}
-    />
-  );
 
   return (
     <div onDoubleClick={handleDoubleClick}>
@@ -127,27 +116,47 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
         dragListeners={dragListeners}
         active={active}
         inputRef={inputRef}
+        deleteDisabled={deleteDisabled}
+        actionsLeft={
+          onExpandedChange ? (
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                margin: 0,
+                cursor: "pointer",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandedChange(!expanded);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              aria-label={expanded ? "Use fixed height" : "Use full height"}
+            >
+              <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 18, height: 18, opacity: 0.9 }} />
+            </button>
+          ) : null
+        }
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: "1px", marginLeft: "auto" }}>
-            {pendingVisualDirection || pendingStoryboardSketches ? (
-              blueDot
-            ) : (
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: isSaving
-                    ? "#ff9800"
-                    : active
-                    ? "#abf43e"
-                    : "#6a6967",
-                  marginRight: 0,
-                  border: "1.5px solid #232523",
-                  transition: "background 0.2s",
-                }}
-              />
-            )}
+            <CardStatusDot
+              status={
+                generating
+                  ? "generating"
+                  : pendingVisualDirection || pendingStoryboardSketches
+                  ? "pending"
+                  : isSaving
+                  ? "saving"
+                  : active
+                  ? "active"
+                  : "idle"
+              }
+            />
           </div>
         }
       />
@@ -156,3 +165,4 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
 };
 
 export default VisualDirectionCardHeader;
+

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useGenerateScriptAIMutation } from "../api/ai-visuals/mutations";
+import { ReconnectingWebSocket } from "../utils/websocket";
 
 type UseGenerateScriptAIResult = {
   generate: (project_brief: string, branding: string, duration: string) => Promise<string>;
@@ -10,7 +11,7 @@ type UseGenerateScriptAIResult = {
 export function useGenerateScriptAI(): UseGenerateScriptAIResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef<ReconnectingWebSocket | null>(null);
 
   const mutation = useGenerateScriptAIMutation();
 
@@ -35,25 +36,24 @@ export function useGenerateScriptAI(): UseGenerateScriptAIResult {
       }
 
       return await new Promise<string>((resolve, reject) => {
-        const ws = new WebSocket(wsUrl);
+        const ws = new ReconnectingWebSocket(wsUrl);
         wsRef.current = ws;
-
-        ws.onopen = () => {
-          console.log("AI Script WebSocket opened:", wsUrl);
-        };
 
         ws.onmessage = (event) => {
           try {
             // Debug: log raw websocket message and event
             console.log("AI Script WebSocket onmessage event:", event);
             console.log("AI Script WebSocket message:", event.data);
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(String((event as MessageEvent).data));
+            if (data.status === "pending") return;
             if (data.status === "done" && typeof data.result === "string") {
               console.log("AI Script WebSocket: received DONE, closing and resolving", ws.readyState);
+              ws.disableReconnect();
               ws.close();
               resolve(data.result);
             } else if (data.status === "error") {
               console.log("AI Script WebSocket: received ERROR, closing and rejecting", ws.readyState);
+              ws.disableReconnect();
               ws.close();
               reject(new Error(data.error || "AI script generation failed"));
             } else {
@@ -61,24 +61,18 @@ export function useGenerateScriptAI(): UseGenerateScriptAIResult {
             }
           } catch (err) {
             console.error("AI Script WebSocket: malformed message", event.data, err, ws.readyState);
+            ws.disableReconnect();
             ws.close();
             reject(new Error("Malformed WebSocket message"));
           }
         };
 
-        ws.onerror = (event) => {
-          console.error("AI Script WebSocket error:", event);
-          ws.close();
-          reject(new Error("WebSocket error"));
-        };
-
-        ws.onclose = (event) => {
-          console.log("AI Script WebSocket closed:", event);
-        };
+        // ReconnectingWebSocket will retry; we only fail on timeout.
 
         // Timeout after 2 minutes
         setTimeout(() => {
-          if (ws.readyState !== ws.CLOSED) {
+          if (ws.readyState !== WebSocket.CLOSED) {
+            ws.disableReconnect();
             ws.close();
             reject(new Error("AI script generation timed out"));
           }
@@ -94,3 +88,4 @@ export function useGenerateScriptAI(): UseGenerateScriptAIResult {
 
   return { generate, loading, error };
 }
+

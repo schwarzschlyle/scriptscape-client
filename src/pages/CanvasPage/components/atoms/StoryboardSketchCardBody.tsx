@@ -1,6 +1,7 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import EditableCardContentArea from "./EditableCardContentArea";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 export interface StoryboardSketchCardBodyProps {
   sketches: { id?: string; name?: string; image_url: string; meta?: Record<string, any> }[];
@@ -21,8 +22,6 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   compact = false,
 }) => {
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
-  // Caption is fixed-height to keep the grid consistent.
-  // Give it a bit more room than strict 3 lines so nothing gets visually clipped.
   const textBoxHeight = 66;
 
   return (
@@ -50,8 +49,6 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                 overflow: "hidden",
                 border: "1px solid rgba(255,255,255,0.10)",
                 background: "rgba(0,0,0,0.15)",
-                // Allow the caption area to be visible (don't lock the container to a square)
-                // while keeping the image itself square.
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -59,43 +56,47 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
               }}
               title={s.name || `Sketch ${idx + 1}`}
             >
-              {src ? (
-                <img
-                  src={src}
-                  alt={s.name || `Sketch ${idx + 1}`}
-                  loading="lazy"
-                  style={{
-                    width: "100%",
-                    // Compact gallery mode keeps thumbnails smaller but aspect preserved.
-                    aspectRatio: compact ? "16 / 10" : "4 / 3",
-                    objectFit: "cover",
-                    display: "block",
-                    opacity: deleting ? 0.5 : 1,
-                    filter: isSaving ? "grayscale(0.1)" : "none",
-                  }}
-                />
-              ) : (
-                // IMPORTANT: do not render <img src="">. When we only have cached metadata,
-                // image_url will be empty until the API refresh fetch returns a new presigned URL.
-                <Box
-                  sx={{
-                    width: "100%",
-                    aspectRatio: compact ? "16 / 10" : "4 / 3",
-                    bgcolor: "rgba(255,255,255,0.06)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "rgba(255,255,255,0.55)",
-                    fontSize: 12,
-                  }}
-                >
-                  Loading image…
-                </Box>
-              )}
+              <Box
+                sx={{
+                  position: "relative",
+                  width: "100%",
+                  aspectRatio: compact ? "16 / 10" : "4 / 3",
+                  bgcolor: "rgba(255,255,255,0.06)",
+                }}
+              >
+                {!src ? (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <LoadingSpinner size={20} label="" sx={{ minHeight: 0, width: "auto", py: 0 }} />
+                  </Box>
+                ) : (
+                  <img
+                    src={src}
+                    alt={s.name || `Sketch ${idx + 1}`}
+                    loading="lazy"
+                    draggable={false}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                      opacity: deleting ? 0.5 : 1,
+                      filter: isSaving ? "grayscale(0.1)" : "none",
+                      userSelect: "none",
+                    }}
+                  />
+                )}
+              </Box>
 
               {!compact && !!segmentText && (
                 <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>
-                  {/* Use the exact same container component styling as other cards */}
                   <Box
                     sx={{
                       width: "100%",
@@ -104,7 +105,6 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                     }}
                     title={segmentText}
                   >
-                    {/* Scroll inside caption box when expanded */}
                     <div className="canvas-scrollbar" style={{ height: textBoxHeight, overflowY: "auto" }}>
                       <EditableCardContentArea value={segmentText} editable={false} minHeight={textBoxHeight} />
                     </div>
