@@ -12,8 +12,10 @@ import {
   getStoryboardSketches,
   deleteStoryboardSketch,
 } from "@api/storyboard_sketches/queries";
-import { useGenerateScriptSketchesAI } from "./useGenerateScriptSketchesAI";
 import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
+import { addAiJob, listAiJobs, pruneAiJobs, removeAiJob, removeAiJobsWhere } from "../utils/aiJobPersistence";
+import { ReconnectingWebSocket } from "../utils/websocket";
+import { buildWsUrl } from "../utils/wsUrl";
 
 type CachedStoryboardSketch = {
   id: string;
@@ -105,11 +107,206 @@ export function useStoryboardCanvasAreaLogic({
   const [storyboards, setStoryboards] = useState<StoryboardsState>({});
   const [positions, setPositions] = useState<PositionsState>({});
   const [pendingStoryboard, setPendingStoryboard] = useState<{ [parentVisualDirectionId: string]: boolean }>({});
+  /** Child storyboard-card generating state (orange dot). */
+  const [generatingStoryboards, setGeneratingStoryboards] = useState<{ [storyboardId: string]: boolean }>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { generate: generateSketchAI } = useGenerateScriptSketchesAI();
+  // Prevent duplicate websocket attachments for the same AI job.
+  // Without this, rerenders/strict-mode can lead to repeated POST /storyboard-sketches.
+  const attachedJobsRef = useState(() => new Set<string>())[0];
+
+  // Track how many sketch jobs are outstanding per storyboard.
+  // When the count reaches 0, we clear both parent pending + child generating.
+  const storyboardOutstandingRef = useState(() => new Map<string, { parentId: string; remaining: number }>())[0];
+
+  // note: we start jobs directly via fetch() to enable persistence/resume
+
+  const startSketchJob = useCallback(async (visual_direction: string, instructions: string) => {
+    const aiApiUrl = import.meta.env.VITE_AI_API_URL;
+    const resp = await fetch(`${aiApiUrl}/run-generate-storyboard-sketch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visual_direction, instructions }),
+    });
+    if (!resp.ok) throw new Error("Failed to start storyboard sketch generation.");
+    const data = await resp.json();
+    return data as { job_id: string };
+  }, []);
+
+  const attachToSketchJob = useCallback(
+    (
+      jobId: string,
+      storyboardId: string,
+      _parentVisualDirectionId: string,
+      idx: number,
+      name: string,
+      meta: Record<string, any>
+    ) => {
+      if (attachedJobsRef.has(jobId)) return;
+      attachedJobsRef.add(jobId);
+
+      const wsUrl = buildWsUrl(`/ws/generate-storyboard-sketch-result/${jobId}`);
+
+      const ws = new ReconnectingWebSocket(wsUrl);
+      ws.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(String(event.data));
+          // Keepalive / progress
+          if (data.status === "pending") return;
+          if (data.status === "done" && typeof data.image_base64 === "string") {
+            // Guard against duplicate done messages / duplicate sockets.
+            if (!attachedJobsRef.has(jobId)) return;
+
+            const created = await createStoryboardSketch(storyboardId, {
+              name,
+              image_base64: data.image_base64,
+              meta,
+            });
+
+            setStoryboards((prev) => {
+              const sb = prev[storyboardId];
+              if (!sb) return prev;
+              const sketches = [...(sb.sketches || [])];
+              const existingIdx = sketches.findIndex((s: any) => (s.meta as any)?.visualDirectionIndex === idx);
+              if (existingIdx >= 0) sketches[existingIdx] = created as any;
+              else sketches.push(created as any);
+              const next = { ...prev, [storyboardId]: { ...sb, sketches, loadingSketches: false } };
+              updateCache(next);
+              idbSet(getSketchesCacheKey(storyboardId), sketchesToCachePayload(sketches)).catch(() => undefined);
+              return next;
+            });
+
+            removeAiJob("storyboard_sketch", jobId);
+            attachedJobsRef.delete(jobId);
+
+            // Decrement outstanding job count for this storyboard; clear generating states when done.
+            const rec = storyboardOutstandingRef.get(storyboardId);
+            if (rec) {
+              rec.remaining = Math.max(0, rec.remaining - 1);
+              storyboardOutstandingRef.set(storyboardId, rec);
+              if (rec.remaining === 0) {
+                setGeneratingStoryboards((prev) => {
+                  const next = { ...prev };
+                  delete next[storyboardId];
+                  return next;
+                });
+                setPendingStoryboard((prev) => ({ ...prev, [rec.parentId]: false }));
+                storyboardOutstandingRef.delete(storyboardId);
+
+                // Mark the storyboard as no longer saving once ALL sketches have resolved.
+                setStoryboards((prev) => {
+                  const sb = prev[storyboardId];
+                  if (!sb) return prev;
+                  const next = { ...prev, [storyboardId]: { ...sb, isSaving: false } as any };
+                  updateCache(next);
+                  return next;
+                });
+              }
+            }
+
+            ws.disableReconnect();
+            ws.close();
+          } else if (data.status === "error") {
+            removeAiJob("storyboard_sketch", jobId);
+            attachedJobsRef.delete(jobId);
+
+            const rec = storyboardOutstandingRef.get(storyboardId);
+            if (rec) {
+              rec.remaining = Math.max(0, rec.remaining - 1);
+              storyboardOutstandingRef.set(storyboardId, rec);
+              if (rec.remaining === 0) {
+                setGeneratingStoryboards((prev) => {
+                  const next = { ...prev };
+                  delete next[storyboardId];
+                  return next;
+                });
+                setPendingStoryboard((prev) => ({ ...prev, [rec.parentId]: false }));
+                storyboardOutstandingRef.delete(storyboardId);
+
+                setStoryboards((prev) => {
+                  const sb = prev[storyboardId];
+                  if (!sb) return prev;
+                  const next = { ...prev, [storyboardId]: { ...sb, isSaving: false } as any };
+                  updateCache(next);
+                  return next;
+                });
+              }
+            }
+
+            ws.disableReconnect();
+            ws.close();
+          }
+        } catch {
+          removeAiJob("storyboard_sketch", jobId);
+          attachedJobsRef.delete(jobId);
+
+          const rec = storyboardOutstandingRef.get(storyboardId);
+          if (rec) {
+            rec.remaining = Math.max(0, rec.remaining - 1);
+            storyboardOutstandingRef.set(storyboardId, rec);
+            if (rec.remaining === 0) {
+              setGeneratingStoryboards((prev) => {
+                const next = { ...prev };
+                delete next[storyboardId];
+                return next;
+              });
+              setPendingStoryboard((prev) => ({ ...prev, [rec.parentId]: false }));
+              storyboardOutstandingRef.delete(storyboardId);
+
+              setStoryboards((prev) => {
+                const sb = prev[storyboardId];
+                if (!sb) return prev;
+                const next = { ...prev, [storyboardId]: { ...sb, isSaving: false } as any };
+                updateCache(next);
+                return next;
+              });
+            }
+          }
+
+          ws.disableReconnect();
+          ws.close();
+        }
+      };
+
+      // Hard timeout so a stuck job doesn't keep the socket alive forever.
+      window.setTimeout(() => {
+        if (attachedJobsRef.has(jobId)) {
+          attachedJobsRef.delete(jobId);
+          removeAiJob("storyboard_sketch", jobId);
+        }
+
+        // Timeout counts as terminal for this sketch job.
+        const rec = storyboardOutstandingRef.get(storyboardId);
+        if (rec) {
+          rec.remaining = Math.max(0, rec.remaining - 1);
+          storyboardOutstandingRef.set(storyboardId, rec);
+          if (rec.remaining === 0) {
+            setGeneratingStoryboards((prev) => {
+              const next = { ...prev };
+              delete next[storyboardId];
+              return next;
+            });
+            setPendingStoryboard((prev) => ({ ...prev, [rec.parentId]: false }));
+            storyboardOutstandingRef.delete(storyboardId);
+
+            setStoryboards((prev) => {
+              const sb = prev[storyboardId];
+              if (!sb) return prev;
+              const next = { ...prev, [storyboardId]: { ...sb, isSaving: false } as any };
+              updateCache(next);
+              return next;
+            });
+          }
+        }
+
+        ws.disableReconnect();
+        ws.close();
+      }, 4 * 60_000);
+    },
+    [attachedJobsRef, storyboardOutstandingRef]
+  );
 
   function updateCache(next: StoryboardsState) {
     // Cache the storyboard container only (no sketches/image_base64)
@@ -174,6 +371,33 @@ export function useStoryboardCanvasAreaLogic({
 
     setLoading(false);
   }, [organizationId, projectId]);
+
+  useEffect(() => {
+    pruneAiJobs(24 * 60 * 60_000);
+    const jobs = listAiJobs("storyboard_sketch");
+    jobs.forEach((job) => {
+      const meta = job.meta || {};
+      const storyboardId = meta.storyboardId as string | undefined;
+      const parentVisualDirectionId = meta.parentVisualDirectionId as string | undefined;
+      const idx = meta.idx as number | undefined;
+      const name = meta.name as string | undefined;
+      const sketchMeta = meta.sketchMeta as Record<string, any> | undefined;
+      if (!storyboardId || !parentVisualDirectionId || typeof idx !== "number" || !name || !sketchMeta) return;
+      setPendingStoryboard((prev) => ({ ...prev, [parentVisualDirectionId]: true }));
+
+      // If we have any persisted sketch jobs, mark the storyboard as generating.
+      setGeneratingStoryboards((prev) => ({ ...prev, [storyboardId]: true }));
+
+      // Ensure we have an outstanding-count record.
+      // We can't know remaining count precisely from here (unless we scan jobs per storyboard),
+      // but we can best-effort set to at least 1.
+      const existing = storyboardOutstandingRef.get(storyboardId);
+      if (!existing) storyboardOutstandingRef.set(storyboardId, { parentId: parentVisualDirectionId, remaining: 1 });
+      else storyboardOutstandingRef.set(storyboardId, { parentId: parentVisualDirectionId, remaining: Math.max(1, existing.remaining) });
+
+      attachToSketchJob(job.jobId, storyboardId, parentVisualDirectionId, idx, name, sketchMeta);
+    });
+  }, [attachToSketchJob]);
 
   // Ensure a default position exists for any storyboard that doesn't have one yet.
   // This is critical for connector visibility, and mirrors the behavior of scripts.
@@ -378,64 +602,89 @@ export function useStoryboardCanvasAreaLogic({
           },
         });
 
-        // Generate images in parallel
-        const images: string[] = await Promise.all(
-          visualDirections.map(async (vd) => {
-            const dir = (vd as any)?.content || "";
-            if (!dir.trim()) return "";
-            const imageBase64 = await generateSketchAI(dir, instructions || "");
-            return imageBase64;
-          })
-        );
-
-        // Persist storyboard_sketches in parallel
-        const createdSketches: StoryboardSketch[] = await Promise.all(
-          images.map(async (image_base64, idx) => {
-            const name = `Sketch ${idx + 1}`;
-            const meta = visualMeta[idx] || { index: idx };
-            // If generation failed for a particular direction, still store an empty marker? For now, skip.
-            if (!image_base64) {
-              return {
-                id: `temp-sketch-${idx}-${Date.now()}`,
-                storyboardId: storyboard.id,
-                name,
-                image_url: "",
-                s3_key: "",
-                meta: { ...meta, skipped: true },
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              } as any;
-            }
-            return await createStoryboardSketch(storyboard.id, {
-              name,
-              image_base64,
-              meta: {
-                parentVisualDirectionId,
-                visualDirectionIndex: idx,
-                ...meta,
-              },
-            });
-          })
-        );
-
-        const card: StoryboardCard = {
-          ...storyboard,
-          parentVisualDirectionId,
-          sketches: createdSketches.filter((s) => !!(s as any)?.image_url),
-          isSaving: false,
-          deleting: false,
-          error: null,
-          loadingSketches: false,
-        };
-
         setStoryboards((prev) => {
-          const next = { ...prev, [storyboard.id]: card };
+          const next = {
+            ...prev,
+            [storyboard.id]: {
+              ...storyboard,
+              parentVisualDirectionId,
+              sketches: [],
+              isSaving: true,
+              deleting: false,
+              error: null,
+              loadingSketches: true,
+            } as any,
+          };
           updateCache(next);
           return next;
         });
 
-        // Cache sketch *metadata* only (no image bytes / no presigned URLs)
-        idbSet(getSketchesCacheKey(storyboard.id), sketchesToCachePayload(card.sketches)).catch(() => undefined);
+        // Child (storyboard) should show orange while sketches are generating.
+        setGeneratingStoryboards((prev) => ({ ...prev, [storyboard.id]: true }));
+
+        const validVisuals = (visualDirections || []).filter((vd: any) => String(vd?.content || "").trim());
+        // Track how many sketch jobs we expect to finish.
+        // IMPORTANT: use `allSettled` and decrement for failures, otherwise we can
+        // get stuck in `generating` forever if one job fails to start.
+        storyboardOutstandingRef.set(storyboard.id, { parentId: parentVisualDirectionId, remaining: validVisuals.length });
+
+        const results = await Promise.allSettled(
+          validVisuals.map(async (vd: any, idx: number) => {
+            const dir = String(vd?.content || "");
+            const name = `Sketch ${idx + 1}`;
+            const meta = {
+              parentVisualDirectionId,
+              visualDirectionIndex: idx,
+              ...(visualMeta[idx] || { index: idx }),
+            };
+
+            const { job_id } = await startSketchJob(dir, instructions || "");
+            addAiJob({
+              type: "storyboard_sketch",
+              jobId: job_id,
+              createdAt: Date.now(),
+              meta: {
+                storyboardId: storyboard.id,
+                parentVisualDirectionId,
+                idx,
+                name,
+                sketchMeta: meta,
+              },
+            });
+            attachToSketchJob(job_id, storyboard.id, parentVisualDirectionId, idx, name, meta);
+            return job_id;
+          })
+        );
+
+        // Adjust outstanding count for any failed starts.
+        const failedStarts = results.filter((r) => r.status === "rejected").length;
+        if (failedStarts > 0) {
+          const rec = storyboardOutstandingRef.get(storyboard.id);
+          if (rec) {
+            rec.remaining = Math.max(0, rec.remaining - failedStarts);
+            storyboardOutstandingRef.set(storyboard.id, rec);
+          }
+        }
+
+        // If we ended up with 0 actual jobs (no visuals or all starts failed),
+        // clear generating/pending immediately so the UI doesn't get stuck.
+        const recAfter = storyboardOutstandingRef.get(storyboard.id);
+        if (!recAfter || recAfter.remaining === 0) {
+          setGeneratingStoryboards((prev) => {
+            const next = { ...prev };
+            delete next[storyboard.id];
+            return next;
+          });
+          setPendingStoryboard((prev) => ({ ...prev, [parentVisualDirectionId]: false }));
+          storyboardOutstandingRef.delete(storyboard.id);
+          setStoryboards((prev) => {
+            const sb = prev[storyboard.id];
+            if (!sb) return prev;
+            const next = { ...prev, [storyboard.id]: { ...sb, isSaving: false } as any };
+            updateCache(next);
+            return next;
+          });
+        }
 
         // No image caching: images are in S3.
 
@@ -449,12 +698,13 @@ export function useStoryboardCanvasAreaLogic({
       } catch (e: any) {
         setError(e?.message || "Failed to generate storyboard sketches.");
       } finally {
-        setPendingStoryboard((prev) => ({ ...prev, [parentVisualDirectionId]: false }));
+        // IMPORTANT: do NOT clear pending/generating here.
+        // Websocket terminal messages (done/error/timeout) clear them when the final sketch job resolves.
         setSyncing(false);
         onSyncChange?.(false);
       }
     },
-    [onSyncChange, generateSketchAI]
+    [onSyncChange, startSketchJob, attachToSketchJob, storyboardOutstandingRef]
   );
 
   const handleEditStoryboardName = useCallback(
@@ -502,6 +752,9 @@ export function useStoryboardCanvasAreaLogic({
 
   const handleDeleteStoryboard = useCallback(async (storyboardId: string) => {
     let prevStoryboard: StoryboardCard | undefined;
+
+    // Cancel any outstanding AI jobs tied to this storyboard so it can't resurrect.
+    removeAiJobsWhere((j) => j.type === "storyboard_sketch" && j.meta?.storyboardId === storyboardId);
 
     setStoryboards((prev) => {
       prevStoryboard = prev[storyboardId];
@@ -571,6 +824,7 @@ export function useStoryboardCanvasAreaLogic({
     storyboards,
     positions,
     pendingStoryboard,
+    generatingStoryboards,
     loading,
     error,
     syncing,

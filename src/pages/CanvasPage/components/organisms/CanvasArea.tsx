@@ -52,6 +52,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     collections,
     positions: segColPositions,
     pendingSegmentCollection,
+    generatingCollections,
     loading: segsLoading,
     error: segsError,
     syncing: segsSyncing,
@@ -68,6 +69,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     directions: visualDirections,
     positions: visualDirectionsPositions,
     pendingVisualDirection,
+    generatingDirections,
     loading: visualsLoading,
     error: visualsError,
     syncing: visualsSyncing,
@@ -82,6 +84,7 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     storyboards,
     positions: storyboardPositions,
     pendingStoryboard,
+    generatingStoryboards,
     loading: storyboardsLoading,
     error: storyboardsError,
     syncing: storyboardsSyncing,
@@ -543,6 +546,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                 deleting={!!col.deleting}
                 dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
                 pendingVisualDirection={!!pendingVisualDirection[col.id] || !!pendingVisualSet[col.id]}
+                generating={!!generatingCollections[col.id]}
                 onGenerateVisualDirections={async () => {
                   if (!col.segments || col.segments.length === 0) return;
                   setPendingVisualSet(prev => ({ ...prev, [col.id]: true }));
@@ -589,6 +593,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                     deleting={!!vd.deleting}
                     dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
                     pendingStoryboardSketches={!!pendingStoryboard[vd.id]}
+                    generating={!!generatingDirections[vd.id]}
                     onGenerateStoryboardSketches={async (instructions?: string) => {
                       // Place storyboard card to the right of the visual direction card
                       const parentPos = visualDirectionsPositions[vd.id] || {
@@ -630,6 +635,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                         onExpandedChange={(expanded) =>
                           setStoryboardExpanded((prev) => ({ ...prev, [sb.id]: expanded }))
                         }
+                        generating={!!generatingStoryboards[sb.id]}
                       />
                       </div>
                     ))

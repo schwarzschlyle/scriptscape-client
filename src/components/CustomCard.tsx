@@ -34,7 +34,7 @@ const CustomCard: React.FC<CustomCardProps> = ({
         height: height ?? "auto",
         display: "flex",
         flexDirection: "column",
-        outline: active ? "2.5px solid #abf43e" : "none",
+        outline: active ? "1.5px solid #abf43e" : "none",
         outlineOffset: "0px",
         borderRadius: 2,
         transition: "outline 0.15s",

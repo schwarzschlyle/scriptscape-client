@@ -15,7 +15,7 @@ const LoadingSpinner = ({ label = "Loading...", size = 48, sx }: LoadingSpinnerP
     flexDirection="column"
     alignItems="center"
     justifyContent="center"
-    minHeight="30vh"
+    minHeight={0}
     width="100%"
     sx={{ py: 4, ...sx }}
   >

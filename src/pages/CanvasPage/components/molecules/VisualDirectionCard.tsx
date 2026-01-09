@@ -29,6 +29,8 @@ interface VisualDirectionCardProps {
   onVisualChange?: (visualId: string, newContent: string, index: number) => void;
   onDelete?: () => void;
   pendingVisualDirection?: boolean;
+  /** True while this card is generating its visuals (child orange dot). */
+  generating?: boolean;
   onGenerateStoryboardSketches?: (instructions?: string) => void;
   pendingStoryboardSketches?: boolean;
 }
@@ -48,6 +50,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   onVisualChange,
   onDelete,
   pendingVisualDirection = false,
+  generating = false,
   onGenerateStoryboardSketches,
   pendingStoryboardSketches = false,
 }) => {
@@ -55,54 +58,22 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
-  const [localVisuals, setLocalVisuals] = useState<{ content: string }[]>(visuals.map(v => ({ content: v.content || "" })));
-  // Removed editingVisualIndex state (unused after refactor)
-  const [lastSaved, setLastSaved] = useState<{ name: string; visuals: { content: string }[] }>({
-    name: name || "",
-    visuals: visuals.map(v => ({ content: v.content || "" })),
-  });
-
-  const [showGenerateStoryboardModal, setShowGenerateStoryboardModal] = useState(false);
-
+  const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
   React.useEffect(() => {
     setLocalName(name || "");
-    setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
-    setLastSaved({
-      name: name || "",
-      visuals: visuals.map(v => ({ content: v.content || "" })),
-    });
-  }, [name, visuals]);
+    setLastSaved({ name: name || "" });
+  }, [name]);
 
   React.useEffect(() => {
-    if (visuals && visuals.length === localVisuals.length) {
-      setLocalVisuals(visuals.map(v => ({ content: v.content || "" })));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visuals]);
-
-  React.useEffect(() => {
-    if (
-      !active &&
-      (localName !== lastSaved.name ||
-        localVisuals.some((v, i) => v.content !== (lastSaved.visuals[i]?.content ?? "")))
-    ) {
-      if (onNameChange && localName !== lastSaved.name) {
-        onNameChange(localName);
-      }
-      if (onVisualChange) {
-        localVisuals.forEach((vis, idx) => {
-          if (vis.content !== (lastSaved.visuals[idx]?.content ?? "")) {
-            const visualId = visuals[idx]?.id || "";
-            if (visualId) {
-              onVisualChange(visualId, vis.content, idx);
-            }
-          }
-        });
-      }
-      setLastSaved({ name: localName, visuals: [...localVisuals] });
+    if (!active && localName !== lastSaved.name) {
+      onNameChange?.(localName);
+      setLastSaved({ name: localName });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
+
+  const [showGenerateStoryboardModal, setShowGenerateStoryboardModal] = useState(false);
+
 
   return (
     <div style={{ position: "relative" }}>
@@ -121,6 +92,10 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
             editable={editable && !isSaving && !deleting}
             pendingVisualDirection={pendingVisualDirection}
             pendingStoryboardSketches={pendingStoryboardSketches}
+            generating={generating}
+            deleteDisabled={!!pendingVisualDirection || !!pendingStoryboardSketches}
+            expanded={isFullHeight}
+            onExpandedChange={setIsFullHeight}
           />
         }
         body={
@@ -143,35 +118,9 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
             </Box>
             <CardFooter
               left={null}
-              center={
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    padding: 0,
-                    margin: 0,
-                    outline: "none",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFullHeight((v) => !v);
-                  }}
-                  aria-label={isFullHeight ? "Use fixed height" : "Use full height"}
-                >
-                  <img
-                    src={AiPromptIcon}
-                    alt="Expand/Collapse"
-                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
-                  />
-                </button>
-              }
+              center={null}
               right={
                 <>
-                  {/* Generate Storyboard Sketches */}
                   <button
                     style={{
                       background: "none",
@@ -179,20 +128,20 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      cursor: isSaving || pendingStoryboardSketches ? "not-allowed" : "pointer",
-                      opacity: isSaving || pendingStoryboardSketches ? 0.5 : 1,
+                      cursor: isSaving || generating || pendingStoryboardSketches ? "not-allowed" : "pointer",
+                      opacity: isSaving || generating || pendingStoryboardSketches ? 0.5 : 1,
                       padding: 0,
                       margin: 0,
                       outline: "none",
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isSaving && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
+                      if (!isSaving && !generating && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
                         setShowGenerateStoryboardModal(true);
                       }
                     }}
                     aria-label="Generate Storyboard Sketches"
-                    disabled={isSaving || pendingStoryboardSketches || !onGenerateStoryboardSketches}
+                    disabled={isSaving || generating || pendingStoryboardSketches || !onGenerateStoryboardSketches}
                   >
                     <img
                       src={AiPromptIcon}
@@ -201,7 +150,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
                         width: 22,
                         height: 22,
                         display: "block",
-                        filter: isSaving || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
+                        filter: isSaving || generating || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
                       }}
                     />
                   </button>

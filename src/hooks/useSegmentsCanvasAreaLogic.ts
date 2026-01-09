@@ -5,11 +5,19 @@ import {
   useDeleteSegmentCollection,
 } from "@api/segment_collections/mutations";
 import { useCreateSegment, useUpdateSegment } from "@api/segments/mutations";
-import { useGenerateScriptSegmentsAI } from "./useGenerateScriptSegmentsAI";
+import { addAiJob, listAiJobs, pruneAiJobs, removeAiJob, removeAiJobsWhere } from "../utils/aiJobPersistence";
+import { getSegmentCollections } from "@api/segment_collections/queries";
+import { getSegments } from "@api/segments/queries";
+import { ReconnectingWebSocket } from "../utils/websocket";
+import { buildWsUrl } from "../utils/wsUrl";
 import type { SegmentCollection } from "@api/segment_collections/types";
 import type { Segment as BaseSegment } from "@api/segments/types";
 
 type Segment = BaseSegment;
+
+function normalizeParentScriptId(col: any) {
+  return col?.scriptId || col?.script_id || "";
+}
 type CollectionsState = {
   [id: string]: SegmentCollection & {
     parentScriptId: string;
@@ -42,6 +50,8 @@ export function useSegmentsCanvasAreaLogic({
   const [collections, setCollections] = useState<CollectionsState>({});
   const [positions, setPositions] = useState<PositionsState>({});
   const [pendingSegmentCollection, setPendingSegmentCollection] = useState<{ [scriptId: string]: boolean }>({});
+  /** Child segment-collection-card generating state (orange dot). */
+  const [generatingCollections, setGeneratingCollections] = useState<{ [collectionId: string]: boolean }>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +61,138 @@ export function useSegmentsCanvasAreaLogic({
   const updateCollectionMutation = useUpdateSegmentCollection();
   const deleteCollectionMutation = useDeleteSegmentCollection();
   const updateSegmentMutation = useUpdateSegment();
-  const { generate: generateSegmentsAI } = useGenerateScriptSegmentsAI();
+
+  // Refresh canonical data after any local create/delete.
+  // (A lightweight mechanism without threading query-client into this hook.)
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Prevent duplicate websocket attachments for the same job.
+  // This can happen in React strict mode / rerenders and leads to repeated writes (flooding).
+  const attachedJobsRef = useState(() => new Set<string>())[0];
+
+  // Prevent duplicate terminal message handling ("done" / "error").
+  // Reconnects or multiple sockets can otherwise cause repeated POST /segments calls.
+  const terminalHandledJobsRef = useState(() => new Set<string>())[0];
+
+  const startSegmentsJob = useCallback(async (script: string, numSegments: number) => {
+    const aiApiUrl = import.meta.env.VITE_AI_API_URL;
+    const resp = await fetch(`${aiApiUrl}/run-generate-script-segments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ script, num_segments: numSegments }),
+    });
+    if (!resp.ok) throw new Error("Failed to start segment generation.");
+    const data = await resp.json();
+    return data as { job_id: string };
+  }, []);
+
+  const attachToSegmentsJob = useCallback(
+    (jobId: string, parentScriptId: string, collectionId: string, _numSegments: number, parentScriptPosition?: { x: number; y: number }) => {
+      if (attachedJobsRef.has(jobId)) return;
+      attachedJobsRef.add(jobId);
+
+      const wsUrl = buildWsUrl(`/ws/generate-script-segments-result/${jobId}`);
+
+      const ws = new ReconnectingWebSocket(wsUrl);
+
+      ws.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(String(event.data));
+          if (data.status === "pending") return;
+          if (data.status === "done" && Array.isArray(data.result)) {
+            // Guard against duplicate terminal messages (reconnects / duplicate sockets)
+            // causing repeated POST /segments calls.
+            if (terminalHandledJobsRef.has(jobId)) return;
+            terminalHandledJobsRef.add(jobId);
+
+            const createdSegments: Segment[] = await Promise.all(
+              (data.result as string[]).map((text: string, i: number) =>
+                createSegmentMutation.mutateAsync({ collectionId, segmentIndex: i, text })
+              )
+            );
+
+            setCollections((prev) => {
+              const updated = {
+                ...prev,
+                [collectionId]: {
+                  ...(prev[collectionId] as any),
+                  id: collectionId,
+                  parentScriptId,
+                  segments: createdSegments,
+                  isSaving: false,
+                  deleting: false,
+                  error: null,
+                },
+              };
+              updateCache(updated);
+              return updated;
+            });
+
+            setPositions((prev) => {
+              if (prev[collectionId]) return prev;
+              const parentPos = parentScriptPosition || { x: 200, y: 200 };
+              const offsetX = 380;
+              const offsetY = 40 + Object.keys(prev).length * 40;
+              const updated = { ...prev, [collectionId]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY } };
+              updatePositionsCache(updated);
+              return updated;
+            });
+
+            removeAiJob("segments", jobId);
+            setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
+            setGeneratingCollections((prev) => {
+              const next = { ...prev };
+              delete next[collectionId];
+              return next;
+            });
+            attachedJobsRef.delete(jobId);
+            ws.disableReconnect();
+            ws.close();
+          } else if (data.status === "error") {
+            if (terminalHandledJobsRef.has(jobId)) return;
+            terminalHandledJobsRef.add(jobId);
+            removeAiJob("segments", jobId);
+            setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
+            setGeneratingCollections((prev) => {
+              const next = { ...prev };
+              delete next[collectionId];
+              return next;
+            });
+            attachedJobsRef.delete(jobId);
+            ws.disableReconnect();
+            ws.close();
+          }
+        } catch {
+          removeAiJob("segments", jobId);
+          setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
+          setGeneratingCollections((prev) => {
+            const next = { ...prev };
+            delete next[collectionId];
+            return next;
+          });
+          attachedJobsRef.delete(jobId);
+          // Leave terminalHandledJobsRef entry until timeout cleanup.
+          ws.disableReconnect();
+          ws.close();
+        }
+      };
+
+      window.setTimeout(() => {
+        attachedJobsRef.delete(jobId);
+        terminalHandledJobsRef.delete(jobId);
+        removeAiJob("segments", jobId);
+        setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
+        setGeneratingCollections((prev) => {
+          const next = { ...prev };
+          delete next[collectionId];
+          return next;
+        });
+        ws.disableReconnect();
+        ws.close();
+      }, 4 * 60_000);
+    },
+    [createSegmentMutation, attachedJobsRef, terminalHandledJobsRef]
+  );
 
   function updateCache(collections: CollectionsState) {
     const cacheKey = getCacheKey(organizationId, projectId);
@@ -94,6 +235,83 @@ export function useSegmentsCanvasAreaLogic({
   }, [organizationId, projectId]);
 
   useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const scriptsCacheKey = `scripts-cache-${organizationId}-${projectId}`;
+        const raw = localStorage.getItem(scriptsCacheKey);
+        const parsed = raw ? JSON.parse(raw) : [];
+        const scriptIds = Array.isArray(parsed) ? parsed.map((s: any) => s?.id).filter(Boolean) : [];
+        if (!scriptIds.length) return;
+
+        const collectionsResponses = await Promise.all(
+          scriptIds.map(async (scriptId: string) => ({ scriptId, collections: await getSegmentCollections(scriptId) }))
+        );
+        const allCollections = collectionsResponses.flatMap(({ scriptId, collections }) =>
+          (collections || []).map((c: any) => ({ ...c, scriptId }))
+        );
+
+        const segmentsResponses = await Promise.all(
+          allCollections.map(async (col: any) => ({ colId: col.id, segmentsRes: await getSegments(col.id) }))
+        );
+        const segmentsByCollectionId: Record<string, Segment[]> = {};
+        segmentsResponses.forEach(({ colId, segmentsRes }) => {
+          // API returns a raw list[Segment] (not { data, pagination }).
+          // The previous code expected a `{ data }` wrapper and would therefore
+          // set segments to [] on every refresh, which looks like “entries cleared”.
+          const payload = segmentsRes as any;
+          segmentsByCollectionId[colId] = (Array.isArray(payload) ? payload : payload?.data || []) as any;
+        });
+
+        if (!mounted) return;
+        setCollections((prev) => {
+          const next: CollectionsState = { ...prev };
+          allCollections.forEach((col: any) => {
+            const existing = prev[col.id];
+            next[col.id] = {
+              ...(existing || ({} as any)),
+              ...col,
+              id: col.id,
+              parentScriptId: normalizeParentScriptId(col) || existing?.parentScriptId || "",
+              segments: segmentsByCollectionId[col.id] || existing?.segments || [],
+              isSaving: (segmentsByCollectionId[col.id]?.length ?? 0) > 0 ? false : existing?.isSaving,
+            } as any;
+          });
+
+          const backendIds = new Set(allCollections.map((c: any) => c.id));
+          Object.keys(next).forEach((id) => {
+            if (!backendIds.has(id)) delete (next as any)[id];
+          });
+
+          updateCache(next);
+          return next;
+        });
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [organizationId, projectId, refreshTick]);
+
+  useEffect(() => {
+    pruneAiJobs(24 * 60 * 60_000);
+    const jobs = listAiJobs("segments");
+    jobs.forEach((job) => {
+      const meta = job.meta || {};
+      const parentScriptId = meta.parentScriptId as string | undefined;
+      const collectionId = meta.collectionId as string | undefined;
+      const numSegments = meta.numSegments as number | undefined;
+      const parentPos = meta.parentScriptPosition as { x: number; y: number } | undefined;
+      if (!parentScriptId || !collectionId || typeof numSegments !== "number") return;
+      setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: true }));
+      setGeneratingCollections((prev) => ({ ...prev, [collectionId]: true }));
+      attachToSegmentsJob(job.jobId, parentScriptId, collectionId, numSegments, parentPos);
+    });
+  }, [attachToSegmentsJob]);
+
+  useEffect(() => {
     if (onSyncChange) onSyncChange(syncing);
   }, [syncing, onSyncChange]);
 
@@ -114,6 +332,38 @@ export function useSegmentsCanvasAreaLogic({
           scriptId: parentScriptId,
           name,
         });
+
+        setCollections((prev) => {
+          const updated = {
+            ...prev,
+            [collection.id]: {
+              ...collection,
+              parentScriptId,
+              segments: [],
+              isSaving: true,
+              deleting: false,
+              error: null,
+            },
+          };
+          updateCache(updated);
+          return updated;
+        });
+
+        // Child card should show orange while segments are generating.
+        setGeneratingCollections((prev) => ({ ...prev, [collection.id]: true }));
+
+        setPositions((prev) => {
+          if (prev[collection.id]) return prev;
+          const parentPos = parentScriptPosition || { x: 200, y: 200 };
+          const offsetX = 380;
+          const offsetY = 40 + Object.keys(prev).length * 40;
+          const updated = {
+            ...prev,
+            [collection.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
+          };
+          updatePositionsCache(updated);
+          return updated;
+        });
         // Create segments in backend using AI API
         // Get parent script text
         let scriptText = "";
@@ -125,72 +375,61 @@ export function useSegmentsCanvasAreaLogic({
           setError("Parent script text not found.");
           throw new Error("Parent script text not found.");
         }
-        // Use AI hook to generate segments
-        let aiSegments: string[] = [];
-        try {
-          console.log("Calling generateSegmentsAI with:", { scriptText, numSegments });
-          aiSegments = await generateSegmentsAI(scriptText, numSegments);
-          console.log("AI segments generated:", aiSegments);
-        } catch (err: any) {
-          setError(err?.message || "Failed to generate segments from AI.");
-          throw err;
-        }
-        // Create segments in parallel using the AI output
-        const createdSegments: Segment[] = await Promise.all(
-          aiSegments.map(async (text, i) => {
-            try {
-              const result = await createSegmentMutation.mutateAsync({
-                collectionId: collection.id,
-                segmentIndex: i,
-                text,
-              });
-              // Debug: log successful segment creation
-              console.log("Created segment:", result);
-              return result;
-            } catch (err) {
-              // Debug: log error
-              console.error("Error creating segment:", err);
-              throw err;
-            }
-          })
-        );
-        // Add the new collection to state and localStorage only after all API calls succeed
-        setCollections((prev) => {
-          const updated = {
-            ...prev,
-            [collection.id]: {
-              ...collection,
-              parentScriptId,
-              segments: createdSegments,
-              isSaving: false,
-              deleting: false,
-              error: null,
+
+        const { job_id } = await startSegmentsJob(scriptText, numSegments);
+
+        addAiJob({
+          type: "segments",
+          jobId: job_id,
+          createdAt: Date.now(),
+          meta: {
+            parentScriptId,
+            collectionId: collection.id,
+            numSegments,
+            parentScriptPosition: parentScriptPosition || null,
+            collection: {
+              id: collection.id,
+              name: collection.name,
+              metadata: (collection as any).metadata,
             },
-          };
-          updateCache(updated);
-          return updated;
+          },
         });
-        // Assign a position for the new collection
-        setPositions((prev) => {
-          const parentPos = parentScriptPosition || { x: 200, y: 200 };
-          const offsetX = 380;
-          const offsetY = 40 + Object.keys(prev).length * 40;
-          const updated = {
-            ...prev,
-            [collection.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
-          };
-          updatePositionsCache(updated);
-          return updated;
-        });
+
+        attachToSegmentsJob(job_id, parentScriptId, collection.id, numSegments, parentScriptPosition);
+
+        // Pull canonical backend data after creating the container + starting AI.
+        // (Ensures cross-session/device parity.)
+        setRefreshTick((t) => t + 1);
       } catch (e: any) {
         setError(e?.message || "Failed to create segment collection.");
+        setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
+
+        // Ensure child generating is cleared if we already created a collection.
+        // (collectionId can be missing in some failure paths)
+        setGeneratingCollections((prev) => {
+          const next = { ...prev };
+          Object.keys(next).forEach((cid) => {
+            const col = (collections as any)?.[cid];
+            if (col?.parentScriptId === parentScriptId) delete next[cid];
+          });
+          return next;
+        });
+
+        setCollections((prev) => {
+          const next = { ...prev };
+          const col = Object.values(prev).find((c: any) => c?.parentScriptId === parentScriptId && c?.isSaving);
+          if (col?.id && next[col.id]) {
+            next[col.id] = { ...(next[col.id] as any), isSaving: false, error: e?.message || "Failed to create segment collection." };
+            updateCache(next);
+          }
+          return next;
+        });
       } finally {
-        setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: false }));
         setSyncing(false);
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, onSyncChange, createSegmentCollectionMutation, createSegmentMutation]
+    [organizationId, projectId, onSyncChange, createSegmentCollectionMutation, createSegmentMutation, startSegmentsJob, attachToSegmentsJob]
   );
 
   // Edit collection name
@@ -306,6 +545,9 @@ export function useSegmentsCanvasAreaLogic({
   // Delete collection (optimistic)
   const handleDeleteCollection = useCallback(
     async (colId: string) => {
+      // Cancel any outstanding AI jobs tied to this collection so it can't resurrect.
+      removeAiJobsWhere((j) => j.type === "segments" && j.meta?.collectionId === colId);
+
       let prevCol: any;
       setCollections((prev) => {
         prevCol = prev[colId];
@@ -346,6 +588,7 @@ export function useSegmentsCanvasAreaLogic({
         });
       } finally {
         setSyncing(false);
+        setRefreshTick((t) => t + 1);
       }
     },
     [deleteCollectionMutation]
@@ -362,6 +605,9 @@ export function useSegmentsCanvasAreaLogic({
    */
   const handleDeleteCollectionsByScriptId = useCallback(
     async (scriptId: string) => {
+      // Cancel any outstanding AI jobs tied to this script.
+      removeAiJobsWhere((j) => j.type === "segments" && j.meta?.parentScriptId === scriptId);
+
       const colIds = Object.values(collections)
         .filter((c: any) => c?.parentScriptId === scriptId)
         .map((c: any) => c.id)
@@ -389,6 +635,8 @@ export function useSegmentsCanvasAreaLogic({
 
       // Backend deletes
       await Promise.all(colIds.map((id) => deleteCollectionMutation.mutateAsync(id).catch(() => undefined)));
+
+      setRefreshTick((t) => t + 1);
     },
     [collections, deleteCollectionMutation]
   );
@@ -409,6 +657,7 @@ export function useSegmentsCanvasAreaLogic({
     collections,
     positions,
     pendingSegmentCollection,
+    generatingCollections,
     loading,
     error,
     syncing,
@@ -421,3 +670,6 @@ export function useSegmentsCanvasAreaLogic({
     clearError,
   };
 }
+
+
+

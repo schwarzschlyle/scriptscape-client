@@ -35,6 +35,24 @@ body {
   background-color: #242424;
 }
 
+.canvas-card, .canvas-card * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.canvas-card input,
+.canvas-card textarea,
+.canvas-card [contenteditable="true"],
+.canvas-card [contenteditable="true"] * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.canvas-card img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
 /* Modern translucent dark scrollbar (used for fixed-height canvas cards) */
 .canvas-scrollbar {
   scrollbar-width: thin; /* Firefox */

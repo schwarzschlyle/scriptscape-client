@@ -56,7 +56,9 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
               if (onVisualChange) {
                 const visualId = visual.id || "";
                 if (visualId) {
-                  onVisualChange(visualId, localVisuals[idx], idx);
+                  const nextText = localVisuals[idx];
+                  const prevText = visual.content || "";
+                  if (nextText !== prevText) onVisualChange(visualId, nextText, idx);
                 }
               }
             }}

@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useGenerateScriptSegmentsAIMutation } from "../api/ai-visuals/mutations";
+import { ReconnectingWebSocket } from "../utils/websocket";
+import { addAiJob, removeAiJob } from "../utils/aiJobPersistence";
 
 type UseGenerateScriptSegmentsAIResult = {
   generate: (script: string, numSegments: number) => Promise<string[]>;
@@ -10,7 +12,7 @@ type UseGenerateScriptSegmentsAIResult = {
 export function useGenerateScriptSegmentsAI(): UseGenerateScriptSegmentsAIResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef<ReconnectingWebSocket | null>(null);
 
   const mutation = useGenerateScriptSegmentsAIMutation();
 
@@ -24,6 +26,7 @@ export function useGenerateScriptSegmentsAI(): UseGenerateScriptSegmentsAIResult
     try {
       // Start the AI job
       const { job_id } = await mutation.mutateAsync({ script, numSegments });
+      addAiJob({ type: "segments", jobId: job_id, createdAt: Date.now() });
       const wsBase = import.meta.env.VITE_AI_API_WEBSOCKET_URL;
       let wsUrl: string;
       if (wsBase.startsWith("ws://") || wsBase.startsWith("wss://")) {
@@ -34,47 +37,41 @@ export function useGenerateScriptSegmentsAI(): UseGenerateScriptSegmentsAIResult
       }
 
       return await new Promise<string[]>((resolve, reject) => {
-        const ws = new WebSocket(wsUrl);
+        const ws = new ReconnectingWebSocket(wsUrl);
         wsRef.current = ws;
-
-        ws.onopen = () => {
-          console.log("AI WebSocket opened:", wsUrl);
-        };
 
         ws.onmessage = (event) => {
           try {
-            // Debug: log raw websocket message
-            console.log("AI WebSocket message:", event.data);
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(String(event.data));
+            if (data.status === "pending") return;
             if (data.status === "done" && Array.isArray(data.result)) {
+              removeAiJob("segments", job_id);
+              ws.disableReconnect();
               ws.close();
               resolve(data.result);
             } else if (data.status === "error") {
+              removeAiJob("segments", job_id);
+              ws.disableReconnect();
               ws.close();
               reject(new Error(data.error || "AI segment generation failed"));
             }
-          } catch (err) {
+          } catch {
+            removeAiJob("segments", job_id);
+            ws.disableReconnect();
             ws.close();
             reject(new Error("Malformed WebSocket message"));
           }
         };
 
-        ws.onerror = (event) => {
-          console.error("AI WebSocket error:", event);
-          ws.close();
-          reject(new Error("WebSocket error"));
+        ws.onerror = () => {
+          // reconnecting websocket will retry; reject only on timeout
         };
 
-        ws.onclose = (event) => {
-          console.log("AI WebSocket closed:", event);
-        };
-
-        // Timeout after 2 minutes
         setTimeout(() => {
-          if (ws.readyState !== ws.CLOSED) {
-            ws.close();
-            reject(new Error("AI segment generation timed out"));
-          }
+          removeAiJob("segments", job_id);
+          ws.disableReconnect();
+          ws.close();
+          reject(new Error("AI segment generation timed out"));
         }, 120000);
       });
     } catch (err: any) {

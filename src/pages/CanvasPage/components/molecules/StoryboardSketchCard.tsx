@@ -25,10 +25,10 @@ interface StoryboardSketchCardProps {
   onClick?: () => void;
   onNameChange?: (name: string) => void;
   onDelete?: () => void;
-  /** Controlled expand state (optional) so CanvasArea can compute connector width correctly. */
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
-  // no pending indicator on child cards (parent shows blue dot while generating)
+  /** True while storyboard sketches are being generated (child orange dot). */
+  generating?: boolean;
 }
 
 const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
@@ -46,6 +46,7 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onDelete,
   expanded: controlledExpanded,
   onExpandedChange,
+  generating = false,
 }) => {
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
@@ -84,6 +85,7 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
             dragListeners={dragListeners}
             active={active}
             editable={editable && !isSaving && !deleting}
+            generating={generating}
           />
         }
         body={
@@ -92,19 +94,11 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
               className={expanded ? undefined : "canvas-scrollbar"}
               sx={{
                 flex: 1,
-                // When compact, allow scrolling inside the card body to access all rows.
-                // When expanded, we want full height (no card-level scroll).
                 overflowY: expanded ? "visible" : "auto",
                 overflowX: "hidden",
               }}
             >
-              <StoryboardSketchCardBody
-                sketches={sketches}
-                isSaving={isSaving}
-                deleting={deleting}
-                error={error}
-                compact={!expanded}
-              />
+              <StoryboardSketchCardBody sketches={sketches} isSaving={isSaving} deleting={deleting} error={error} compact={!expanded} />
             </Box>
 
             <CardFooter
@@ -128,17 +122,16 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
                     if (onExpandedChange) onExpandedChange(next);
                     else setUncontrolledExpanded(next);
                   }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   aria-label={expanded ? "Collapse" : "Expand"}
                 >
-                  <img
-                    src={AiPromptIcon}
-                    alt="Expand/Collapse"
-                    style={{ width: 22, height: 22, display: "block", opacity: 0.9 }}
-                  />
+                  <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 22, height: 22, display: "block", opacity: 0.9 }} />
                 </button>
               }
               right={null}
             />
+
             {error && (
               <Box sx={{ mt: 1, px: 2 }}>
                 <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
