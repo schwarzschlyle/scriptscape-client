@@ -9,7 +9,8 @@ COPY package.json package-lock.json* ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code and .env
+# Copy source code
+# NOTE: `.env` is ignored by `.dockerignore` and is not included in the image build context.
 COPY . .
 
 # Build args for API URLs
