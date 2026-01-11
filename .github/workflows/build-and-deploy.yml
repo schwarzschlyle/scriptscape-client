@@ -27,8 +27,10 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # Prefer a PAT (GHCR_TOKEN) for reliable pushes across org namespaces/packages.
+          # Fallback to GITHUB_TOKEN when GHCR_TOKEN is not provided.
+          username: ${{ secrets.GHCR_USERNAME || github.actor }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build and push client
         uses: docker/build-push-action@v6
