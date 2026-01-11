@@ -1,0 +1,58 @@
+name: Build client + trigger infra deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: scriptscape-client
+  # Defaults to the current repo owner if not set
+  GHCR_NAMESPACE: ${{ secrets.GHCR_NAMESPACE || github.repository_owner }}
+
+jobs:
+  build-push-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push client
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=/api/v1
+            VITE_AI_API_URL=/ai-api
+            VITE_AI_API_WEBSOCKET_URL=/ai-api
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.GHCR_NAMESPACE }}/${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger infra deploy (client)
+        env:
+          INFRA_REPO: ${{ secrets.INFRA_REPO }} # e.g. schwarzschlyle/scriptscape-infra
+          INFRA_TOKEN: ${{ secrets.INFRA_TRIGGER_TOKEN }} # PAT with repo:dispatch on infra repo
+        run: |
+          set -euo pipefail
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $INFRA_TOKEN" \
+            https://api.github.com/repos/$INFRA_REPO/dispatches \
+            -d '{"event_type":"scriptscape-deploy","client_payload":{"service":"client","tag":"sha-${{ github.sha }}","ai_worker_scale":"1"}}'
