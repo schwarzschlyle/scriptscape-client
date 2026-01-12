@@ -57,4 +57,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $INFRA_TOKEN" \
             https://api.github.com/repos/$INFRA_REPO/dispatches \
-            -d '{"event_type":"scriptscape-deploy","client_payload":{"service":"client","tag":"sha-${{ github.sha }}","ai_worker_scale":"1"}}'
+            -d '{"event_type":"scriptscape-deploy","client_payload":{"service":"client","tag":"sha-${{ github.sha }}","ai_worker_scale":"1","aggressive_cleanup":"true"}}'
