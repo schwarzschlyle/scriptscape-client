@@ -13,7 +13,6 @@ export default function RegisterPage() {
   }, []);
   const [firstName, setFirstName] = useState("");
   const [orgName, setOrgName] = useState("");
-  const [projectName, setProjectName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [, setOrgId] = useState<string>("");
@@ -81,14 +80,6 @@ export default function RegisterPage() {
           type="text"
           value={orgName}
           onChange={e => setOrgName(e.target.value)}
-          required
-        />
-
-        <TextField
-          label="Project Name"
-          type="text"
-          value={projectName}
-          onChange={e => setProjectName(e.target.value)}
           required
         />
 
