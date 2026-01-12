@@ -16,7 +16,8 @@
       "@routes/*": ["routes/*"],
       "@pages/*": ["pages/*"],
       "@components/*": ["components/*"],
-      "@hooks/*": ["hooks/*"]
+      "@hooks/*": ["hooks/*"],
+      "@auth/*": ["auth/*"]
     },
 
     /* Bundler mode */

@@ -10,7 +10,8 @@ export default defineConfig({
       { find: '@pages', replacement: '/src/pages' },
       { find: '@routes', replacement: '/src/routes' },
       { find: '@components', replacement: '/src/components' },
-      { find: '@hooks', replacement: '/src/hooks' }
+      { find: '@hooks', replacement: '/src/hooks' },
+      { find: '@auth', replacement: '/src/auth' }
     ]
   }
 })

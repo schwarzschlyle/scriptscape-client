@@ -3,9 +3,12 @@ import CustomButton from "@components/CustomButton";
 import CustomForm from "@components/CustomForm";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useRegister, useLogin, useCreateOrganization } from "@api";
-import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "@components/LoadingSpinner";
+import { useRegister, useCreateOrganization } from "@api";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
+import { buildRoute } from "@routes/routes.config";
+import { useAuth } from "@auth/AuthContext";
 
 export default function RegisterPage() {
   React.useEffect(() => {
@@ -21,8 +24,16 @@ export default function RegisterPage() {
 
   const createOrg = useCreateOrganization();
   const register = useRegister();
-  const login = useLogin();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const auth = useAuth();
+
+  // If already authenticated, avoid showing register.
+  React.useEffect(() => {
+    if (auth.status === "authenticated" && auth.user?.organizationId) {
+      navigate(buildRoute.projects(auth.user.organizationId), { replace: true });
+    }
+  }, [auth.status, auth.user?.organizationId, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,21 +53,25 @@ export default function RegisterPage() {
         organization_name: orgResp.name,
       });
       if (!regResp.user?.id) throw new Error("User registration failed");
-      localStorage.setItem("accessToken", regResp.accessToken);
-      localStorage.setItem("refreshToken", regResp.refreshToken);
 
-      const loginResp = await login.mutateAsync({ email, password });
-      if (!loginResp.accessToken) throw new Error("Login failed");
-      localStorage.setItem("accessToken", loginResp.accessToken);
-      localStorage.setItem("refreshToken", loginResp.refreshToken);
+      await auth.login({ accessToken: regResp.accessToken });
 
-      navigate(`/canvas/${orgResp.id}/`);
+      const returnTo = searchParams.get("returnTo");
+      if (returnTo && returnTo.startsWith("/")) {
+        navigate(returnTo, { replace: true });
+      } else {
+        navigate(buildRoute.projects(orgResp.id), { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
   };
+
+  if (auth.status === "loading") {
+    return <LoadingSpinner label="Restoring session..." />;
+  }
 
   return (
     <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>

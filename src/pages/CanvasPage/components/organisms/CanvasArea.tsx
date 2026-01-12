@@ -29,7 +29,6 @@ const CARD_WIDTH = 340;
 const STORYBOARD_BASE_CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 
-import CanvasHeader from "../molecules/CanvasHeader";
 
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
   // Scripts logic
@@ -418,13 +417,6 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
 
   return (
     <>
-      <CanvasHeader
-        orgName={""}
-        projectName={""}
-        projectDescription={""}
-        onLogout={() => {}}
-        syncing={syncing}
-      />
       <Box
       sx={{
         position: "fixed",

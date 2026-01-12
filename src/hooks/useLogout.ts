@@ -1,18 +1,12 @@
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { ROUTES } from "@routes/routes.config";
-import queryClient from "@api/queryClient";
+import { useAuth } from "@auth/AuthContext";
 
 export function useLogout() {
-  const navigate = useNavigate();
+  const auth = useAuth();
 
   const logout = useCallback(() => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("reactQueryCache");
-    queryClient.clear();
-    navigate(ROUTES.LOGIN, { replace: true });
-  }, [navigate]);
+    void auth.logout();
+  }, [auth]);
 
   return logout;
 }
