@@ -1,6 +1,5 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import Box from "@mui/material/Box";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useCurrentUser } from "@api/users/queries";
 import { useOrganization } from "@api/organizations/queries";
