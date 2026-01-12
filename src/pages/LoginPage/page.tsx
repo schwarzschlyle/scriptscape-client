@@ -68,7 +68,7 @@ export default function LoginPage() {
     <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>
 
       <Typography variant="h5" component="h2" align="center" sx={{ mb: 2 }}>
-        LLogin
+        Login
       </Typography>
 
       <CustomForm onSubmit={handleSubmit}>
