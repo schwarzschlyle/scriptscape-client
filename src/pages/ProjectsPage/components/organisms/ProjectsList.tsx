@@ -149,9 +149,6 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} mb={2} align="center">
-        Select a Project (Design of this page is under development.)
-      </Typography>
       <ProjectGrid
         projects={projects}
         onProjectClick={handleProjectClick}

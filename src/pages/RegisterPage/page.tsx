@@ -9,6 +9,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
 import { buildRoute } from "@routes/routes.config";
 import { useAuth } from "@auth/AuthContext";
+import { AuthShell } from "@pages/Auth/components/AuthShell";
 
 export default function RegisterPage() {
   React.useEffect(() => {
@@ -69,18 +70,12 @@ export default function RegisterPage() {
     }
   };
 
-  if (auth.status === "loading") {
-    return <LoadingSpinner label="Restoring session..." />;
-  }
-
   return (
-    <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>
-
-      <Typography variant="h5" component="h2" align="center" sx={{ mb: 2 }}>
-        Register
-      </Typography>
-
-      <CustomForm onSubmit={handleSubmit}>
+    <AuthShell title="Register" subtitle="Create your account">
+      {auth.status === "loading" ? (
+        <LoadingSpinner label="Restoring session..." />
+      ) : (
+        <CustomForm onSubmit={handleSubmit}>
 
         <TextField
           label="First Name"
@@ -130,11 +125,11 @@ export default function RegisterPage() {
         )}
 
       </CustomForm>
+      )}
 
       <Typography sx={{ mt: 2 }} align="center" variant="body2">
         Already have an account? <a href={ROUTES.LOGIN}>Login</a>
       </Typography>
-      
-    </div>
+    </AuthShell>
   );
 }

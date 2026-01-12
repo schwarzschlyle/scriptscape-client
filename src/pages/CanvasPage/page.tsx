@@ -55,7 +55,7 @@ export default function CanvasPage() {
   const handleSyncChange = useCallback((sync: boolean) => setSyncing(sync), []);
 
   if (userLoading || orgLoading || projectLoading) {
-    return <LoadingSpinner label="Accessing Canvas..." />;
+    return <LoadingSpinner fullScreen label="Accessing canvas..." />;
   }
 
   if (orgError || projectError) {

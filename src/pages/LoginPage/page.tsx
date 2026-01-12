@@ -9,6 +9,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
 import { buildRoute } from "@routes/routes.config";
 import { useAuth } from "@auth/AuthContext";
+import { AuthShell } from "@pages/Auth/components/AuthShell";
 
 export default function LoginPage() {
   React.useEffect(() => {
@@ -66,19 +67,12 @@ export default function LoginPage() {
     }
   };
 
-  // While auth bootstraps (refresh cookie -> access token -> /me), avoid showing the login form.
-  if (auth.status === "loading") {
-    return <LoadingSpinner label="Restoring session..." />;
-  }
-
   return (
-    <div style={{ maxWidth: 400, margin: "2rem auto", padding: 24, border: "1px solid #ccc", borderRadius: 8 }}>
-
-      <Typography variant="h5" component="h2" align="center" sx={{ mb: 2 }}>
-        Login
-      </Typography>
-
-      <CustomForm onSubmit={handleSubmit}>
+    <AuthShell title="Login" subtitle="Sign in to continue">
+      {auth.status === "loading" ? (
+        <LoadingSpinner label="Restoring session..." />
+      ) : (
+        <CustomForm onSubmit={handleSubmit}>
 
         <TextField
           label="Email"
@@ -113,12 +107,12 @@ export default function LoginPage() {
         )}
         
       </CustomForm>
+      )}
 
       <Typography sx={{ mt: 2 }} align="center" variant="body2">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <a href={ROUTES.REGISTER || "/register"}>Register</a>
       </Typography>
-
-    </div>
+    </AuthShell>
   );
 }

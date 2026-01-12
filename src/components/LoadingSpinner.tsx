@@ -7,15 +7,16 @@ interface LoadingSpinnerProps {
   label?: string;
   size?: number;
   sx?: SxProps;
+  fullScreen?: boolean;
 }
 
-const LoadingSpinner = ({ label = "Loading...", size = 48, sx }: LoadingSpinnerProps) => (
+const LoadingSpinner = ({ label = "Loading...", size = 48, sx, fullScreen = false }: LoadingSpinnerProps) => (
   <Box
     display="flex"
     flexDirection="column"
     alignItems="center"
     justifyContent="center"
-    minHeight={0}
+    minHeight={fullScreen ? "100vh" : 0}
     width="100%"
     sx={{ py: 4, ...sx }}
   >
