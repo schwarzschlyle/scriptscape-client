@@ -12,6 +12,7 @@ import Button from "@mui/material/Button";
 import { useProjects } from "@api/projects/queries";
 import { useCreateProject } from "@api/projects/mutations";
 import queryClient from "@api/queryClient";
+import { buildRoute } from "@routes/routes.config";
 
 export interface ProjectsListProps {
   organizationId: string;
@@ -44,7 +45,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   const handleProjectClick = (idx: number) => {
     const project = projects[idx];
     if (organizationId && project.id) {
-      window.location.href = `/canvas/${organizationId}/${project.id}`;
+      window.location.href = buildRoute.canvas(organizationId, project.id);
     }
   };
 
@@ -73,7 +74,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
       setNewDesc("");
       await queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
       if (resp?.id) {
-        window.location.href = `/canvas/${organizationId}/${resp.id}`;
+        window.location.href = buildRoute.canvas(organizationId, resp.id);
       }
     } catch (err: any) {
       setAddError(
@@ -148,9 +149,6 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} mb={2} align="center">
-        Select a Project (Design of this page is under development.)
-      </Typography>
       <ProjectGrid
         projects={projects}
         onProjectClick={handleProjectClick}

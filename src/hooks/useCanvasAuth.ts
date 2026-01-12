@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "@routes/routes.config";
+import { ROUTES, buildRoute } from "@routes/routes.config";
 
 interface UseCanvasAuthParams {
   user: any;
@@ -33,17 +33,17 @@ export function useCanvasAuth({
     if (userLoading || orgLoading || projectLoading) return;
 
     if (!user) {
-      navigate(ROUTES.LOGIN, { replace: true });
+      navigate(`${ROUTES.LOGIN}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
       return;
     }
 
     if (orgError || !org || (user.organizationId && user.organizationId !== organizationId)) {
-      navigate(ROUTES.LOGIN, { replace: true });
+      navigate(buildRoute.projects(user.organizationId), { replace: true });
       return;
     }
 
     if (projectError || !project || project.organizationId !== organizationId) {
-      navigate(ROUTES.LOGIN, { replace: true });
+      navigate(buildRoute.projects(user.organizationId), { replace: true });
       return;
     }
   }, [

@@ -29,7 +29,6 @@ const CARD_WIDTH = 340;
 const STORYBOARD_BASE_CARD_WIDTH = 340;
 const CANVAS_SIZE = 10000;
 
-import CanvasHeader from "../molecules/CanvasHeader";
 
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
   // Scripts logic
@@ -117,7 +116,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const loading = scriptsLoading || segsLoading || visualsLoading || storyboardsLoading;
   const error = scriptsError || segsError || visualsError || storyboardsError;
   const anyPendingVisualSet = Object.values(pendingVisualSet).some(Boolean);
-  const syncing = scriptsSyncing || segsSyncing || visualsSyncing || storyboardsSyncing || anyPendingVisualSet;
+  // We currently surface sync state via the CanvasPage header.
+  // This local computation is kept only to ensure the individual syncing flags are "used"
+  // (they can be useful for debugging and future UI affordances).
+  void (scriptsSyncing || segsSyncing || visualsSyncing || storyboardsSyncing || anyPendingVisualSet);
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
@@ -418,13 +420,6 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
 
   return (
     <>
-      <CanvasHeader
-        orgName={""}
-        projectName={""}
-        projectDescription={""}
-        onLogout={() => {}}
-        syncing={syncing}
-      />
       <Box
       sx={{
         position: "fixed",

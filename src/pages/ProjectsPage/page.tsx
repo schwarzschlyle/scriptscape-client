@@ -1,11 +1,11 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import Box from "@mui/material/Box";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useCurrentUser } from "@api/users/queries";
 import { useOrganization } from "@api/organizations/queries";
 import { useOrgAccessAuth } from "@hooks/useOrgAccessAuth";
 import ProjectsList from "./components/organisms/ProjectsList";
+import { ProjectsShell } from "./components/ProjectsShell";
 
 const ProjectsPage: React.FC = () => {
   const { organizationId = "" } = useParams<{ organizationId: string }>();
@@ -31,24 +31,16 @@ const ProjectsPage: React.FC = () => {
   }, [org?.name]);
 
   if (userLoading || orgLoading) {
-    return <LoadingSpinner label="Loading organization..." />;
+    return <LoadingSpinner fullScreen label="Loading organization..." />;
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#fff",
-        color: "#000",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        px: 2,
-        py: 4,
-      }}
+    <ProjectsShell
+      title={org?.name ? `${org.name}` : "Projects"}
+      subtitle="Select a project to open the canvas"
     >
       <ProjectsList organizationId={organizationId} />
-    </Box>
+    </ProjectsShell>
   );
 };
 

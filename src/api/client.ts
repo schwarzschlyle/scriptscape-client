@@ -1,15 +1,34 @@
 import axios from "axios";
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import { getApiBaseUrl } from "./baseUrl";
 
 const AUTH_REFRESH_ENDPOINT = "/auth/refresh";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = getApiBaseUrl();
+
+export type UnauthHandler = () => void;
+
+let accessToken: string | null = null;
+let onUnauthenticated: UnauthHandler | null = null;
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+export function getAccessToken() {
+  return accessToken;
+}
+
+export function setOnUnauthenticated(handler: UnauthHandler | null) {
+  onUnauthenticated = handler;
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  // Needed so the refresh HttpOnly cookie is sent.
   withCredentials: true,
 });
 
@@ -19,20 +38,15 @@ async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const refreshToken = localStorage.getItem("refreshToken") || "";
-    if (!refreshToken) throw new Error("Missing refresh token");
-
+    // Refresh token is stored in HttpOnly cookie; no body required.
     const resp = await axios.post(
       `${API_BASE_URL}${AUTH_REFRESH_ENDPOINT}`,
-      { refreshToken },
+      null,
       { headers: { "Content-Type": "application/json" }, withCredentials: true }
     );
     const nextAccessToken = resp.data?.accessToken;
-    const nextRefreshToken = resp.data?.refreshToken;
     if (!nextAccessToken) throw new Error("Token refresh failed");
-
-    localStorage.setItem("accessToken", nextAccessToken);
-    if (nextRefreshToken) localStorage.setItem("refreshToken", nextRefreshToken);
+    setAccessToken(nextAccessToken);
     return nextAccessToken as string;
   })();
 
@@ -45,7 +59,7 @@ async function refreshAccessToken(): Promise<string> {
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     if (token) {
       config.headers.set?.("Authorization", `Bearer ${token}`);
     }
@@ -72,8 +86,8 @@ api.interceptors.response.use(
       originalRequest.headers.set?.("Authorization", `Bearer ${nextToken}`);
       return api.request(originalRequest);
     } catch {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+      setAccessToken(null);
+      onUnauthenticated?.();
       return Promise.reject(error);
     }
   }

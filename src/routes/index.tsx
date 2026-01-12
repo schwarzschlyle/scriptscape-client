@@ -28,7 +28,7 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/canvas/:organizationId/",
+        path: ROUTES.PROJECTS,
         element: <ProjectsPage />
       },
       {
