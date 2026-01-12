@@ -116,7 +116,10 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
   const loading = scriptsLoading || segsLoading || visualsLoading || storyboardsLoading;
   const error = scriptsError || segsError || visualsError || storyboardsError;
   const anyPendingVisualSet = Object.values(pendingVisualSet).some(Boolean);
-  const syncing = scriptsSyncing || segsSyncing || visualsSyncing || storyboardsSyncing || anyPendingVisualSet;
+  // We currently surface sync state via the CanvasPage header.
+  // This local computation is kept only to ensure the individual syncing flags are "used"
+  // (they can be useful for debugging and future UI affordances).
+  void (scriptsSyncing || segsSyncing || visualsSyncing || storyboardsSyncing || anyPendingVisualSet);
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
