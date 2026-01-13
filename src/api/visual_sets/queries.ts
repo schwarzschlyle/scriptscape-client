@@ -2,6 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import api from "../client";
 import type { VisualSet, VisualSetsListResponse } from "./types";
 
+// -----------------
+// Direct API helpers (for canvas hooks / non-React Query flows)
+// -----------------
+
+export async function getVisualSets(
+  collectionId: string,
+  params?: { page?: number; limit?: number }
+): Promise<VisualSet[]> {
+  const response = await api.get<VisualSet[]>(
+    `/segment-collections/${collectionId}/visual-sets`,
+    { params }
+  );
+  return response.data;
+}
+
 export function useVisualSets(collectionId: string, params?: { page?: number; limit?: number }) {
   return useQuery<VisualSetsListResponse>({
     queryKey: ["visualSets", collectionId, params],

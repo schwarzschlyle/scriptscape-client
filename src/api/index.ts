@@ -34,6 +34,9 @@ export * from "./segments/mutations";
 export * from "./visual_sets/queries";
 export * from "./visual_sets/mutations";
 
+export * from "./card_positions/queries";
+export * from "./card_positions/mutations";
+
 // Visuals
 export * from "./visuals/queries";
 export * from "./visuals/mutations";

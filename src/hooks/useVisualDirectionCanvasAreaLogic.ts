@@ -4,6 +4,7 @@ import type { Visual } from "@api/visuals/types";
 import { addAiJob, listAiJobs, pruneAiJobs, removeAiJob, removeAiJobsWhere } from "../utils/aiJobPersistence";
 import { ReconnectingWebSocket } from "../utils/websocket";
 import { buildWsUrl } from "../utils/wsUrl";
+import { usePersistedCardPositions } from "./usePersistedCardPositions";
 
 type VisualDirection = {
   id: string;
@@ -30,7 +31,7 @@ function sortVisualsBySegmentIndex(visuals: Visual[]) {
 
 const getCacheKey = (organizationId: string, projectId: string) =>
   `visual-directions-cache-${organizationId}-${projectId}`;
-const getPositionsKey = (organizationId: string, projectId: string) =>
+const getLegacyPositionsKey = (organizationId: string, projectId: string) =>
   `visual-directions-positions-${organizationId}-${projectId}`;
 
 export interface UseVisualDirectionCanvasAreaLogicProps {
@@ -48,7 +49,35 @@ export function useVisualDirectionCanvasAreaLogic({
   // Used to read the latest directions inside mount/resume effects without
   // re-triggering them (prevents update-depth loops).
   const directionsRef = useRef<DirectionsState>({});
-  const [positions, setPositions] = useState<PositionsState>({});
+  const {
+    positions,
+    setCardPosition,
+    deleteCardPosition,
+  } = usePersistedCardPositions({
+    organizationId,
+    projectId,
+    cardType: "visualDirection",
+    onHydrated: async ({ positions: current, setCardPosition: setFromHydration }) => {
+      // One-time migration from legacy localStorage positions.
+      try {
+        const raw = localStorage.getItem(getLegacyPositionsKey(organizationId, projectId));
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        Object.entries(parsed as PositionsState).forEach(([id, pos]) => {
+          if (!id) return;
+          if ((current as any)?.[id]) return;
+          const x = Number((pos as any)?.x);
+          const y = Number((pos as any)?.y);
+          if (!isFinite(x) || !isFinite(y)) return;
+          setFromHydration(id, x, y);
+        });
+        localStorage.removeItem(getLegacyPositionsKey(organizationId, projectId));
+      } catch {
+        // ignore
+      }
+    },
+  });
   const [pendingVisualDirection, setPendingVisualDirection] = useState<{ [segmentCollectionId: string]: boolean }>({});
   /** Child visual-direction-card generating state (orange dot). */
   const [generatingDirections, setGeneratingDirections] = useState<{ [visualDirectionId: string]: boolean }>({});
@@ -211,10 +240,6 @@ export function useVisualDirectionCanvasAreaLogic({
     localStorage.setItem(cacheKey, JSON.stringify(directions));
   }
 
-  function updatePositionsCache(positions: PositionsState) {
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    localStorage.setItem(positionsKey, JSON.stringify(positions));
-  }
 
   // Load from cache on mount
   useEffect(() => {
@@ -240,17 +265,8 @@ export function useVisualDirectionCanvasAreaLogic({
       } catch {}
     }
 
-    // Positions
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    const cachedPositions = localStorage.getItem(positionsKey);
-    if (cachedPositions) {
-      try {
-        const parsed = JSON.parse(cachedPositions);
-        if (parsed && typeof parsed === "object") {
-          setPositions(parsed);
-        }
-      } catch {}
-    }
+    // Positions are hydrated by usePersistedCardPositions (IDB -> DB),
+    // with a legacy localStorage migration in onHydrated.
 
     setLoading(false);
   }, [organizationId, projectId]);
@@ -613,14 +629,7 @@ export function useVisualDirectionCanvasAreaLogic({
         });
         // Assign a position for the new direction card
         if (position) {
-          setPositions((prev) => {
-            const updated = {
-              ...prev,
-              [newId]: position,
-            };
-            updatePositionsCache(updated);
-            return updated;
-          });
+          setCardPosition(newId, position.x, position.y);
         }
       } catch (e: any) {
         setError(e?.message || "Failed to create visual direction.");
@@ -631,7 +640,7 @@ export function useVisualDirectionCanvasAreaLogic({
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, createVisualMutation, onSyncChange, startVisualsJob, attachedJobsRef, terminalHandledJobsRef, directionParentRef]
+    [projectId, onSyncChange, startVisualsJob, createVisualMutation, attachedJobsRef, terminalHandledJobsRef, directionParentRef, setCardPosition]
   );
 
   // Edit a single visual (by visualId) inside a VisualDirection card.
@@ -707,11 +716,7 @@ export function useVisualDirectionCanvasAreaLogic({
         updateCache(rest);
         return rest;
       });
-      setPositions((prev) => {
-        const { [visualDirectionId]: _, ...rest } = prev;
-        updatePositionsCache(rest);
-        return rest;
-      });
+      deleteCardPosition(visualDirectionId);
 
       setSyncing(true);
       try {
@@ -740,17 +745,13 @@ export function useVisualDirectionCanvasAreaLogic({
         setSyncing(false);
       }
     },
-    [deleteVisualMutation]
+    [deleteVisualMutation, deleteCardPosition]
   );
 
   // Update position of a direction card and cache
   const handlePositionChange = useCallback((id: string, x: number, y: number) => {
-    setPositions((prev) => {
-      const next = { ...prev, [id]: { x, y } };
-      updatePositionsCache(next);
-      return next;
-    });
-  }, [organizationId, projectId]);
+    setCardPosition(id, x, y);
+  }, [setCardPosition]);
 
   // Clear error
   const clearError = useCallback(() => setError(null), []);
