@@ -60,6 +60,14 @@ function cachePayloadToSketches(payload: CachedStoryboardSketch[]): StoryboardSk
   );
 }
 
+function sortSketchesByVisualDirectionIndex(sketches: StoryboardSketch[]) {
+  const getIdx = (s: any) =>
+    (s?.meta as any)?.visualDirectionIndex ??
+    (s?.meta as any)?.index ??
+    Number.MAX_SAFE_INTEGER;
+  return [...(sketches || [])].sort((a: any, b: any) => getIdx(a) - getIdx(b));
+}
+
 type StoryboardCard = Storyboard & {
   parentVisualDirectionId: string;
   sketches: StoryboardSketch[];
@@ -172,9 +180,10 @@ export function useStoryboardCanvasAreaLogic({
               const existingIdx = sketches.findIndex((s: any) => (s.meta as any)?.visualDirectionIndex === idx);
               if (existingIdx >= 0) sketches[existingIdx] = created as any;
               else sketches.push(created as any);
-              const next = { ...prev, [storyboardId]: { ...sb, sketches, loadingSketches: false } };
+              const nextSketches = sortSketchesByVisualDirectionIndex(sketches as any);
+              const next = { ...prev, [storyboardId]: { ...sb, sketches: nextSketches, loadingSketches: false } };
               updateCache(next);
-              idbSet(getSketchesCacheKey(storyboardId), sketchesToCachePayload(sketches)).catch(() => undefined);
+              idbSet(getSketchesCacheKey(storyboardId), sketchesToCachePayload(nextSketches)).catch(() => undefined);
               return next;
             });
 
@@ -505,7 +514,7 @@ export function useStoryboardCanvasAreaLogic({
             try {
               const cached = await idbGet<CachedStoryboardSketch[]>(getSketchesCacheKey(id));
               if (mounted && cached && cached.length > 0) {
-                const cachedSketches = cachePayloadToSketches(cached);
+                const cachedSketches = sortSketchesByVisualDirectionIndex(cachePayloadToSketches(cached) as any);
                 setStoryboards((prev) => {
                   const sb = prev[id];
                   if (!sb) return prev;
@@ -522,7 +531,7 @@ export function useStoryboardCanvasAreaLogic({
             }
 
             // 2) Always fetch fresh image_url from API (presigned S3 URL)
-            const sketches = await getStoryboardSketches(id);
+            const sketches = sortSketchesByVisualDirectionIndex((await getStoryboardSketches(id)) as any);
             if (!mounted) return;
 
             // Update IDB cache with metadata only

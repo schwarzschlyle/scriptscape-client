@@ -18,6 +18,16 @@ type DirectionsState = {
 };
 type PositionsState = { [id: string]: { x: number; y: number } };
 
+function sortVisualsBySegmentIndex(visuals: Visual[]) {
+  const getIdx = (v: any) =>
+    (v?.metadata as any)?.segmentIndex ??
+    (v?.meta as any)?.segmentIndex ??
+    (v?.metadata as any)?.segment_index ??
+    (v?.meta as any)?.segment_index ??
+    Number.MAX_SAFE_INTEGER;
+  return [...(visuals || [])].sort((a: any, b: any) => getIdx(a) - getIdx(b));
+}
+
 const getCacheKey = (organizationId: string, projectId: string) =>
   `visual-directions-cache-${organizationId}-${projectId}`;
 const getPositionsKey = (organizationId: string, projectId: string) =>
@@ -106,6 +116,8 @@ export function useVisualDirectionCanvasAreaLogic({
               metadata: {
                 parentSegmentCollectionId,
                 segmentText,
+                // Legacy single-item jobs may not know the segment index; batch flow sets this.
+                segmentIndex: undefined,
               },
             } as any);
 
@@ -122,7 +134,7 @@ export function useVisualDirectionCanvasAreaLogic({
                   ...(existing as any),
                   id: visualDirectionId,
                   parentSegmentCollectionId,
-                  visuals,
+                  visuals: sortVisualsBySegmentIndex(visuals as any),
                   isSaving: false,
                   deleting: false,
                   error: null,
@@ -215,7 +227,15 @@ export function useVisualDirectionCanvasAreaLogic({
       try {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === "object") {
-          setDirections(parsed);
+          // Ensure visuals are always stored/rendered in stable order.
+          const normalized: DirectionsState = {};
+          Object.entries(parsed).forEach(([id, vd]: any) => {
+            normalized[id] = {
+              ...(vd as any),
+              visuals: sortVisualsBySegmentIndex((vd as any)?.visuals || []),
+            };
+          });
+          setDirections(normalized);
         }
       } catch {}
     }
@@ -305,10 +325,13 @@ export function useVisualDirectionCanvasAreaLogic({
                     metadata: {
                       parentSegmentCollectionId,
                       segmentText,
+                      segmentIndex: i,
                     },
                   } as any);
                 })
               );
+
+              const orderedVisuals = sortVisualsBySegmentIndex(createdVisuals as any);
 
               setDirections((prev) => {
                 const existingDir = prev[visualDirectionId] || {
@@ -322,7 +345,7 @@ export function useVisualDirectionCanvasAreaLogic({
                     ...(existingDir as any),
                     id: visualDirectionId,
                     parentSegmentCollectionId,
-                    visuals: createdVisuals,
+                    visuals: orderedVisuals,
                     isSaving: false,
                     deleting: false,
                     error: null,
@@ -484,10 +507,13 @@ export function useVisualDirectionCanvasAreaLogic({
                       metadata: {
                         parentSegmentCollectionId,
                         segmentText,
+                        segmentIndex: i,
                       },
                     } as any);
                   })
                 );
+
+                const orderedVisuals = sortVisualsBySegmentIndex(createdVisuals as any);
 
                 setDirections((prev) => {
                   const existing = prev[newId] || {
@@ -501,7 +527,7 @@ export function useVisualDirectionCanvasAreaLogic({
                       ...(existing as any),
                       id: newId,
                       parentSegmentCollectionId,
-                      visuals: createdVisuals,
+                      visuals: orderedVisuals,
                       isSaving: false,
                       deleting: false,
                       error: null,

@@ -15,6 +15,10 @@ import type { Segment as BaseSegment } from "@api/segments/types";
 
 type Segment = BaseSegment;
 
+function sortBySegmentIndex(segments: Segment[]) {
+  return [...(segments || [])].sort((a: any, b: any) => (a?.segmentIndex ?? 0) - (b?.segmentIndex ?? 0));
+}
+
 function normalizeParentScriptId(col: any) {
   return col?.scriptId || col?.script_id || "";
 }
@@ -111,6 +115,8 @@ export function useSegmentsCanvasAreaLogic({
               )
             );
 
+            const orderedSegments = sortBySegmentIndex(createdSegments);
+
             setCollections((prev) => {
               const updated = {
                 ...prev,
@@ -118,7 +124,7 @@ export function useSegmentsCanvasAreaLogic({
                   ...(prev[collectionId] as any),
                   id: collectionId,
                   parentScriptId,
-                  segments: createdSegments,
+                  segments: orderedSegments,
                   isSaving: false,
                   deleting: false,
                   error: null,
@@ -268,12 +274,13 @@ export function useSegmentsCanvasAreaLogic({
           const next: CollectionsState = { ...prev };
           allCollections.forEach((col: any) => {
             const existing = prev[col.id];
+            const ordered = sortBySegmentIndex(segmentsByCollectionId[col.id] || existing?.segments || []);
             next[col.id] = {
               ...(existing || ({} as any)),
               ...col,
               id: col.id,
               parentScriptId: normalizeParentScriptId(col) || existing?.parentScriptId || "",
-              segments: segmentsByCollectionId[col.id] || existing?.segments || [],
+              segments: ordered,
               isSaving: (segmentsByCollectionId[col.id]?.length ?? 0) > 0 ? false : existing?.isSaving,
             } as any;
           });
@@ -670,6 +677,3 @@ export function useSegmentsCanvasAreaLogic({
     clearError,
   };
 }
-
-
-

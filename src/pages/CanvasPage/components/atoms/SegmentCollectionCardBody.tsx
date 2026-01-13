@@ -2,6 +2,10 @@ import React from "react";
 import EditableCardContentArea from "./EditableCardContentArea";
 import Box from "@mui/material/Box";
 
+function formatIndex(idx: number) {
+  return String(idx + 1).padStart(2, "0");
+}
+
 export interface SegmentCollectionCardBodyProps {
   segments: { id?: string; text: string }[];
   editable?: boolean;
@@ -41,6 +45,24 @@ const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
             mb: idx === segments.length - 1 ? 0 : "2px",
           }}
         >
+          <Box
+            sx={{
+              width: 26,
+              minWidth: 26,
+              mr: 1,
+              alignSelf: "flex-start",
+              pt: "8px",
+              color: "rgba(255,255,255,0.70)",
+              fontSize: 11,
+              fontFamily: "monospace",
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+              textAlign: "left",
+            }}
+            aria-label={`Segment ${idx + 1}`}
+          >
+            {formatIndex(idx)}
+          </Box>
           <EditableCardContentArea
             value={localSegments[idx]}
             editable={editingIndex === idx && !isSaving && !deleting}
