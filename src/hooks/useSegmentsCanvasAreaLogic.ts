@@ -12,6 +12,7 @@ import { ReconnectingWebSocket } from "../utils/websocket";
 import { buildWsUrl } from "../utils/wsUrl";
 import type { SegmentCollection } from "@api/segment_collections/types";
 import type { Segment as BaseSegment } from "@api/segments/types";
+import { usePersistedCardPositions } from "./usePersistedCardPositions";
 
 type Segment = BaseSegment;
 
@@ -35,7 +36,7 @@ type PositionsState = { [id: string]: { x: number; y: number } };
 
 const getCacheKey = (organizationId: string, projectId: string) =>
   `segment-collections-cache-${organizationId}-${projectId}`;
-const getPositionsKey = (organizationId: string, projectId: string) =>
+const getLegacyPositionsKey = (organizationId: string, projectId: string) =>
   `segment-collections-positions-${organizationId}-${projectId}`;
 
 export interface UseSegmentsCanvasAreaLogicProps {
@@ -52,7 +53,38 @@ export function useSegmentsCanvasAreaLogic({
   getScriptById,
 }: UseSegmentsCanvasAreaLogicProps) {
   const [collections, setCollections] = useState<CollectionsState>({});
-  const [positions, setPositions] = useState<PositionsState>({});
+  const {
+    positions,
+    loaded: _positionsLoaded,
+    setCardPosition,
+    deleteCardPosition,
+  } = usePersistedCardPositions({
+    organizationId,
+    projectId,
+    cardType: "segmentCollection",
+    onHydrated: async ({ positions: current, setCardPosition: setFromHydration }) => {
+      // One-time migration from legacy localStorage positions.
+      // Only migrates ids not already present in DB/IDB.
+      try {
+        const raw = localStorage.getItem(getLegacyPositionsKey(organizationId, projectId));
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        Object.entries(parsed as PositionsState).forEach(([id, pos]) => {
+          if (!id) return;
+          if ((current as any)?.[id]) return;
+          const x = Number((pos as any)?.x);
+          const y = Number((pos as any)?.y);
+          if (!isFinite(x) || !isFinite(y)) return;
+          setFromHydration(id, x, y);
+        });
+        // Best-effort cleanup
+        localStorage.removeItem(getLegacyPositionsKey(organizationId, projectId));
+      } catch {
+        // ignore
+      }
+    },
+  });
   const [pendingSegmentCollection, setPendingSegmentCollection] = useState<{ [scriptId: string]: boolean }>({});
   /** Child segment-collection-card generating state (orange dot). */
   const [generatingCollections, setGeneratingCollections] = useState<{ [collectionId: string]: boolean }>({});
@@ -134,15 +166,14 @@ export function useSegmentsCanvasAreaLogic({
               return updated;
             });
 
-            setPositions((prev) => {
-              if (prev[collectionId]) return prev;
+            // Ensure this new card has a persisted position.
+            // (Idempotent; safe under StrictMode.)
+            if (!positions[collectionId]) {
               const parentPos = parentScriptPosition || { x: 200, y: 200 };
               const offsetX = 380;
-              const offsetY = 40 + Object.keys(prev).length * 40;
-              const updated = { ...prev, [collectionId]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY } };
-              updatePositionsCache(updated);
-              return updated;
-            });
+              const offsetY = 40 + Object.keys(positions || {}).length * 40;
+              setCardPosition(collectionId, parentPos.x + offsetX, parentPos.y + offsetY);
+            }
 
             removeAiJob("segments", jobId);
             setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: false }));
@@ -197,17 +228,12 @@ export function useSegmentsCanvasAreaLogic({
         ws.close();
       }, 4 * 60_000);
     },
-    [createSegmentMutation, attachedJobsRef, terminalHandledJobsRef]
+    [createSegmentMutation, attachedJobsRef, terminalHandledJobsRef, positions, setCardPosition]
   );
 
   function updateCache(collections: CollectionsState) {
     const cacheKey = getCacheKey(organizationId, projectId);
     localStorage.setItem(cacheKey, JSON.stringify(collections));
-  }
-
-  function updatePositionsCache(positions: PositionsState) {
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    localStorage.setItem(positionsKey, JSON.stringify(positions));
   }
 
   useEffect(() => {
@@ -226,16 +252,8 @@ export function useSegmentsCanvasAreaLogic({
     }
 
     // Positions
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    const cachedPositions = localStorage.getItem(positionsKey);
-    if (cachedPositions) {
-      try {
-        const parsed = JSON.parse(cachedPositions);
-        if (parsed && typeof parsed === "object") {
-          setPositions(parsed);
-        }
-      } catch {}
-    }
+    // Positions are hydrated by usePersistedCardPositions (IDB -> DB),
+    // with a legacy localStorage migration in onHydrated.
 
     setLoading(false);
   }, [organizationId, projectId]);
@@ -359,18 +377,14 @@ export function useSegmentsCanvasAreaLogic({
         // Child card should show orange while segments are generating.
         setGeneratingCollections((prev) => ({ ...prev, [collection.id]: true }));
 
-        setPositions((prev) => {
-          if (prev[collection.id]) return prev;
+        // Persist default position for this collection card (only if none exists)
+        if (!positions[collection.id]) {
           const parentPos = parentScriptPosition || { x: 200, y: 200 };
           const offsetX = 380;
-          const offsetY = 40 + Object.keys(prev).length * 40;
-          const updated = {
-            ...prev,
-            [collection.id]: { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
-          };
-          updatePositionsCache(updated);
-          return updated;
-        });
+          const offsetY = 40 + Object.keys(positions || {}).length * 40;
+          setCardPosition(collection.id, parentPos.x + offsetX, parentPos.y + offsetY);
+        }
+
         // Create segments in backend using AI API
         // Get parent script text
         let scriptText = "";
@@ -436,7 +450,7 @@ export function useSegmentsCanvasAreaLogic({
         if (onSyncChange) onSyncChange(false);
       }
     },
-    [organizationId, projectId, onSyncChange, createSegmentCollectionMutation, createSegmentMutation, startSegmentsJob, attachToSegmentsJob]
+    [onSyncChange, createSegmentCollectionMutation, startSegmentsJob, attachToSegmentsJob, getScriptById, positions, setCardPosition]
   );
 
   // Edit collection name
@@ -562,11 +576,8 @@ export function useSegmentsCanvasAreaLogic({
         updateCache(rest);
         return rest;
       });
-      setPositions((prev) => {
-        const { [colId]: _, ...rest } = prev;
-        updatePositionsCache(rest);
-        return rest;
-      });
+      const prevPos = positions[colId];
+      deleteCardPosition(colId);
       setSyncing(true);
       try {
         await deleteCollectionMutation.mutateAsync(colId);
@@ -585,20 +596,16 @@ export function useSegmentsCanvasAreaLogic({
           updateCache(updated);
           return updated;
         });
-        setPositions((prev) => {
-          const updated = {
-            ...prev,
-            [colId]: prevCol && prevCol.position ? prevCol.position : { x: 600, y: 200 },
-          };
-          updatePositionsCache(updated);
-          return updated;
-        });
+
+        // Best-effort rollback (re-add card position)
+        const p = prevPos || { x: 600, y: 200 };
+        setCardPosition(colId, p.x, p.y);
       } finally {
         setSyncing(false);
         setRefreshTick((t) => t + 1);
       }
     },
-    [deleteCollectionMutation]
+    [deleteCollectionMutation, deleteCardPosition, positions, setCardPosition]
   );
 
   /**
@@ -630,14 +637,8 @@ export function useSegmentsCanvasAreaLogic({
           updateCache(next as any);
           return next as any;
         });
-        setPositions((prev) => {
-          const next = { ...prev };
-          colIds.forEach((id) => {
-            delete (next as any)[id];
-          });
-          updatePositionsCache(next as any);
-          return next as any;
-        });
+        // Persisted positions are stored via card_positions; delete them best-effort.
+        colIds.forEach((id) => deleteCardPosition(id));
       }
 
       // Backend deletes
@@ -645,17 +646,13 @@ export function useSegmentsCanvasAreaLogic({
 
       setRefreshTick((t) => t + 1);
     },
-    [collections, deleteCollectionMutation]
+    [collections, deleteCollectionMutation, deleteCardPosition]
   );
 
   // Update position of a collection card and cache
   const handleCollectionPositionChange = useCallback((id: string, x: number, y: number) => {
-    setPositions((prev) => {
-      const next = { ...prev, [id]: { x, y } };
-      updatePositionsCache(next);
-      return next;
-    });
-  }, [organizationId, projectId]);
+    setCardPosition(id, x, y);
+  }, [setCardPosition]);
 
   // Clear error
   const clearError = useCallback(() => setError(null), []);

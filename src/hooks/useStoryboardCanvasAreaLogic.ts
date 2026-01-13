@@ -16,6 +16,7 @@ import { idbDel, idbGet, idbSet } from "../utils/indexedDb";
 import { addAiJob, listAiJobs, pruneAiJobs, removeAiJob, removeAiJobsWhere } from "../utils/aiJobPersistence";
 import { ReconnectingWebSocket } from "../utils/websocket";
 import { buildWsUrl } from "../utils/wsUrl";
+import { usePersistedCardPositions } from "./usePersistedCardPositions";
 
 type CachedStoryboardSketch = {
   id: string;
@@ -84,7 +85,7 @@ type StoryboardsState = {
 type PositionsState = { [id: string]: { x: number; y: number } };
 const getCacheKey = (organizationId: string, projectId: string) =>
   `storyboards-cache-${organizationId}-${projectId}`;
-const getPositionsKey = (organizationId: string, projectId: string) =>
+const getLegacyPositionsKey = (organizationId: string, projectId: string) =>
   `storyboards-positions-${organizationId}-${projectId}`;
 
 export interface UseStoryboardCanvasAreaLogicProps {
@@ -113,13 +114,64 @@ export function useStoryboardCanvasAreaLogic({
   getVisualDirectionPosition,
 }: UseStoryboardCanvasAreaLogicProps) {
   const [storyboards, setStoryboards] = useState<StoryboardsState>({});
-  const [positions, setPositions] = useState<PositionsState>({});
+  const {
+    positions,
+    setCardPosition,
+    deleteCardPosition,
+  } = usePersistedCardPositions({
+    organizationId,
+    projectId,
+    cardType: "storyboard",
+    onHydrated: async ({ positions: current, setCardPosition: setFromHydration }) => {
+      // One-time migration from legacy localStorage positions.
+      try {
+        const raw = localStorage.getItem(getLegacyPositionsKey(organizationId, projectId));
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        Object.entries(parsed as PositionsState).forEach(([id, pos]) => {
+          if (!id) return;
+          if ((current as any)?.[id]) return;
+          const x = Number((pos as any)?.x);
+          const y = Number((pos as any)?.y);
+          if (!isFinite(x) || !isFinite(y)) return;
+          setFromHydration(id, x, y);
+        });
+        localStorage.removeItem(getLegacyPositionsKey(organizationId, projectId));
+      } catch {
+        // ignore
+      }
+    },
+  });
   const [pendingStoryboard, setPendingStoryboard] = useState<{ [parentVisualDirectionId: string]: boolean }>({});
   /** Child storyboard-card generating state (orange dot). */
   const [generatingStoryboards, setGeneratingStoryboards] = useState<{ [storyboardId: string]: boolean }>({});
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Note: positions are managed by usePersistedCardPositions.
+  // Keep a local setter shim for existing logic that expects `setPositions`.
+  const setPositions = useCallback(
+    (updater: (prev: PositionsState) => PositionsState) => {
+      const prev = positions as unknown as PositionsState;
+      const next = updater(prev);
+      // Apply writes
+      Object.entries(next).forEach(([id, p]) => {
+        const x = Number((p as any)?.x);
+        const y = Number((p as any)?.y);
+        if (!isFinite(x) || !isFinite(y)) return;
+        if (!prev[id] || prev[id].x !== x || prev[id].y !== y) {
+          setCardPosition(id, x, y);
+        }
+      });
+      // Apply deletes
+      Object.keys(prev || {}).forEach((id) => {
+        if (!(id in next)) deleteCardPosition(id);
+      });
+    },
+    [positions, setCardPosition, deleteCardPosition]
+  );
 
   // Prevent duplicate websocket attachments for the same AI job.
   // Without this, rerenders/strict-mode can lead to repeated POST /storyboard-sketches.
@@ -337,9 +389,7 @@ export function useStoryboardCanvasAreaLogic({
     }
   }
 
-  function updatePositionsCache(next: PositionsState) {
-    localStorage.setItem(getPositionsKey(organizationId, projectId), JSON.stringify(next));
-  }
+  // positions are persisted by usePersistedCardPositions
 
   // Load storyboards (container only) + positions from cache first
   useEffect(() => {
@@ -369,14 +419,8 @@ export function useStoryboardCanvasAreaLogic({
       } catch {}
     }
 
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    const cachedPositions = localStorage.getItem(positionsKey);
-    if (cachedPositions) {
-      try {
-        const parsed = JSON.parse(cachedPositions);
-        if (parsed && typeof parsed === "object") setPositions(parsed);
-      } catch {}
-    }
+    // positions are hydrated by usePersistedCardPositions (IDB -> DB),
+    // with a legacy localStorage migration in onHydrated.
 
     setLoading(false);
   }, [organizationId, projectId]);
@@ -428,7 +472,6 @@ export function useStoryboardCanvasAreaLogic({
         }
       });
       if (changed) {
-        updatePositionsCache(next);
         return next;
       }
       return prev;
@@ -698,11 +741,7 @@ export function useStoryboardCanvasAreaLogic({
         // No image caching: images are in S3.
 
         if (position) {
-          setPositions((prev) => {
-            const next = { ...prev, [storyboard.id]: position };
-            updatePositionsCache(next);
-            return next;
-          });
+          setCardPosition(storyboard.id, position.x, position.y);
         }
       } catch (e: any) {
         setError(e?.message || "Failed to generate storyboard sketches.");
@@ -771,11 +810,7 @@ export function useStoryboardCanvasAreaLogic({
       updateCache(rest as any);
       return rest as any;
     });
-    setPositions((prev) => {
-      const { [storyboardId]: _, ...rest } = prev;
-      updatePositionsCache(rest);
-      return rest;
-    });
+    deleteCardPosition(storyboardId);
 
     setSyncing(true);
     try {
@@ -818,13 +853,9 @@ export function useStoryboardCanvasAreaLogic({
 
   const handleStoryboardPositionChange = useCallback(
     (id: string, x: number, y: number) => {
-      setPositions((prev) => {
-        const next = { ...prev, [id]: { x, y } };
-        updatePositionsCache(next);
-        return next;
-      });
+      setCardPosition(id, x, y);
     },
-    [organizationId, projectId]
+    [setCardPosition]
   );
 
   const clearError = useCallback(() => setError(null), []);

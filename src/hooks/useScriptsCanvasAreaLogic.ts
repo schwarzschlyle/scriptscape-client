@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { getScripts, createScript, updateScript, deleteScript } from "@api/scripts/queries";
 import type { Script } from "@api/scripts/types";
+import { usePersistedCardPositions } from "./usePersistedCardPositions";
 
 type ScriptsState = Script[];
-type PositionsState = { [id: string]: { x: number; y: number } };
 
 const getCacheKey = (organizationId: string, projectId: string) =>
   `scripts-cache-${organizationId}-${projectId}`;
-const getPositionsKey = (organizationId: string, projectId: string) =>
-  `canvas-positions-${organizationId}-${projectId}`;
 
 export interface UseScriptsCanvasAreaLogicProps {
   organizationId: string;
@@ -23,8 +21,13 @@ export function useScriptsCanvasAreaLogic({
 }: UseScriptsCanvasAreaLogicProps) {
   const [scripts, setScripts] = useState<ScriptsState>([]);
   const [draftScripts, setDraftScripts] = useState<{ [id: string]: { name: string; text: string } }>({});
-  const [positions, setPositions] = useState<PositionsState>({});
-  const [positionsLoaded, setPositionsLoaded] = useState(false);
+  const {
+    positions,
+    loaded: positionsLoaded,
+    setCardPosition,
+    deleteCardPosition,
+    ensureDefaultPositions,
+  } = usePersistedCardPositions({ organizationId, projectId, cardType: "script" });
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +37,6 @@ export function useScriptsCanvasAreaLogic({
     localStorage.setItem(cacheKey, JSON.stringify(scripts));
   }
 
-  function updatePositionsCache(positions: PositionsState) {
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    localStorage.setItem(positionsKey, JSON.stringify(positions));
-  }
 
   useEffect(() => {
     let mounted = true;
@@ -56,19 +55,7 @@ export function useScriptsCanvasAreaLogic({
       } catch {}
     }
 
-    // Script positions
-    const positionsKey = getPositionsKey(organizationId, projectId);
-    const cachedPositions = localStorage.getItem(positionsKey);
-    if (cachedPositions) {
-      try {
-        const parsed = JSON.parse(cachedPositions);
-        if (parsed && typeof parsed === "object") {
-          setPositions(parsed);
-        }
-      } catch {}
-    }
-
-    setPositionsLoaded(true);
+    // positions are hydrated by usePersistedCardPositions (IDB -> DB)
 
     getScripts(organizationId, projectId)
       .then((data) => {
@@ -91,27 +78,10 @@ export function useScriptsCanvasAreaLogic({
   // Only assign default positions for new scripts, never overwrite existing positions
   useEffect(() => {
     if (!positionsLoaded) return;
-    setPositions((prev) => {
-      let changed = false;
-      const next: PositionsState = { ...prev };
-      scripts.forEach((s, i) => {
-        if (!next[s.id]) {
-          next[s.id] = { x: 200 + (i % 5) * 60, y: 200 + Math.floor(i / 5) * 120 };
-          changed = true;
-        }
-      });
-      Object.keys(next).forEach((id) => {
-        if (!scripts.find((s) => s.id === id)) {
-          delete next[id];
-          changed = true;
-        }
-      });
-      if (changed) {
-        updatePositionsCache(next);
-        return next;
-      }
-      return prev;
-    });
+    ensureDefaultPositions(
+      scripts.map((s) => s.id),
+      (_id, i) => ({ x: 200 + (i % 5) * 60, y: 200 + Math.floor(i / 5) * 120 })
+    );
   }, [scripts, organizationId, projectId, positionsLoaded]);
 
   useEffect(() => {
@@ -131,11 +101,7 @@ export function useScriptsCanvasAreaLogic({
         });
         // Assign position if provided
         if (position) {
-          setPositions((prev) => {
-            const next = { ...prev, [created.id]: position };
-            updatePositionsCache(next);
-            return next;
-          });
+          setCardPosition(created.id, position.x, position.y);
         }
       } catch (e) {
         setError("Failed to create script.");
@@ -225,23 +191,15 @@ export function useScriptsCanvasAreaLogic({
   /** Optimistically remove script positions too (and cache). */
   const handleDeleteScriptPosition = useCallback(
     (id: string) => {
-      setPositions((prev) => {
-        const { [id]: _, ...rest } = prev;
-        updatePositionsCache(rest);
-        return rest;
-      });
+      deleteCardPosition(id);
     },
-    [organizationId, projectId]
+    [deleteCardPosition]
   );
 
   // Update position of a script card and cache
   const handleCardPositionChange = useCallback((id: string, x: number, y: number) => {
-    setPositions((prev) => {
-      const next = { ...prev, [id]: { x, y } };
-      updatePositionsCache(next);
-      return next;
-    });
-  }, [organizationId, projectId]);
+    setCardPosition(id, x, y);
+  }, [setCardPosition]);
 
   // Clear error
   const clearError = useCallback(() => setError(null), []);
