@@ -2,6 +2,10 @@ import React from "react";
 import EditableCardContentArea from "./EditableCardContentArea";
 import Box from "@mui/material/Box";
 
+function formatIndex(idx: number) {
+  return String(idx + 1).padStart(2, "0");
+}
+
 export interface VisualDirectionCardBodyProps {
   visuals: { id?: string; content: string }[];
   editable?: boolean;
@@ -41,6 +45,24 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
             mb: idx === visuals.length - 1 ? 0 : "2px",
           }}
         >
+          <Box
+            sx={{
+              width: 26,
+              minWidth: 26,
+              mr: 1,
+              alignSelf: "flex-start",
+              pt: "8px",
+              color: "rgba(255,255,255,0.70)",
+              fontSize: 11,
+              fontFamily: "monospace",
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+              textAlign: "left",
+            }}
+            aria-label={`Visual ${idx + 1}`}
+          >
+            {formatIndex(idx)}
+          </Box>
           <EditableCardContentArea
             value={localVisuals[idx]}
             editable={editingIndex === idx && !isSaving && !deleting}

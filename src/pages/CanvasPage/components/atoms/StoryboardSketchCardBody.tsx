@@ -24,6 +24,8 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
   const textBoxHeight = 66;
 
+  const formatIndex = (idx: number) => String(idx + 1).padStart(2, "0");
+
   return (
     <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2, px: 2 }}>
       {/* Simple responsive-ish grid inside fixed-width card */}
@@ -64,6 +66,30 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                   bgcolor: "rgba(255,255,255,0.06)",
                 }}
               >
+                {/* Order badge (01, 02, 03, ...) */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    left: 6,
+                    zIndex: 2,
+                    px: 0.75,
+                    py: 0.25,
+                    borderRadius: 0.75,
+                    bgcolor: "rgba(0,0,0,0.55)",
+                    border: "1px solid rgba(255,255,255,0.20)",
+                    color: "rgba(255,255,255,0.92)",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                    letterSpacing: "0.08em",
+                    lineHeight: 1,
+                    pointerEvents: "none",
+                    backdropFilter: "blur(2px)",
+                  }}
+                  aria-label={`Sketch ${idx + 1}`}
+                >
+                  {formatIndex(idx)}
+                </Box>
                 {!src ? (
                   <Box
                     sx={{
