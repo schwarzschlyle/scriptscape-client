@@ -49,9 +49,10 @@ export function createAppTheme(mode: ThemeMode) {
   const isDark = mode === "dark";
 
   // Brand accents (currently hardcoded across canvas)
-  // Keep the ScriptScape accent consistent across themes.
-  // (In light mode, the canvas may be lighter, but the accent stays brand-green.)
-  const accent = "#abf43e";
+  // Canvas accent should adapt to theme mode:
+  // - dark mode: brand green
+  // - light mode: neutral dark gray (less visually aggressive on light backgrounds)
+  const accent = isDark ? "#abf43e" : "#374151";
   const cardType = "#73A32C";
 
   return createTheme({
