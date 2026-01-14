@@ -1,6 +1,7 @@
 import React from "react";
 import EditableCardContentArea from "./EditableCardContentArea";
 import Box from "@mui/material/Box";
+import { useTheme } from "@mui/material/styles";
 
 function formatIndex(idx: number) {
   return String(idx + 1).padStart(2, "0");
@@ -25,6 +26,7 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
   onVisualChange,
   extraBottomPadding = false,
 }) => {
+  const theme = useTheme();
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [localVisuals, setLocalVisuals] = React.useState(visuals.map(v => v.content || ""));
 
@@ -52,7 +54,7 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
               mr: 1,
               alignSelf: "flex-start",
               pt: "8px",
-              color: "rgba(255,255,255,0.70)",
+              color: theme.palette.text.secondary,
               fontSize: 11,
               fontFamily: "monospace",
               letterSpacing: "0.08em",
@@ -87,7 +89,7 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
           />
           {error && idx === 0 && (
             <Box sx={{ mt: 1, px: 2 }}>
-              <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+              <span style={{ color: theme.palette.error.main, fontSize: 13 }}>{error}</span>
             </Box>
           )}
         </Box>

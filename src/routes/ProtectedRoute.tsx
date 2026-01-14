@@ -7,7 +7,7 @@ export const ProtectedRoute = () => {
   const { status, user } = useAuth();
   const location = useLocation();
 
-  if (status === "loading") return <LoadingSpinner />;
+  if (status === "loading") return <LoadingSpinner fullScreen label="Restoring session..." />;
   if (status !== "authenticated" || !user) {
     const returnTo = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`${ROUTES.LOGIN}?returnTo=${returnTo}`} replace />;

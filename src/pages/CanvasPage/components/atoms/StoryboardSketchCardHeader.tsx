@@ -5,6 +5,7 @@ import CardTypography from "../molecules/CardTypography";
 import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
 import CardStatusDot from "./CardStatusDot";
+import { useTheme } from "@mui/material/styles";
 
 interface StoryboardSketchCardHeaderProps {
   name: string;
@@ -34,6 +35,7 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
   editable = false,
   generating = false,
 }) => {
+  const theme = useTheme();
   const {
     value: localName,
     editing,
@@ -65,8 +67,8 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
                 fontSize: 16,
                 fontWeight: 600,
                 background: "transparent",
-                color: "#fff",
-                border: "1px solid #444",
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
                 borderRadius: 4,
                 padding: "2px 8px",
                 width: "90%",
@@ -118,4 +120,3 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
 };
 
 export default StoryboardSketchCardHeader;
-

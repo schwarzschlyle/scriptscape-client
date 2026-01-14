@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useTheme } from "@mui/material/styles";
 
 export interface CustomCardHeaderProps {
   title?: React.ReactNode;
@@ -47,6 +48,8 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
   inputRef,
   ...rest
 }) => {
+  const theme = useTheme();
+
   return (
     <Box
       // Entire header acts as drag handle (except title + delete button areas)
@@ -59,21 +62,23 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
         px: 1,
         py: 0.5,
         userSelect: "none",
-        background: "rgba(47,51,47,0.35)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        background: theme.palette.card.headerBg,
+        // In light mode, avoid translucent/glassy header which can look like an extra "card layer".
+        backdropFilter: theme.palette.mode === "dark" ? "blur(16px)" : "none",
+        WebkitBackdropFilter: theme.palette.mode === "dark" ? "blur(16px)" : "none",
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
-        borderBottom: "1px solid #1f211f",
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 2px 16px 0 rgba(0,0,0,0.08)",
+        borderBottom: `1px solid ${theme.palette.card.headerBorderBottom}`,
+        // Avoid an extra "outline" around the header in light mode by not drawing a full border.
+        border: "none",
+        boxShadow: theme.palette.mode === "dark" ? "0 2px 16px 0 rgba(0,0,0,0.08)" : "none",
         cursor: !editing && dragListeners ? "grab" : "default",
       }}
       tabIndex={0}
       onDoubleClick={editable && !editing ? onEditStart : undefined}
       {...rest}
     >
-      <Box sx={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, gap: 0.75 }}>
         {icon}
         <Box
           // Title area should NOT initiate drag (to avoid conflicts with editing/selection)
@@ -91,7 +96,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
                 flex: 1,
                 minWidth: 0,
                 background: "transparent",
-                color: "#73a32c",
+                color: theme.palette.card.titleText,
                 border: "none",
                 outline: "none",
                 fontWeight: 600,
@@ -110,7 +115,7 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
               noWrap
               sx={{
                 fontWeight: 600,
-                color: "#73a32c",
+                color: theme.palette.card.titleText,
                 fontSize: 16,
                 pl: 0,
                 pr: 2,
@@ -139,7 +144,10 @@ const CustomCardHeader: React.FC<CustomCardHeaderProps> = ({
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             sx={{
-              color: deleting || isSaving || deleteDisabled ? "#bdbdbd" : "#e53935",
+              color:
+                deleting || isSaving || deleteDisabled
+                  ? theme.palette.text.disabled
+                  : theme.palette.error.main,
               cursor: deleting || isSaving || deleteDisabled ? "not-allowed" : "pointer",
             }}
             style={{ display: "inline-flex" }}

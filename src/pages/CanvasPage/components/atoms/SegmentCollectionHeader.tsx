@@ -1,10 +1,13 @@
 import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import SegmentIcon from "../../../../assets/segment-icon.svg";
+import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import CardStatusDot from "./CardStatusDot";
+import { useTheme } from "@mui/material/styles";
 
 interface SegmentCollectionHeaderProps {
   name: string;
@@ -43,6 +46,7 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
   expanded,
   onExpandedChange,
 }) => {
+  const theme = useTheme();
   const {
     value: localName,
     editing,
@@ -74,8 +78,8 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
                     fontSize: 16,
                     fontWeight: 600,
                     background: "transparent",
-                    color: "#fff",
-                    border: "1px solid #444",
+                    color: theme.palette.text.primary,
+                    border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 4,
                     padding: "2px 8px",
                     width: "90%",
@@ -118,27 +122,23 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
         deleteDisabled={deleteDisabled}
         actionsLeft={
           onExpandedChange ? (
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0,
-                margin: 0,
-                cursor: "pointer",
-              }}
+            <IconButton
+              size="small"
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandedChange(!expanded);
               }}
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
-              aria-label={expanded ? "Use fixed height" : "Use full height"}
+              sx={{
+                color: theme.palette.text.primary,
+                p: 0.25,
+                mr: 0.5,
+              }}
+              aria-label={expanded ? "Collapse" : "Expand"}
             >
-              <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 18, height: 18, opacity: 0.9 }} />
-            </button>
+              {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
           ) : null
         }
         actions={
@@ -164,4 +164,3 @@ const SegmentCollectionHeader: React.FC<SegmentCollectionHeaderProps> = ({
 };
 
 export default SegmentCollectionHeader;
-

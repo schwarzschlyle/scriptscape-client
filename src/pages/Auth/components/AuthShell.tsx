@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import { alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 
 export function AuthShell({
   title,
@@ -12,6 +15,8 @@ export function AuthShell({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const theme = useTheme();
+
   return (
     <Box
       sx={{
@@ -23,6 +28,13 @@ export function AuthShell({
         px: 2,
         py: 4,
         bgcolor: "background.default",
+        // Subtle background texture so auth pages feel more "designed".
+        backgroundImage:
+          theme.palette.mode === "dark"
+            ? `radial-gradient(circle at 15% 10%, ${alpha(theme.palette.success.main, 0.12)} 0%, transparent 35%),
+               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.success.main, 0.10)} 0%, transparent 40%)`
+            : `radial-gradient(circle at 15% 10%, ${alpha(theme.palette.primary.main, 0.06)} 0%, transparent 35%),
+               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 40%)`,
       }}
     >
       <Paper
@@ -30,19 +42,26 @@ export function AuthShell({
         sx={{
           width: "100%",
           maxWidth: 420,
-          p: 3,
+          p: { xs: 2.5, sm: 3 },
           borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: "hidden",
         }}
       >
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 700, textAlign: "center" }}>
-          {title}
-        </Typography>
-        {subtitle ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: "center" }}>
-            {subtitle}
+        <Box sx={{ px: { xs: 0.5, sm: 1 }, pt: 0.5, pb: 0 }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 800, textAlign: "center" }}>
+            {title}
           </Typography>
-        ) : null}
-        <Box sx={{ mt: 2 }}>{children}</Box>
+          {subtitle ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, textAlign: "center" }}>
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
+
+        <Divider sx={{ mt: 2, mb: 2 }} />
+
+        <Box sx={{ px: { xs: 0.5, sm: 1 }, pb: 0.5 }}>{children}</Box>
       </Paper>
     </Box>
   );

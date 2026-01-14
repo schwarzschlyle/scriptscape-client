@@ -9,17 +9,23 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useProjects } from "@api/projects/queries";
 import { useCreateProject } from "@api/projects/mutations";
 import queryClient from "@api/queryClient";
 import { buildRoute } from "@routes/routes.config";
+import { useNavigate } from "react-router-dom";
 
 export interface ProjectsListProps {
   organizationId: string;
 }
 
 const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
+  const theme = useTheme();
   const { data, isLoading, isError, error } = useProjects(organizationId);
+  const navigate = useNavigate();
   const projectsRaw = Array.isArray(data) ? data : [];
   const projects = projectsRaw.map((p: any) => ({
     ...p,
@@ -45,7 +51,9 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   const handleProjectClick = (idx: number) => {
     const project = projects[idx];
     if (organizationId && project.id) {
-      window.location.href = buildRoute.canvas(organizationId, project.id);
+      // Client-side navigation avoids a full page reload, which prevents a double loading state
+      // (ProtectedRoute session restore -> CanvasPage access spinner).
+      navigate(buildRoute.canvas(organizationId, project.id));
     }
   };
 
@@ -74,7 +82,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
       setNewDesc("");
       await queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
       if (resp?.id) {
-        window.location.href = buildRoute.canvas(organizationId, resp.id);
+        navigate(buildRoute.canvas(organizationId, resp.id));
       }
     } catch (err: any) {
       setAddError(
@@ -102,43 +110,55 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   if (projects.length === 0) {
     return (
       <Box>
-        <Typography variant="h5" fontWeight={600} mb={2} align="center">
-          No projects found for this organization.
-        </Typography>
+        <Box
+          sx={{
+            mb: 2,
+            p: 2,
+            borderRadius: 2,
+            border: `1px solid ${alpha(theme.palette.common.white, 0.10)}`,
+            background: alpha(theme.palette.common.white, 0.03),
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Create your first project
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Projects hold your scripts, generated segments, visuals, and storyboards.
+          </Typography>
+        </Box>
         <ProjectGrid
           projects={[]}
           onProjectClick={handleProjectClick}
           onAddProject={handleAddProject}
         />
         <Dialog open={addOpen} onClose={handleAddClose}>
-          <DialogTitle>Add New Project</DialogTitle>
+          <DialogTitle sx={{ fontWeight: 800 }}>New project</DialogTitle>
           <form onSubmit={handleAddSubmit}>
             <DialogContent>
-              <TextField
-                label="Project Name"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                required
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Description"
-                value={newDesc}
-                onChange={e => setNewDesc(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-              {addError && (
-                <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
-                  {addError}
-                </Typography>
-              )}
+              <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                {addError ? <Alert severity="error">{addError}</Alert> : null}
+                <TextField
+                  label="Project name"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  required
+                  fullWidth
+                  autoFocus
+                  placeholder="e.g. Pilot Episode"
+                />
+                <TextField
+                  label="Description"
+                  value={newDesc}
+                  onChange={e => setNewDesc(e.target.value)}
+                  fullWidth
+                  placeholder="Optional"
+                />
+              </Stack>
             </DialogContent>
             <DialogActions>
               <Button onClick={handleAddClose}>Cancel</Button>
-              <Button type="submit" variant="contained" color="primary" disabled={createProject.isPending}>
-                {createProject.isPending ? "Creating..." : "Create"}
+              <Button type="submit" variant="contained" color="success" disabled={createProject.isPending}>
+                {createProject.isPending ? "Creating…" : "Create"}
               </Button>
             </DialogActions>
           </form>
@@ -155,34 +175,33 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
         onAddProject={handleAddProject}
       />
       <Dialog open={addOpen} onClose={handleAddClose}>
-        <DialogTitle>Add New Project</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800 }}>New project</DialogTitle>
         <form onSubmit={handleAddSubmit}>
           <DialogContent>
-            <TextField
-              label="Project Name"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              required
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="Description"
-              value={newDesc}
-              onChange={e => setNewDesc(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            {addError && (
-              <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
-                {addError}
-              </Typography>
-            )}
+            <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+              {addError ? <Alert severity="error">{addError}</Alert> : null}
+              <TextField
+                label="Project name"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                required
+                fullWidth
+                autoFocus
+                placeholder="e.g. Pilot Episode"
+              />
+              <TextField
+                label="Description"
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                fullWidth
+                placeholder="Optional"
+              />
+            </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleAddClose}>Cancel</Button>
-            <Button type="submit" variant="contained" color="primary" disabled={createProject.isPending}>
-              {createProject.isPending ? "Creating..." : "Create"}
+            <Button type="submit" variant="contained" color="success" disabled={createProject.isPending}>
+              {createProject.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogActions>
         </form>

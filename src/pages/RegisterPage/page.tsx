@@ -5,11 +5,15 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useRegister, useCreateOrganization } from "@api";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
 import { buildRoute } from "@routes/routes.config";
 import { useAuth } from "@auth/AuthContext";
 import { AuthShell } from "@pages/Auth/components/AuthShell";
+import Alert from "@mui/material/Alert";
+import Link from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import DarkPage from "@theme/DarkPage";
 
 export default function RegisterPage() {
   React.useEffect(() => {
@@ -71,65 +75,67 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthShell title="Register" subtitle="Create your account">
+    <DarkPage>
+      <AuthShell title="Register" subtitle="Create your account">
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 1.5 }}>
+          <Stack spacing={1.5}>
+            {error ? <Alert severity="error">{error}</Alert> : null}
 
-        <TextField
-          label="First Name"
-          type="text"
-          value={firstName}
-          onChange={e => setFirstName(e.target.value)}
-          required
-        />
+            <TextField
+              label="First name"
+              type="text"
+              value={firstName}
+              onChange={e => setFirstName(e.target.value)}
+              required
+              autoComplete="given-name"
+            />
 
-        <TextField
-          label="Organization Name"
-          type="text"
-          value={orgName}
-          onChange={e => setOrgName(e.target.value)}
-          required
-        />
+            <TextField
+              label="Organization"
+              type="text"
+              value={orgName}
+              onChange={e => setOrgName(e.target.value)}
+              required
+              autoComplete="organization"
+            />
 
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
 
-        <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-        />
-        
-        <CustomButton
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Processing..." : "Register"}
-        </CustomButton>
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+              helperText="Use at least 8 characters."
+            />
+          </Stack>
 
-        {error && (
-          <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
-            {error}
-          </Typography>
-        )}
-
-      </CustomForm>
+          <CustomButton type="submit" disabled={loading}>
+            {loading ? "Creating account…" : "Create account"}
+          </CustomButton>
+        </CustomForm>
       )}
 
-      <Typography sx={{ mt: 2 }} align="center" variant="body2">
-        Already have an account? <a href={ROUTES.LOGIN}>Login</a>
+      <Typography sx={{ mt: 2 }} align="center" variant="body2" color="text.secondary">
+        Already have an account?{" "}
+        <Link component={RouterLink} to={ROUTES.LOGIN} underline="hover">
+          Sign in
+        </Link>
       </Typography>
-    </AuthShell>
+      </AuthShell>
+    </DarkPage>
   );
 }

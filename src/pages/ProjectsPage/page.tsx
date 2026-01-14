@@ -6,6 +6,7 @@ import { useOrganization } from "@api/organizations/queries";
 import { useOrgAccessAuth } from "@hooks/useOrgAccessAuth";
 import ProjectsList from "./components/organisms/ProjectsList";
 import { ProjectsShell } from "./components/ProjectsShell";
+import DarkPage from "@theme/DarkPage";
 
 const ProjectsPage: React.FC = () => {
   const { organizationId = "" } = useParams<{ organizationId: string }>();
@@ -35,12 +36,14 @@ const ProjectsPage: React.FC = () => {
   }
 
   return (
-    <ProjectsShell
-      title={org?.name ? `${org.name}` : "Projects"}
-      subtitle="Select a project to open the canvas"
-    >
-      <ProjectsList organizationId={organizationId} />
-    </ProjectsShell>
+    <DarkPage>
+      <ProjectsShell
+        title={org?.name ? `${org.name}` : "Projects"}
+        subtitle="Select a project to open the canvas"
+      >
+        <ProjectsList organizationId={organizationId} />
+      </ProjectsShell>
+    </DarkPage>
   );
 };
 

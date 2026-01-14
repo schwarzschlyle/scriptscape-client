@@ -1,4 +1,5 @@
 import React from "react";
+import { useTheme } from "@mui/material/styles";
 
 type CanvasTypographyVariant = "projectName" | "organizationName" | "projectDescription";
 
@@ -10,50 +11,52 @@ interface CanvasTypographyProps {
   title?: string;
 }
 
-const variantStyles: Record<CanvasTypographyVariant, React.CSSProperties> = {
-  projectName: {
-    fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
-    fontWeight: 700,
-    fontStyle: "normal",
-    fontSize: "16px",
-    color: "#FFFFFF",
-    letterSpacing: 0,
-    lineHeight: 1.2,
-  },
-  organizationName: {
-    fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
-    fontWeight: 700,
-    fontStyle: "normal",
-    fontSize: "8px",
-    color: "#4B5563",
-    letterSpacing: 0,
-    lineHeight: 1.2,
-  },
-  projectDescription: {
-    fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
-    fontWeight: 400,
-    fontStyle: "normal",
-    fontSize: "8px",
-    color: "#9CA3AF",
-    letterSpacing: 0,
-    lineHeight: 1.2,
-  },
-};
-
 const CanvasTypography: React.FC<CanvasTypographyProps> = ({
   variant,
   children,
   style,
   className,
   title,
-}) => (
-  <span
-    style={{ ...variantStyles[variant], ...style }}
-    className={className}
-    title={title}
-  >
-    {children}
-  </span>
-);
+}) => {
+  const theme = useTheme();
+
+  const base: React.CSSProperties = {
+    fontFamily: "'SF Pro Text', 'San Francisco', Arial, sans-serif",
+    fontStyle: "normal",
+    letterSpacing: 0,
+    lineHeight: 1.2,
+  };
+
+  const variantStyles: Record<CanvasTypographyVariant, React.CSSProperties> = {
+    projectName: {
+      ...base,
+      fontWeight: 700,
+      fontSize: "16px",
+      color: theme.palette.text.primary,
+    },
+    organizationName: {
+      ...base,
+      fontWeight: 700,
+      fontSize: "8px",
+      color: theme.palette.text.secondary,
+    },
+    projectDescription: {
+      ...base,
+      fontWeight: 400,
+      fontSize: "8px",
+      color: theme.palette.text.secondary,
+    },
+  };
+
+  return (
+    <span
+      style={{ ...variantStyles[variant], ...style }}
+      className={className}
+      title={title}
+    >
+      {children}
+    </span>
+  );
+};
 
 export default CanvasTypography;

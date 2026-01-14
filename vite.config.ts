@@ -11,7 +11,8 @@ export default defineConfig({
       { find: '@routes', replacement: '/src/routes' },
       { find: '@components', replacement: '/src/components' },
       { find: '@hooks', replacement: '/src/hooks' },
-      { find: '@auth', replacement: '/src/auth' }
+      { find: '@auth', replacement: '/src/auth' },
+      { find: '@theme', replacement: '/src/theme' }
     ]
   }
 })

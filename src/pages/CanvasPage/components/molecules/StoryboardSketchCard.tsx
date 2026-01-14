@@ -4,7 +4,10 @@ import StoryboardSketchCardHeader from "../atoms/StoryboardSketchCardHeader";
 import StoryboardSketchCardBody from "../atoms/StoryboardSketchCardBody";
 import Box from "@mui/material/Box";
 import CardFooter from "@components/CardFooter";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import { useTheme } from "@mui/material/styles";
+import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 interface StoryboardSketch {
   id?: string;
@@ -48,6 +51,7 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
   onExpandedChange,
   generating = false,
 }) => {
+  const theme = useTheme();
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
@@ -104,18 +108,8 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
             <CardFooter
               left={null}
               center={
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    padding: 0,
-                    margin: 0,
-                    outline: "none",
-                  }}
+                <IconButton
+                  size="small"
                   onClick={(e) => {
                     e.stopPropagation();
                     const next = !expanded;
@@ -124,17 +118,20 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
+                  sx={{
+                    color: theme.palette.text.primary,
+                  }}
                   aria-label={expanded ? "Collapse" : "Expand"}
                 >
-                  <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 22, height: 22, display: "block", opacity: 0.9 }} />
-                </button>
+                  {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </IconButton>
               }
               right={null}
             />
 
             {error && (
               <Box sx={{ mt: 1, px: 2 }}>
-                <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+                <span style={{ color: theme.palette.error.main, fontSize: 13 }}>{error}</span>
               </Box>
             )}
           </>
@@ -143,7 +140,6 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
         style={{
           ...(expanded ? { width: CARD_WIDTH * columns } : { width: CARD_WIDTH }),
           opacity: deleting ? 0.5 : 1,
-          marginTop: 16,
         }}
         active={active}
         onClick={onClick}

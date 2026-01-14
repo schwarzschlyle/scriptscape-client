@@ -18,6 +18,7 @@ import { useVisualDirectionCanvasAreaLogic } from "@hooks/useVisualDirectionCanv
 import { useCreateVisualSet } from "@api/visual_sets/mutations";
 import { useStoryboardCanvasAreaLogic } from "@hooks/useStoryboardCanvasAreaLogic";
 import DraggableStoryboardSketchCard from "../molecules/DraggableStoryboardSketchCard";
+import { useTheme } from "@mui/material/styles";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -31,6 +32,7 @@ const CANVAS_SIZE = 10000;
 
 
 const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSyncChange }) => {
+  const theme = useTheme();
   // Scripts logic
   const {
     scripts,
@@ -347,11 +349,11 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
             from={{ x: fx, y: fy }}
             to={{ x: tx, y: ty }}
             canvasSize={CANVAS_SIZE}
-            stroke="#fff"
+            stroke={theme.palette.canvas.connectorStroke}
             strokeWidth={1}
             opacity={0.92}
             style={{
-              filter: "drop-shadow(0 1px 2px #0008)",
+              filter: theme.palette.canvas.connectorShadow,
               strokeLinejoin: "round",
             }}
           />
@@ -371,11 +373,11 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
             from={from}
             to={to}
             canvasSize={CANVAS_SIZE}
-            stroke="#fff"
+            stroke={theme.palette.canvas.connectorStroke}
             strokeWidth={1}
             opacity={0.92}
             style={{
-              filter: "drop-shadow(0 1px 2px #0008)",
+              filter: theme.palette.canvas.connectorShadow,
               strokeLinejoin: "round",
             }}
           />
@@ -395,11 +397,11 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
             from={from}
             to={to}
             canvasSize={CANVAS_SIZE}
-            stroke="#fff"
+            stroke={theme.palette.canvas.connectorStroke}
             strokeWidth={1}
             opacity={0.92}
             style={{
-              filter: "drop-shadow(0 1px 2px #0008)",
+              filter: theme.palette.canvas.connectorShadow,
               strokeLinejoin: "round",
             }}
           />
@@ -426,7 +428,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
         inset: 0,
         width: "100vw",
         height: "100vh",
-        bgcolor: "#111211",
+        bgcolor: theme.palette.canvas.background,
         p: 0,
         m: 0,
         overflow: "hidden",
@@ -457,7 +459,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
             inset: 0,
             pointerEvents: "none",
             backgroundColor: "transparent",
-            backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.35) 0.5px, transparent 0.5px)",
+            backgroundImage: `radial-gradient(circle, ${theme.palette.canvas.gridMinorDot} 0.5px, transparent 0.5px)`,
             backgroundSize: "20px 20px",
             opacity: 0.8,
             zIndex: 0,
@@ -472,7 +474,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
             inset: 0,
             pointerEvents: "none",
             backgroundColor: "transparent",
-            backgroundImage: "radial-gradient(circle, rgba(255, 255, 255, 0.5) 1.5px, transparent 1.5px)",
+            backgroundImage: `radial-gradient(circle, ${theme.palette.canvas.gridMajorDot} 1.5px, transparent 1.5px)`,
             backgroundSize: "100px 100px",
             opacity: 0.85,
             zIndex: 0,

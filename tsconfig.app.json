@@ -17,7 +17,8 @@
       "@pages/*": ["pages/*"],
       "@components/*": ["components/*"],
       "@hooks/*": ["hooks/*"],
-      "@auth/*": ["auth/*"]
+      "@auth/*": ["auth/*"],
+      "@theme/*": ["theme/*"]
     },
 
     /* Bundler mode */

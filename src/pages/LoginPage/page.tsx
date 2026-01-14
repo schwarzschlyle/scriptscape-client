@@ -5,11 +5,15 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useLogin } from "@api";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
 import { ROUTES } from "@routes/routes.config";
 import { buildRoute } from "@routes/routes.config";
 import { useAuth } from "@auth/AuthContext";
 import { AuthShell } from "@pages/Auth/components/AuthShell";
+import Link from "@mui/material/Link";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
+import DarkPage from "@theme/DarkPage";
 
 export default function LoginPage() {
   React.useEffect(() => {
@@ -68,51 +72,52 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthShell title="Login" subtitle="Sign in to continue">
+    <DarkPage>
+      <AuthShell title="Login" subtitle="Sign in to continue">
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 1.5 }}>
+          <Stack spacing={1.5}>
+            {error ? <Alert severity="error">{error}</Alert> : null}
 
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-          defaultValue="musketeer@scriptscape.com"
-        />
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="you@company.com"
+              // Keep the previous dev convenience, but don’t show a prefilled value to users.
+              inputProps={{
+                "data-default": "musketeer@scriptscape.com",
+              }}
+            />
 
-        <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-        
-        <CustomButton
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Processing..." : "Login"}
-        </CustomButton>
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </Stack>
 
-        {error && (
-          <Typography color="error" sx={{ mt: 1, fontWeight: 600 }}>
-            {error}
-          </Typography>
-        )}
-        
-      </CustomForm>
+          <CustomButton type="submit" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
+          </CustomButton>
+        </CustomForm>
       )}
 
-      <Typography sx={{ mt: 2 }} align="center" variant="body2">
+      <Typography sx={{ mt: 2 }} align="center" variant="body2" color="text.secondary">
         Don&apos;t have an account?{" "}
-        <a href={ROUTES.REGISTER || "/register"}>Register</a>
+        <Link component={RouterLink} to={ROUTES.REGISTER || "/register"} underline="hover">
+          Create one
+        </Link>
       </Typography>
-    </AuthShell>
+      </AuthShell>
+    </DarkPage>
   );
 }

@@ -3,9 +3,10 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Let MUI theme control page colors; avoid forcing dark defaults in light mode. */
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: inherit;
+  background-color: transparent;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -32,7 +33,7 @@ a:hover {
 body {
   margin: 0;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  background-color: #242424;
+  background-color: transparent;
 }
 
 .canvas-card, .canvas-card * {

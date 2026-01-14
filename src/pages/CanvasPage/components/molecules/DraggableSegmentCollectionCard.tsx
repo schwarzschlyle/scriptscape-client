@@ -56,7 +56,6 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
         m: 0,
         flex: "0 1 auto",
         zIndex: active ? 1000 : 50,
-        boxShadow: 2,
         bgcolor: "transparent",
         display: "flex",
         flexDirection: "column",
