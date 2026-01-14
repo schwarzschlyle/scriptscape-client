@@ -3,6 +3,10 @@ import IconButton from "@mui/material/IconButton";
 import LogoutIcon from "@mui/icons-material/Logout";
 import LoadingSpinner from "@components/LoadingSpinner";
 import CanvasTypography from "./CanvasTypography";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import { useTheme } from "@mui/material/styles";
+import { useThemeMode } from "../../../../theme/ThemeModeContext";
 
 interface CanvasHeaderProps {
   orgName?: string;
@@ -14,27 +18,31 @@ interface CanvasHeaderProps {
 
 const SPINNER_WIDTH = 40;
 
-const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, syncing }: CanvasHeaderProps) => (
-  <Box
-    sx={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      zIndex: 1100,
-      px: { xs: 1, sm: 2 },
-      py: { xs: 1, sm: 2 },
-      pr: { xs: 4, sm: 8 },
-      pl: { xs: 4, sm: 8 },
-      background: "transparent",
-      minHeight: 96,
-      maxHeight: 96,
-      height: 96,
-      display: "flex",
-      alignItems: "center",
-      transform: "none !important",
-    }}
-  >
+const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, syncing }: CanvasHeaderProps) => {
+  const theme = useTheme();
+  const { mode, toggleMode } = useThemeMode();
+
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        zIndex: 1100,
+        px: { xs: 1, sm: 2 },
+        py: { xs: 1, sm: 2 },
+        pr: { xs: 4, sm: 8 },
+        pl: { xs: 4, sm: 8 },
+        background: "transparent",
+        minHeight: 96,
+        maxHeight: 96,
+        height: 96,
+        display: "flex",
+        alignItems: "center",
+        transform: "none !important",
+      }}
+    >
     <Box
       sx={{
         width: "100%",
@@ -58,7 +66,10 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
                 ml: 2,
                 px: 2,
                 py: 0.5,
-                bgcolor: "#E5E7EB",
+                bgcolor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.12)"
+                    : "rgba(17,24,39,0.08)",
                 borderRadius: 1,
                 display: "flex",
                 alignItems: "center",
@@ -97,7 +108,7 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
           flex: "0 0 auto",
           display: "flex",
           alignItems: "center",
-          gap: 2,
+          gap: 1,
         }}
       >
         <Box
@@ -123,16 +134,30 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
           )}
         </Box>
         <IconButton
+          onClick={toggleMode}
+          size="small"
+          sx={{
+            color: theme.palette.text.primary,
+            bgcolor: "transparent",
+            "&:hover": {
+              bgcolor: theme.palette.action.hover,
+            },
+            borderRadius: 1,
+          }}
+          aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {mode === "dark" ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+        </IconButton>
+        <IconButton
           onClick={onLogout}
           size="small"
           sx={{
-            color: "#fff",
+            color: theme.palette.text.primary,
             bgcolor: "transparent",
             "&:hover": {
-              bgcolor: "rgba(255,255,255,0.08)",
+              bgcolor: theme.palette.action.hover,
             },
             borderRadius: 1,
-            ml: 1,
           }}
           aria-label="Logout"
         >
@@ -141,6 +166,7 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
       </Box>
     </Box>
   </Box>
-);
+  );
+};
 
 export default CanvasHeader;

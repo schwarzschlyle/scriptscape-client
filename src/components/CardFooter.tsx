@@ -1,5 +1,6 @@
 import React from "react";
 import Box from "@mui/material/Box";
+import { useTheme } from "@mui/material/styles";
 
 export interface CardFooterProps {
   /** Left slot for future text/status. */
@@ -23,6 +24,7 @@ const CardFooter: React.FC<CardFooterProps> = ({
   right,
   height = 34,
 }) => {
+  const theme = useTheme();
   return (
     <Box
       sx={{
@@ -33,8 +35,8 @@ const CardFooter: React.FC<CardFooterProps> = ({
         justifyContent: "space-between",
         px: 1,
         gap: 1,
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(47,51,47,0.28)",
+        borderTop: `1px solid ${theme.palette.card.footerBorder}`,
+        background: theme.palette.card.footerBg,
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
       }}

@@ -2,6 +2,7 @@ import React from "react";
 import Box from "@mui/material/Box";
 import EditableCardContentArea from "./EditableCardContentArea";
 import LoadingSpinner from "@components/LoadingSpinner";
+import { useTheme, alpha } from "@mui/material/styles";
 
 export interface StoryboardSketchCardBodyProps {
   sketches: { id?: string; name?: string; image_url: string; meta?: Record<string, any> }[];
@@ -21,6 +22,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
   extraBottomPadding = false,
   compact = false,
 }) => {
+  const theme = useTheme();
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
   const textBoxHeight = 66;
 
@@ -49,8 +51,11 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
               sx={{
                 borderRadius: 1,
                 overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(0,0,0,0.15)",
+                border: `1px solid ${theme.palette.divider}`,
+                background:
+                  theme.palette.mode === "dark"
+                    ? "rgba(0,0,0,0.15)"
+                    : "rgba(17,24,39,0.04)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -63,7 +68,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                   position: "relative",
                   width: "100%",
                   aspectRatio: compact ? "16 / 10" : "4 / 3",
-                  bgcolor: "rgba(255,255,255,0.06)",
+                  bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.06 : 0.03),
                 }}
               >
                 {/* Order badge (01, 02, 03, ...) */}
@@ -76,9 +81,12 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
                     px: 0.75,
                     py: 0.25,
                     borderRadius: 0.75,
-                    bgcolor: "rgba(0,0,0,0.55)",
-                    border: "1px solid rgba(255,255,255,0.20)",
-                    color: "rgba(255,255,255,0.92)",
+                    bgcolor:
+                      theme.palette.mode === "dark"
+                        ? "rgba(0,0,0,0.55)"
+                        : "rgba(255,255,255,0.80)",
+                    border: `1px solid ${theme.palette.divider}`,
+                    color: theme.palette.text.primary,
                     fontSize: 11,
                     fontFamily: "monospace",
                     letterSpacing: "0.08em",
@@ -144,7 +152,7 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
 
       {error && (
         <Box sx={{ mt: 1 }}>
-          <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+          <span style={{ color: theme.palette.error.main, fontSize: 13 }}>{error}</span>
         </Box>
       )}
     </Box>

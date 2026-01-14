@@ -161,9 +161,6 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
         }
         height={isFullHeight ? "auto" : FIXED_HEIGHT}
         active={active}
-        style={{
-          marginTop: 16,
-        }}
         onClick={onClick}
       />
       {showGenerateStoryboardModal && (

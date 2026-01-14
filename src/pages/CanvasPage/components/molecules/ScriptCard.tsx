@@ -7,6 +7,7 @@ import Box from "@mui/material/Box";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import CardFooter from "@components/CardFooter";
+import { useTheme } from "@mui/material/styles";
 
 interface ScriptCardProps {
   script: Script;
@@ -39,6 +40,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   deleting = false,
   pendingSegmentCollection = false,
 }) => {
+  const theme = useTheme();
   const CARD_WIDTH = 340;
   const FIXED_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
   const [isFullHeight, setIsFullHeight] = useState(false);
@@ -126,7 +128,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               />
               {error && (
                 <Box sx={{ mt: 1, px: 2 }}>
-                  <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
+                  <span style={{ color: theme.palette.error.main, fontSize: 13 }}>{error}</span>
                 </Box>
               )}
               {showAddSegmentCollectionModal && (

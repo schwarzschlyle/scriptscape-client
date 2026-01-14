@@ -2,10 +2,13 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import ScriptIcon from "../../../../assets/script-icon.svg";
 import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import CardStatusDot from "./CardStatusDot";
+import { useTheme } from "@mui/material/styles";
 
 interface ScriptCardHeaderProps {
   name: string;
@@ -24,6 +27,7 @@ interface ScriptCardHeaderProps {
 }
 
 const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
+  const theme = useTheme();
   const {
     pendingSegmentCollection,
     onNameChange,
@@ -65,8 +69,8 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
                 fontSize: 16,
                 fontWeight: 600,
                 background: "transparent",
-                color: "#fff",
-                border: "1px solid #444",
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
                 borderRadius: 4,
                 padding: "2px 8px",
                 width: "90%",
@@ -93,25 +97,24 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
         icon={null}
         actionsLeft={
           onExpandedChange ? (
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0,
-                margin: 0,
-                cursor: "pointer",
-              }}
+            <IconButton
+              size="small"
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandedChange(!expanded);
               }}
-              aria-label={expanded ? "Use fixed height" : "Use full height"}
+              // must not initiate drag
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              sx={{
+                color: theme.palette.text.primary,
+                p: 0.25,
+                mr: 0.5,
+              }}
+              aria-label={expanded ? "Collapse" : "Expand"}
             >
-              <img src={AiPromptIcon} alt="Expand/Collapse" style={{ width: 18, height: 18, opacity: 0.9 }} />
-            </button>
+              {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
           ) : null
         }
         actions={
@@ -140,4 +143,3 @@ const ScriptCardHeader: React.FC<ScriptCardHeaderProps> = (props) => {
 };
 
 export default ScriptCardHeader;
-
