@@ -55,8 +55,8 @@ export function usePersistedCardPositions(params: {
   }) => void | Promise<void>;
 }) {
   const { organizationId, projectId, cardType } = params;
-  const idbDebounceMs = params.idbDebounceMs ?? 600;
-  const dbDebounceMs = params.dbDebounceMs ?? 1500;
+  const idbDebounceMs = params.idbDebounceMs ?? 1500;
+  const dbDebounceMs = params.dbDebounceMs ?? 5000;
 
   const [positions, setPositions] = useState<PositionsState>({});
   const [loaded, setLoaded] = useState(false);
