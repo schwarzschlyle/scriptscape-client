@@ -21,9 +21,10 @@ const ProjectGrid: React.FC<ProjectGridProps> = ({
       gridTemplateColumns: {
         xs: "1fr",
         sm: "1fr 1fr",
-        md: "1fr 1fr 1fr 1fr",
+        md: "1fr 1fr 1fr",
+        lg: "1fr 1fr 1fr 1fr",
       },
-      gap: 2,
+      gap: 2.5,
       width: "100%",
     }}
   >
