@@ -13,6 +13,7 @@ import { useProjects } from "@api/projects/queries";
 import { useCreateProject } from "@api/projects/mutations";
 import queryClient from "@api/queryClient";
 import { buildRoute } from "@routes/routes.config";
+import { useNavigate } from "react-router-dom";
 
 export interface ProjectsListProps {
   organizationId: string;
@@ -20,6 +21,7 @@ export interface ProjectsListProps {
 
 const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   const { data, isLoading, isError, error } = useProjects(organizationId);
+  const navigate = useNavigate();
   const projectsRaw = Array.isArray(data) ? data : [];
   const projects = projectsRaw.map((p: any) => ({
     ...p,
@@ -45,7 +47,9 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   const handleProjectClick = (idx: number) => {
     const project = projects[idx];
     if (organizationId && project.id) {
-      window.location.href = buildRoute.canvas(organizationId, project.id);
+      // Client-side navigation avoids a full page reload, which prevents a double loading state
+      // (ProtectedRoute session restore -> CanvasPage access spinner).
+      navigate(buildRoute.canvas(organizationId, project.id));
     }
   };
 
@@ -74,7 +78,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
       setNewDesc("");
       await queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
       if (resp?.id) {
-        window.location.href = buildRoute.canvas(organizationId, resp.id);
+        navigate(buildRoute.canvas(organizationId, resp.id));
       }
     } catch (err: any) {
       setAddError(

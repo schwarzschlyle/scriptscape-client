@@ -66,10 +66,7 @@ const CanvasHeader = ({ orgName, projectName, projectDescription, onLogout, sync
                 ml: 2,
                 px: 2,
                 py: 0.5,
-                bgcolor:
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.12)"
-                    : "rgba(17,24,39,0.08)",
+                bgcolor: theme.palette.canvas.headerPillBg,
                 borderRadius: 1,
                 display: "flex",
                 alignItems: "center",

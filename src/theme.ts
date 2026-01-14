@@ -11,6 +11,7 @@ declare module "@mui/material/styles" {
       gridMajorDot: string;
       connectorStroke: string;
       connectorShadow: string;
+      headerPillBg: string;
     };
     card: {
       background: string;
@@ -24,6 +25,16 @@ declare module "@mui/material/styles" {
       bodyBorder: string;
       footerBg: string;
       footerBorder: string;
+      statusDot: {
+        idle: string;
+        active: string;
+        saving: string;
+        pendingStart: string;
+        pendingEnd: string;
+        generatingStart: string;
+        generatingEnd: string;
+        border: string;
+      };
     };
   }
 
@@ -38,7 +49,9 @@ export function createAppTheme(mode: ThemeMode) {
   const isDark = mode === "dark";
 
   // Brand accents (currently hardcoded across canvas)
-  const accent = isDark ? "#abf43e" : "#374151"; // gray-700 for light mode
+  // Keep the ScriptScape accent consistent across themes.
+  // (In light mode, the canvas may be lighter, but the accent stays brand-green.)
+  const accent = "#abf43e";
   const cardType = "#73A32C";
 
   return createTheme({
@@ -94,6 +107,7 @@ export function createAppTheme(mode: ThemeMode) {
         connectorShadow: isDark
           ? "drop-shadow(0 1px 2px rgba(0,0,0,0.55))"
           : "drop-shadow(0 1px 2px rgba(0,0,0,0.18))",
+        headerPillBg: isDark ? "rgba(255,255,255,0.12)" : "rgba(17,24,39,0.08)",
       },
       card: {
         background: isDark ? "#272927" : "#ffffff",
@@ -108,6 +122,16 @@ export function createAppTheme(mode: ThemeMode) {
         bodyBorder: isDark ? "#1f211f" : alpha("#111827", 0.10),
         footerBg: isDark ? "rgba(47,51,47,0.28)" : "rgba(255,255,255,0.78)",
         footerBorder: isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.10)",
+        statusDot: {
+          idle: isDark ? "#6a6967" : alpha("#111827", 0.35),
+          active: accent,
+          saving: "#ff9800",
+          pendingStart: "#2196f3",
+          pendingEnd: "#21cbf3",
+          generatingStart: "#ff9800",
+          generatingEnd: "#ffc107",
+          border: isDark ? "#232523" : alpha("#111827", 0.25),
+        },
       },
     },
   });
