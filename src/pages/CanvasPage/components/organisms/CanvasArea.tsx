@@ -131,17 +131,13 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
     zoom,
     offset,
     isPanning,
+    viewportRef,
     canvasRef,
     zoomRef,
     minorGridRef,
     majorGridRef,
     getDisplayZoom,
     maybeSnapToGrid,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    handleContextMenu,
-    handleWheel,
     handleZoomIn,
     handleZoomOut,
     endPan,
@@ -423,6 +419,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
   return (
     <>
       <Box
+      ref={viewportRef}
       sx={{
         position: "fixed",
         inset: 0,
@@ -434,14 +431,12 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
         overflow: "hidden",
         userSelect: isPanning ? "none" : "auto",
         cursor: isPanning ? "grabbing" : "default",
+        // Required for PointerEvent touch gestures (otherwise the browser will steal
+        // two-finger panning/zooming).
+        touchAction: "none",
       }}
       onClick={handleCanvasBackgroundClick}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
       onMouseLeave={endPan}
-      onContextMenu={handleContextMenu}
-      onWheel={handleWheel}
       tabIndex={0}
     >
       <DndContext
