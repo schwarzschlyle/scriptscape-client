@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import SegmentCollectionCardBody from "../atoms/SegmentCollectionCardBody";
 import SegmentCollectionHeader from "../atoms/SegmentCollectionHeader";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import Box from "@mui/material/Box";
+import RadialAddButton from "@components/RadialAddButton";
 import CardFooter from "@components/CardFooter";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface Segment {
   id?: string;
@@ -28,6 +29,7 @@ interface SegmentCollectionCardProps {
   onSegmentChange?: (segmentId: string, newText: string, index: number) => void;
   onDelete?: () => void;
   onGenerateVisualDirections?: () => void;
+  onGenerateVisualDirectionsAt?: (side: import("./cardSpawn").SpawnSide) => void;
   pendingVisualDirection?: boolean;
   /** True while this card is generating its segments (child orange dot). */
   generating?: boolean;
@@ -48,6 +50,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   onSegmentChange,
   onDelete,
   onGenerateVisualDirections,
+  onGenerateVisualDirectionsAt,
   pendingVisualDirection,
   generating = false,
 }) => {
@@ -71,7 +74,11 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   }, [active]);
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      className="canvas-card-radials"
+      data-active={active ? "true" : "false"}
+      style={{ position: "relative" }}
+    >
       <CustomCard
         header={
           <SegmentCollectionHeader
@@ -110,45 +117,32 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                 onSegmentChange={onSegmentChange}
               />
             </Box>
+
+            {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
             <CardFooter
               left={null}
               center={null}
               right={
-                <>
-                  <button
-                    style={{
-                      background: "none",
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: isSaving || generating || pendingVisualDirection ? "not-allowed" : "pointer",
-                      opacity: isSaving || generating || pendingVisualDirection ? 0.5 : 1,
-                      padding: 0,
-                      margin: 0,
-                      outline: "none",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isSaving && !generating && !pendingVisualDirection && onGenerateVisualDirections) {
-                        onGenerateVisualDirections();
-                      }
-                    }}
-                    aria-label="Generate Visual Directions"
-                    disabled={isSaving || generating || pendingVisualDirection}
-                  >
-                    <img
-                      src={AiPromptIcon}
-                      alt="AI Prompt"
-                      style={{
-                        width: 22,
-                        height: 22,
-                        display: "block",
-                        filter: isSaving || generating || pendingVisualDirection ? "grayscale(1) opacity(0.5)" : "none",
-                      }}
-                    />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "default",
+                    opacity: 0.85,
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="AI (inactive)"
+                >
+                  <img src={AiPromptIcon} alt="AI Prompt" style={{ width: 22, height: 22, display: "block" }} />
+                </button>
               }
             />
           </>
@@ -157,6 +151,23 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
         active={active}
         onClick={onClick}
       />
+
+      {(["top", "right", "bottom", "left"] as const).map((side) => (
+        <RadialAddButton
+          key={side}
+          side={side}
+          disabled={isSaving || generating || pendingVisualDirection || (!onGenerateVisualDirections && !onGenerateVisualDirectionsAt)}
+          ariaLabel={`Generate Visual Directions (${side})`}
+          onClick={() => {
+            if (isSaving || generating || pendingVisualDirection) return;
+            if (onGenerateVisualDirectionsAt) {
+              onGenerateVisualDirectionsAt(side);
+              return;
+            }
+            onGenerateVisualDirections?.();
+          }}
+        />
+      ))}
     </div>
   );
 };

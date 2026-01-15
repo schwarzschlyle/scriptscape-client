@@ -19,6 +19,8 @@ import { useCreateVisualSet } from "@api/visual_sets/mutations";
 import { useStoryboardCanvasAreaLogic } from "@hooks/useStoryboardCanvasAreaLogic";
 import DraggableStoryboardSketchCard from "../molecules/DraggableStoryboardSketchCard";
 import { useTheme } from "@mui/material/styles";
+import { computeSpawnPoint } from "../molecules/cardSpawn";
+import type { SpawnSide } from "../molecules/cardSpawn";
 
 interface CanvasAreaProps {
   organizationId: string;
@@ -28,6 +30,7 @@ interface CanvasAreaProps {
 
 const CARD_WIDTH = 340;
 const STORYBOARD_BASE_CARD_WIDTH = 340;
+const DEFAULT_CARD_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
 const CANVAS_SIZE = 10000;
 
 
@@ -125,6 +128,11 @@ const CanvasArea: React.FC<CanvasAreaProps> = ({ organizationId, projectId, onSy
 
   const [showAddScriptModal, setShowAddScriptModal] = React.useState(false);
   const [showScriptGenerationModal, setShowScriptGenerationModal] = React.useState(false);
+
+  const getCardRect = React.useCallback(
+    (x: number, y: number, width = CARD_WIDTH, height = DEFAULT_CARD_HEIGHT) => ({ x, y, width, height }),
+    []
+  );
 
   // Navigation logic extracted to hook
   const {
@@ -510,10 +518,18 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                 onDelete={() => deleteScriptCascade(script.id)}
                 active={activeId === script.id}
                 setActive={setActiveId}
-                onAddSegmentCollection={async (name: string, numSegments: number) => {
-                  console.log("Attempting to add segment collection", { scriptId: script.id, name, numSegments, position: positions[script.id] });
-                  await handleAddCollection(script.id, name, numSegments, positions[script.id]);
-                  console.log("Segment collection add complete");
+                onAddSegmentCollectionAt={async (side: SpawnSide, name: string, numSegments: number) => {
+                  const parentPos = positions[script.id] || { x: 200, y: 200 };
+                  const spawn = computeSpawnPoint(
+                    getCardRect(parentPos.x, parentPos.y),
+                    { width: CARD_WIDTH, height: DEFAULT_CARD_HEIGHT },
+                    side,
+                    40
+                  );
+                  await handleAddCollection(script.id, name, numSegments, {
+                    parentScriptPosition: parentPos,
+                    spawnPosition: spawn,
+                  });
                 }}
                 isSaving={!!script.isSaving}
                 deleting={!!script.deleting}
@@ -539,13 +555,17 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                 dragDelta={activeId === col.id && isDragging ? activeDragDelta : null}
                 pendingVisualDirection={!!pendingVisualDirection[col.id] || !!pendingVisualSet[col.id]}
                 generating={!!generatingCollections[col.id]}
-                onGenerateVisualDirections={async () => {
+                onGenerateVisualDirectionsAt={async (side: SpawnSide) => {
                   if (!col.segments || col.segments.length === 0) return;
                   setPendingVisualSet(prev => ({ ...prev, [col.id]: true }));
                   try {
                     const parentPos = segColPositions[col.id] || { x: 600, y: 200 };
-                    const offsetX = 380;
-                    const offsetY = 120;
+                    const spawn = computeSpawnPoint(
+                      getCardRect(parentPos.x, parentPos.y),
+                      { width: CARD_WIDTH, height: DEFAULT_CARD_HEIGHT },
+                      side,
+                      40
+                    );
                     const visualSet = await createVisualSet.mutateAsync({
                       collectionId: col.id,
                       name: "Visual Set",
@@ -559,7 +579,7 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                       col.id,
                       segmentIds,
                       contents,
-                      { x: parentPos.x + offsetX, y: parentPos.y + offsetY },
+                      spawn,
                       visualSet.id
                     );
                   } finally {
@@ -586,21 +606,24 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
                     dragDelta={activeId === vd.id && isDragging ? activeDragDelta : null}
                     pendingStoryboardSketches={!!pendingStoryboard[vd.id]}
                     generating={!!generatingDirections[vd.id]}
-                    onGenerateStoryboardSketches={async (instructions?: string) => {
-                      // Place storyboard card to the right of the visual direction card
+                    onGenerateStoryboardSketchesAt={async (side: SpawnSide, instructions?: string) => {
                       const parentPos = visualDirectionsPositions[vd.id] || {
                         x: (segColPositions[col.id]?.x || 600) + 380,
                         y: (segColPositions[col.id]?.y || 200) + 120,
                       };
-                      const offsetX = 380;
-                      const offsetY = 120;
+                      const spawn = computeSpawnPoint(
+                        getCardRect(parentPos.x, parentPos.y),
+                        { width: CARD_WIDTH, height: DEFAULT_CARD_HEIGHT },
+                        side,
+                        40
+                      );
                       const visualSetId = vd?.visuals?.[0]?.visualSetId || projectId;
                       await handleAddStoryboardWithSketches(
                         vd.id,
                         visualSetId,
                         vd.visuals || [],
                         instructions,
-                        { x: parentPos.x + offsetX, y: parentPos.y + offsetY }
+                        spawn
                       );
                     }}
                   />

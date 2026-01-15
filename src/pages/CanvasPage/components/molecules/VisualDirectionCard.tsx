@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import CustomCard from "../../../../components/CustomCard";
 import VisualDirectionCardBody from "../atoms/VisualDirectionCardBody";
 import VisualDirectionCardHeader from "../atoms/VisualDirectionCardHeader";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import StoryboardSketchGenerationModal from "./StoryboardSketchGenerationModal";
 import Box from "@mui/material/Box";
+import RadialAddButton from "@components/RadialAddButton";
 import CardFooter from "@components/CardFooter";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface VisualDirection {
   id?: string;
@@ -32,6 +33,7 @@ interface VisualDirectionCardProps {
   /** True while this card is generating its visuals (child orange dot). */
   generating?: boolean;
   onGenerateStoryboardSketches?: (instructions?: string) => void;
+  onGenerateStoryboardSketchesAt?: (side: import("./cardSpawn").SpawnSide, instructions?: string) => void;
   pendingStoryboardSketches?: boolean;
 }
 
@@ -52,6 +54,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   pendingVisualDirection = false,
   generating = false,
   onGenerateStoryboardSketches,
+  onGenerateStoryboardSketchesAt,
   pendingStoryboardSketches = false,
 }) => {
   const CARD_WIDTH = 340;
@@ -73,10 +76,16 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   }, [active]);
 
   const [showGenerateStoryboardModal, setShowGenerateStoryboardModal] = useState(false);
+  const [spawnSide, setSpawnSide] = useState<import("./cardSpawn").SpawnSide>("right");
+  const disabled = isSaving || generating || pendingStoryboardSketches || !onGenerateStoryboardSketches;
 
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      className="canvas-card-radials"
+      data-active={active ? "true" : "false"}
+      style={{ position: "relative" }}
+    >
       <CustomCard
         header={
           <VisualDirectionCardHeader
@@ -116,45 +125,32 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
                 onVisualChange={onVisualChange}
               />
             </Box>
+
+            {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
             <CardFooter
               left={null}
               center={null}
               right={
-                <>
-                  <button
-                    style={{
-                      background: "none",
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: isSaving || generating || pendingStoryboardSketches ? "not-allowed" : "pointer",
-                      opacity: isSaving || generating || pendingStoryboardSketches ? 0.5 : 1,
-                      padding: 0,
-                      margin: 0,
-                      outline: "none",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isSaving && !generating && !pendingStoryboardSketches && onGenerateStoryboardSketches) {
-                        setShowGenerateStoryboardModal(true);
-                      }
-                    }}
-                    aria-label="Generate Storyboard Sketches"
-                    disabled={isSaving || generating || pendingStoryboardSketches || !onGenerateStoryboardSketches}
-                  >
-                    <img
-                      src={AiPromptIcon}
-                      alt="AI Prompt"
-                      style={{
-                        width: 22,
-                        height: 22,
-                        display: "block",
-                        filter: isSaving || generating || pendingStoryboardSketches ? "grayscale(1) opacity(0.5)" : "none",
-                      }}
-                    />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "default",
+                    opacity: 0.85,
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="AI (inactive)"
+                >
+                  <img src={AiPromptIcon} alt="AI Prompt" style={{ width: 22, height: 22, display: "block" }} />
+                </button>
               }
             />
           </>
@@ -163,12 +159,30 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
         active={active}
         onClick={onClick}
       />
+
+      {(["top", "right", "bottom", "left"] as const).map((side) => (
+        <RadialAddButton
+          key={side}
+          side={side}
+          disabled={disabled && !onGenerateStoryboardSketchesAt}
+          ariaLabel={`Generate Storyboard Sketches (${side})`}
+          onClick={() => {
+            if (!onGenerateStoryboardSketchesAt && disabled) return;
+            setSpawnSide(side);
+            setShowGenerateStoryboardModal(true);
+          }}
+        />
+      ))}
       {showGenerateStoryboardModal && (
         <StoryboardSketchGenerationModal
           open={showGenerateStoryboardModal}
           onClose={() => setShowGenerateStoryboardModal(false)}
           onGenerate={(instructions?: string) => {
             setShowGenerateStoryboardModal(false);
+            if (onGenerateStoryboardSketchesAt) {
+              onGenerateStoryboardSketchesAt(spawnSide, instructions);
+              return;
+            }
             onGenerateStoryboardSketches?.(instructions);
           }}
         />

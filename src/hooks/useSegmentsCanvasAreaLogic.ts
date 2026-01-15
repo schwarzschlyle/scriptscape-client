@@ -123,7 +123,16 @@ export function useSegmentsCanvasAreaLogic({
   }, []);
 
   const attachToSegmentsJob = useCallback(
-    (jobId: string, parentScriptId: string, collectionId: string, _numSegments: number, parentScriptPosition?: { x: number; y: number }) => {
+    (
+      jobId: string,
+      parentScriptId: string,
+      collectionId: string,
+      _numSegments: number,
+      opts?: {
+        parentScriptPosition?: { x: number; y: number };
+        spawnPosition?: { x: number; y: number };
+      }
+    ) => {
       if (attachedJobsRef.has(jobId)) return;
       attachedJobsRef.add(jobId);
 
@@ -169,10 +178,14 @@ export function useSegmentsCanvasAreaLogic({
             // Ensure this new card has a persisted position.
             // (Idempotent; safe under StrictMode.)
             if (!positions[collectionId]) {
-              const parentPos = parentScriptPosition || { x: 200, y: 200 };
-              const offsetX = 380;
-              const offsetY = 40 + Object.keys(positions || {}).length * 40;
-              setCardPosition(collectionId, parentPos.x + offsetX, parentPos.y + offsetY);
+              if (opts?.spawnPosition) {
+                setCardPosition(collectionId, opts.spawnPosition.x, opts.spawnPosition.y);
+              } else {
+                const parentPos = opts?.parentScriptPosition || { x: 200, y: 200 };
+                const offsetX = 380;
+                const offsetY = 40 + Object.keys(positions || {}).length * 40;
+                setCardPosition(collectionId, parentPos.x + offsetX, parentPos.y + offsetY);
+              }
             }
 
             removeAiJob("segments", jobId);
@@ -329,10 +342,19 @@ export function useSegmentsCanvasAreaLogic({
       const collectionId = meta.collectionId as string | undefined;
       const numSegments = meta.numSegments as number | undefined;
       const parentPos = meta.parentScriptPosition as { x: number; y: number } | undefined;
+      const spawnPos = meta.spawnPosition as { x: number; y: number } | undefined;
       if (!parentScriptId || !collectionId || typeof numSegments !== "number") return;
-      setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: true }));
-      setGeneratingCollections((prev) => ({ ...prev, [collectionId]: true }));
-      attachToSegmentsJob(job.jobId, parentScriptId, collectionId, numSegments, parentPos);
+      // Guard against infinite update loops: only set state if it actually changes.
+      setPendingSegmentCollection((prev) =>
+        prev[parentScriptId] ? prev : { ...prev, [parentScriptId]: true }
+      );
+      setGeneratingCollections((prev) =>
+        prev[collectionId] ? prev : { ...prev, [collectionId]: true }
+      );
+      attachToSegmentsJob(job.jobId, parentScriptId, collectionId, numSegments, {
+        parentScriptPosition: parentPos,
+        spawnPosition: spawnPos,
+      });
     });
   }, [attachToSegmentsJob]);
 
@@ -346,7 +368,10 @@ export function useSegmentsCanvasAreaLogic({
       parentScriptId: string,
       name: string,
       numSegments: number,
-      parentScriptPosition?: { x: number; y: number }
+      opts?: {
+        parentScriptPosition?: { x: number; y: number };
+        spawnPosition?: { x: number; y: number };
+      }
     ) => {
       setPendingSegmentCollection(prev => ({ ...prev, [parentScriptId]: true }));
       setSyncing(true);
@@ -379,10 +404,14 @@ export function useSegmentsCanvasAreaLogic({
 
         // Persist default position for this collection card (only if none exists)
         if (!positions[collection.id]) {
-          const parentPos = parentScriptPosition || { x: 200, y: 200 };
-          const offsetX = 380;
-          const offsetY = 40 + Object.keys(positions || {}).length * 40;
-          setCardPosition(collection.id, parentPos.x + offsetX, parentPos.y + offsetY);
+          if (opts?.spawnPosition) {
+            setCardPosition(collection.id, opts.spawnPosition.x, opts.spawnPosition.y);
+          } else {
+            const parentPos = opts?.parentScriptPosition || { x: 200, y: 200 };
+            const offsetX = 380;
+            const offsetY = 40 + Object.keys(positions || {}).length * 40;
+            setCardPosition(collection.id, parentPos.x + offsetX, parentPos.y + offsetY);
+          }
         }
 
         // Create segments in backend using AI API
@@ -407,7 +436,8 @@ export function useSegmentsCanvasAreaLogic({
             parentScriptId,
             collectionId: collection.id,
             numSegments,
-            parentScriptPosition: parentScriptPosition || null,
+            parentScriptPosition: opts?.parentScriptPosition || null,
+            spawnPosition: opts?.spawnPosition || null,
             collection: {
               id: collection.id,
               name: collection.name,
@@ -416,7 +446,10 @@ export function useSegmentsCanvasAreaLogic({
           },
         });
 
-        attachToSegmentsJob(job_id, parentScriptId, collection.id, numSegments, parentScriptPosition);
+        attachToSegmentsJob(job_id, parentScriptId, collection.id, numSegments, {
+          parentScriptPosition: opts?.parentScriptPosition,
+          spawnPosition: opts?.spawnPosition,
+        });
 
         // Pull canonical backend data after creating the container + starting AI.
         // (Ensures cross-session/device parity.)
