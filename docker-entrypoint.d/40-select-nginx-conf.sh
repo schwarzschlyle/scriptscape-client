@@ -1,9 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-# This container supports two runtime configs:
-# - HTTP-only (to allow initial certbot issuance)
-# - HTTPS (requires Let's Encrypt certs to exist on mounted volume)
+# Choose HTTPS config only if Let's Encrypt certs exist.
+# This prevents nginx from crash-looping on first deploy.
 
 DOMAIN="${DOMAIN:-app.scriptscape.tools}"
 
