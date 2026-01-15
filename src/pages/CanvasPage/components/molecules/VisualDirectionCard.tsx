@@ -76,16 +76,15 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
   }, [active]);
 
   const [showGenerateStoryboardModal, setShowGenerateStoryboardModal] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [spawnSide, setSpawnSide] = useState<import("./cardSpawn").SpawnSide>("right");
   const disabled = isSaving || generating || pendingStoryboardSketches || !onGenerateStoryboardSketches;
 
 
   return (
     <div
+      className="canvas-card-radials"
+      data-active={active ? "true" : "false"}
       style={{ position: "relative" }}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
     >
       <CustomCard
         header={
@@ -165,7 +164,6 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
         <RadialAddButton
           key={side}
           side={side}
-          visible={hovered || active}
           disabled={disabled && !onGenerateStoryboardSketchesAt}
           ariaLabel={`Generate Storyboard Sketches (${side})`}
           onClick={() => {

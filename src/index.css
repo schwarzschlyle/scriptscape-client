@@ -36,6 +36,20 @@ body {
   background-color: transparent;
 }
 
+/* Canvas card radial add buttons
+   Default: not visible + not interactive
+   Visible on hover, or when card wrapper has data-active="true" */
+.canvas-card-radials .radial-add-button {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.canvas-card-radials:hover .radial-add-button,
+.canvas-card-radials[data-active="true"] .radial-add-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .canvas-card, .canvas-card * {
   -webkit-user-select: none;
   user-select: none;

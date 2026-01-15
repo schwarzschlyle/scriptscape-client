@@ -56,7 +56,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   const [editingBody, setEditingBody] = useState(false);
 
   const [showAddSegmentCollectionModal, setShowAddSegmentCollectionModal] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [spawnSide, setSpawnSide] = useState<SpawnSide>("right");
 
   const handleAddSegmentCollection = (name: string, numSegments: number) => {
@@ -101,9 +100,9 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
 
   return (
     <div
+      className="canvas-card-radials"
+      data-active={active ? "true" : "false"}
       style={{ position: "relative" }}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
     >
       <CustomCard
         header={
@@ -196,7 +195,6 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
         <RadialAddButton
           key={side}
           side={side}
-          visible={hovered || active}
           disabled={isSaving || pendingSegmentCollection}
           ariaLabel={`Add Segment Collection (${side})`}
           onClick={() => {

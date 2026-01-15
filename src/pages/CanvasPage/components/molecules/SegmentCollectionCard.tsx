@@ -59,7 +59,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
   const [isFullHeight, setIsFullHeight] = useState(false);
   const [localName, setLocalName] = useState(name || "");
   const [lastSaved, setLastSaved] = useState<{ name: string }>({ name: name || "" });
-  const [hovered, setHovered] = useState(false);
 
   React.useEffect(() => {
     setLocalName(name || "");
@@ -76,9 +75,9 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
 
   return (
     <div
+      className="canvas-card-radials"
+      data-active={active ? "true" : "false"}
       style={{ position: "relative" }}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
     >
       <CustomCard
         header={
@@ -157,7 +156,6 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
         <RadialAddButton
           key={side}
           side={side}
-          visible={hovered || active}
           disabled={isSaving || generating || pendingVisualDirection || (!onGenerateVisualDirections && !onGenerateVisualDirectionsAt)}
           ariaLabel={`Generate Visual Directions (${side})`}
           onClick={() => {

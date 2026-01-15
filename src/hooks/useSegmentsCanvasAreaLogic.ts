@@ -344,8 +344,13 @@ export function useSegmentsCanvasAreaLogic({
       const parentPos = meta.parentScriptPosition as { x: number; y: number } | undefined;
       const spawnPos = meta.spawnPosition as { x: number; y: number } | undefined;
       if (!parentScriptId || !collectionId || typeof numSegments !== "number") return;
-      setPendingSegmentCollection((prev) => ({ ...prev, [parentScriptId]: true }));
-      setGeneratingCollections((prev) => ({ ...prev, [collectionId]: true }));
+      // Guard against infinite update loops: only set state if it actually changes.
+      setPendingSegmentCollection((prev) =>
+        prev[parentScriptId] ? prev : { ...prev, [parentScriptId]: true }
+      );
+      setGeneratingCollections((prev) =>
+        prev[collectionId] ? prev : { ...prev, [collectionId]: true }
+      );
       attachToSegmentsJob(job.jobId, parentScriptId, collectionId, numSegments, {
         parentScriptPosition: parentPos,
         spawnPosition: spawnPos,

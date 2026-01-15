@@ -7,7 +7,11 @@ export type RadialAddButtonSide = "top" | "right" | "bottom" | "left";
 
 export interface RadialAddButtonProps {
   side: RadialAddButtonSide;
-  visible: boolean;
+  /**
+   * If omitted, visibility is controlled via CSS hover on a `.canvas-card-radials` parent
+   * (and also shown when that parent has `data-active="true"`).
+   */
+  visible?: boolean;
   disabled?: boolean;
   ariaLabel: string;
   onClick: (e: React.MouseEvent) => void;
@@ -49,11 +53,27 @@ const RadialAddButton: React.FC<RadialAddButtonProps> = ({
   // In both modes we want the “accent” color (defined as success.main in this app).
   const fg = theme.palette.success.main;
 
+  const explicitVisibilitySx =
+    typeof visible === "boolean"
+      ? {
+          opacity: visible ? 1 : 0,
+          pointerEvents: visible ? ("auto" as const) : ("none" as const),
+        }
+      : null;
+
   return (
     <IconButton
       size="small"
       aria-label={ariaLabel}
       disabled={disabled}
+      className="radial-add-button"
+      onPointerDown={(e) => {
+        // Prevent triggering drag sensors under the button
+        e.stopPropagation();
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
       onClick={(e) => {
         e.stopPropagation();
         onClick(e);
@@ -67,12 +87,11 @@ const RadialAddButton: React.FC<RadialAddButtonProps> = ({
         backgroundColor: bg,
         border: `1px solid ${theme.palette.divider}`,
         boxShadow: isDark ? "0 2px 10px rgba(0,0,0,0.35)" : "0 2px 10px rgba(0,0,0,0.12)",
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? "auto" : "none",
         transition: "opacity 140ms ease, transform 140ms ease",
         "&:hover": {
           backgroundColor: bg,
         },
+        ...(explicitVisibilitySx || {}),
         ...positionSx,
       }}
     >
