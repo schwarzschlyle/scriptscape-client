@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import ScriptCard from "./ScriptCard";
 import { useDraggable } from "@dnd-kit/core";
 import type { Script } from "@api/scripts/types";
+import type { SpawnSide } from "./cardSpawn";
 
 const CARD_WIDTH = 340;
 
@@ -16,6 +17,7 @@ interface DraggableScriptCardProps {
   active: boolean;
   setActive: (id: string) => void;
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
+  onAddSegmentCollectionAt?: (side: SpawnSide, name: string, numSegments: number) => void;
   isSaving?: boolean;
   deleting?: boolean;
   pendingSegmentCollection?: boolean;
@@ -32,6 +34,7 @@ const DraggableScriptCard: React.FC<DraggableScriptCardProps> = ({
   active,
   setActive,
   onAddSegmentCollection,
+  onAddSegmentCollectionAt,
   isSaving,
   deleting,
   pendingSegmentCollection,
@@ -73,6 +76,7 @@ const DraggableScriptCard: React.FC<DraggableScriptCardProps> = ({
         active={active}
         onClick={() => setActive(script.id)}
         onAddSegmentCollection={onAddSegmentCollection}
+        onAddSegmentCollectionAt={onAddSegmentCollectionAt}
         isSaving={isSaving}
         deleting={deleting}
         pendingSegmentCollection={pendingSegmentCollection}

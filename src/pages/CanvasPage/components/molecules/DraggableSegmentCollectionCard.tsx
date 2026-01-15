@@ -2,6 +2,7 @@ import React from "react";
 import Box from "@mui/material/Box";
 import SegmentCollectionCard from "./SegmentCollectionCard";
 import { useDraggable } from "@dnd-kit/core";
+import type { SpawnSide } from "./cardSpawn";
 
 const CARD_WIDTH = 340;
 
@@ -17,6 +18,7 @@ interface DraggableSegmentCollectionCardProps {
   deleting?: boolean;
   dragDelta?: { x: number; y: number } | null;
   onGenerateVisualDirections?: () => void;
+  onGenerateVisualDirectionsAt?: (side: SpawnSide) => void;
   pendingVisualDirection?: boolean;
   generating?: boolean;
 }
@@ -33,6 +35,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
   deleting,
   dragDelta,
   onGenerateVisualDirections,
+  onGenerateVisualDirectionsAt,
   pendingVisualDirection,
   generating,
 }) => {
@@ -76,6 +79,7 @@ const DraggableSegmentCollectionCard: React.FC<DraggableSegmentCollectionCardPro
         onSegmentChange={(segmentId, newText, idx) => onSegmentChange(col.id, segmentId, newText, idx)}
         onDelete={() => onDelete(col.id)}
         onGenerateVisualDirections={typeof onGenerateVisualDirections === "function" ? onGenerateVisualDirections : undefined}
+        onGenerateVisualDirectionsAt={onGenerateVisualDirectionsAt}
         pendingVisualDirection={pendingVisualDirection}
         generating={generating}
       />

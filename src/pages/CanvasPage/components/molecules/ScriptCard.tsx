@@ -5,9 +5,11 @@ import ScriptCardHeader from "../atoms/ScriptCardHeader";
 import ScriptCardBody from "../atoms/ScriptCardBody";
 import Box from "@mui/material/Box";
 import SegmentCollectionAdditionModal from "./SegmentCollectionAdditionModal";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
-import CardFooter from "@components/CardFooter";
 import { useTheme } from "@mui/material/styles";
+import RadialAddButton from "@components/RadialAddButton";
+import type { SpawnSide } from "./cardSpawn";
+import CardFooter from "@components/CardFooter";
+import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface ScriptCardProps {
   script: Script;
@@ -22,6 +24,7 @@ interface ScriptCardProps {
   active?: boolean;
   onClick?: () => void;
   onAddSegmentCollection?: (name: string, numSegments: number) => void;
+  onAddSegmentCollectionAt?: (side: SpawnSide, name: string, numSegments: number) => void;
   isSaving?: boolean;
   deleting?: boolean;
   pendingSegmentCollection?: boolean;
@@ -36,6 +39,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   active = false,
   onClick,
   onAddSegmentCollection,
+  onAddSegmentCollectionAt,
   isSaving = false,
   deleting = false,
   pendingSegmentCollection = false,
@@ -52,12 +56,16 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   const [editingBody, setEditingBody] = useState(false);
 
   const [showAddSegmentCollectionModal, setShowAddSegmentCollectionModal] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [spawnSide, setSpawnSide] = useState<SpawnSide>("right");
 
   const handleAddSegmentCollection = (name: string, numSegments: number) => {
     setShowAddSegmentCollectionModal(false);
-    if (onAddSegmentCollection) {
-      onAddSegmentCollection(name, numSegments);
+    if (onAddSegmentCollectionAt) {
+      onAddSegmentCollectionAt(spawnSide, name, numSegments);
+      return;
     }
+    onAddSegmentCollection?.(name, numSegments);
   };
 
   React.useEffect(() => {
@@ -92,7 +100,11 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      style={{ position: "relative" }}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
       <CustomCard
         header={
           <ScriptCardHeader
@@ -139,43 +151,36 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
                 />
               )}
             </Box>
+
+            {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
             <CardFooter
               left={null}
               center={null}
               right={
-                <>
-                  <button
-                    style={{
-                      background: "none",
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: isSaving || pendingSegmentCollection ? "not-allowed" : "pointer",
-                      opacity: isSaving || pendingSegmentCollection ? 0.5 : 1,
-                      padding: 0,
-                      margin: 0,
-                      outline: "none",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isSaving && !pendingSegmentCollection) setShowAddSegmentCollectionModal(true);
-                    }}
-                    aria-label="Generate Segments"
-                    disabled={isSaving || pendingSegmentCollection}
-                  >
-                    <img
-                      src={AiPromptIcon}
-                      alt="AI Prompt"
-                      style={{
-                        width: 22,
-                        height: 22,
-                        display: "block",
-                        filter: isSaving || pendingSegmentCollection ? "grayscale(1) opacity(0.5)" : "none",
-                      }}
-                    />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "default",
+                    opacity: 0.85,
+                    padding: 0,
+                    margin: 0,
+                    outline: "none",
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="AI (inactive)"
+                >
+                  <img
+                    src={AiPromptIcon}
+                    alt="AI Prompt"
+                    style={{ width: 22, height: 22, display: "block" }}
+                  />
+                </button>
               }
             />
           </>
@@ -185,6 +190,22 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
         onClick={onClick}
         style={{ opacity: deleting ? 0.5 : 1 }}
       />
+
+      {/* Render as sibling so it isn't clipped by the card's overflow:hidden */}
+      {(["top", "right", "bottom", "left"] as const).map((side) => (
+        <RadialAddButton
+          key={side}
+          side={side}
+          visible={hovered || active}
+          disabled={isSaving || pendingSegmentCollection}
+          ariaLabel={`Add Segment Collection (${side})`}
+          onClick={() => {
+            if (isSaving || pendingSegmentCollection) return;
+            setSpawnSide(side);
+            setShowAddSegmentCollectionModal(true);
+          }}
+        />
+      ))}
     </div>
   );
 };

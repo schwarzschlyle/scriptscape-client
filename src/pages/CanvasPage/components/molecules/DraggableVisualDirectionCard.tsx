@@ -2,6 +2,7 @@ import React from "react";
 import Box from "@mui/material/Box";
 import VisualDirectionCard from "./VisualDirectionCard";
 import { useDraggable } from "@dnd-kit/core";
+import type { SpawnSide } from "./cardSpawn";
 
 const CARD_WIDTH = 340;
 
@@ -19,6 +20,7 @@ interface DraggableVisualDirectionCardProps {
   pendingVisualDirection?: boolean;
   generating?: boolean;
   onGenerateStoryboardSketches?: (instructions?: string) => void;
+  onGenerateStoryboardSketchesAt?: (side: SpawnSide, instructions?: string) => void;
   pendingStoryboardSketches?: boolean;
 }
 
@@ -36,6 +38,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
   pendingVisualDirection,
   generating,
   onGenerateStoryboardSketches,
+  onGenerateStoryboardSketchesAt,
   pendingStoryboardSketches,
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -76,6 +79,7 @@ const DraggableVisualDirectionCard: React.FC<DraggableVisualDirectionCardProps> 
         pendingVisualDirection={pendingVisualDirection}
         generating={generating}
         onGenerateStoryboardSketches={onGenerateStoryboardSketches}
+        onGenerateStoryboardSketchesAt={onGenerateStoryboardSketchesAt}
         pendingStoryboardSketches={pendingStoryboardSketches}
         dragAttributes={attributes}
         dragListeners={listeners}
