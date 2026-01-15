@@ -32,9 +32,14 @@ FROM nginx:alpine
 # Copy built files from build stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configs (templates selected at container start)
+COPY nginx.conf /etc/nginx/templates/default.https.conf
+COPY nginx.http.conf /etc/nginx/templates/default.http.conf
 
-EXPOSE 80
+# Select HTTPS config if certs exist, otherwise start HTTP-only
+COPY docker-entrypoint.d/ /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/*.sh
+
+EXPOSE 80 443
 
 CMD ["nginx", "-g", "daemon off;"]
