@@ -42,12 +42,33 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
           key={visual.id || idx}
           sx={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             px: 2,
             mb: idx === visuals.length - 1 ? 0 : "2px",
           }}
         >
-          <Box sx={{ position: "relative", flex: 1, minWidth: 0 }}>
+          {/* Index badge: upper-left, its own column */}
+          <Box
+            sx={{
+              width: 26,
+              minWidth: 26,
+              mr: 1,
+              mt: "8px",
+              color: theme.palette.text.secondary,
+              fontSize: 11,
+              fontFamily: "monospace",
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+              textAlign: "left",
+              userSelect: "none",
+              pointerEvents: "none",
+            }}
+            aria-label={`Visual ${idx + 1}`}
+          >
+            {formatIndex(idx)}
+          </Box>
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <EditableCardContentArea
               value={localVisuals[idx]}
               editable={editingIndex === idx && !isSaving && !deleting}
@@ -70,23 +91,6 @@ const VisualDirectionCardBody: React.FC<VisualDirectionCardBodyProps> = ({
                 }
               }}
             />
-            <Box
-              sx={{
-                position: "absolute",
-                top: 6,
-                right: 10,
-                color: theme.palette.text.secondary,
-                fontSize: 11,
-                fontFamily: "monospace",
-                letterSpacing: "0.08em",
-                lineHeight: 1,
-                userSelect: "none",
-                pointerEvents: "none",
-              }}
-              aria-label={`Visual ${idx + 1}`}
-            >
-              {formatIndex(idx)}
-            </Box>
           </Box>
           {error && idx === 0 && (
             <Box sx={{ mt: 1, px: 2 }}>
