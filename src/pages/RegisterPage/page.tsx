@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import CustomButton from "@components/CustomButton";
+import { AuthPrimaryButton } from "@pages/Auth/components/AuthButtons";
 import CustomForm from "@components/CustomForm";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useRegister, useCreateOrganization } from "@api";
@@ -14,6 +13,7 @@ import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import DarkPage from "@theme/DarkPage";
+import { AuthCardTextInput } from "@pages/Auth/components/AuthCardInputs";
 
 export default function RegisterPage() {
   React.useEffect(() => {
@@ -80,52 +80,53 @@ export default function RegisterPage() {
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit} sx={{ gap: 1.5 }}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2 }}>
           <Stack spacing={1.5}>
             {error ? <Alert severity="error">{error}</Alert> : null}
 
-            <TextField
+            <AuthCardTextInput
               label="First name"
-              type="text"
               value={firstName}
-              onChange={e => setFirstName(e.target.value)}
-              required
+              onChange={setFirstName}
               autoComplete="given-name"
-            />
-
-            <TextField
-              label="Organization"
-              type="text"
-              value={orgName}
-              onChange={e => setOrgName(e.target.value)}
               required
-              autoComplete="organization"
             />
 
-            <TextField
+            <AuthCardTextInput
+              label="Organization"
+              value={orgName}
+              onChange={setOrgName}
+              autoComplete="organization"
+              required
+            />
+
+            <AuthCardTextInput
               label="Email"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
+              onChange={setEmail}
               placeholder="you@company.com"
+              autoComplete="email"
+              required
             />
 
-            <TextField
+            <AuthCardTextInput
               label="Password"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
+              onChange={setPassword}
               autoComplete="new-password"
-              helperText="Use at least 8 characters."
+              required
             />
+
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Use at least 8 characters.
+            </Typography>
           </Stack>
 
-          <CustomButton type="submit" disabled={loading}>
+          <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4 }}>
             {loading ? "Creating account…" : "Create account"}
-          </CustomButton>
+          </AuthPrimaryButton>
         </CustomForm>
       )}
 

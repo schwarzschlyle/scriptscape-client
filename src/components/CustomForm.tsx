@@ -5,10 +5,11 @@ const CustomForm = ({ children, ...props }: BoxProps) => (
   <Box
     component="form"
     sx={{
-      "& .MuiTextField-root": { m: 1, width: "100%" },
+      // Legacy: keep MUI TextField spacing sane if some forms still use it.
+      "& .MuiTextField-root": { m: 0, width: "100%" },
       display: "flex",
       flexDirection: "column",
-      gap: 1,
+      gap: 1.5,
       ...props.sx,
     }}
     noValidate

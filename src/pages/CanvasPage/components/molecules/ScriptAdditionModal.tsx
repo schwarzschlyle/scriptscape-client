@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
-import Modal from "@mui/material/Modal";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
+import ScriptIcon from "../../../../assets/script-icon.svg";
+import CardStyleModal from "./CardStyleModal";
+import { CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
+import { CardModalTextarea } from "./CardModalInputs";
+import CardTypography from "./CardTypography";
 
 interface ScriptAdditionModalProps {
   open: boolean;
@@ -11,21 +12,6 @@ interface ScriptAdditionModalProps {
   onCreate: (name: string, text: string) => void;
   onGenerate: () => void;
 }
-
-const style = {
-  position: "absolute" as const,
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 340,
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
-};
 
 const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
   open,
@@ -48,39 +34,46 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
   }, [open]);
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Create New Script
-        </Typography>
-        {/* Script name input removed */}
-        <TextField
-          type="text"
-          label="Script Text"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          fullWidth
-          multiline
-          minRows={3}
-          sx={{ mb: 2 }}
+    <CardStyleModal
+      open={open}
+      onClose={onClose}
+      title="Create New Script"
+      titleIcon={
+        <img
+          src={ScriptIcon}
+          alt="Script"
+          style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
         />
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-          <Button onClick={onClose} variant="outlined" color="secondary">
+      }
+      footer={
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+          <CardModalSecondaryButton onClick={onClose}>
             Cancel
-          </Button>
-          <Button
+          </CardModalSecondaryButton>
+          <CardModalPrimaryButton
             onClick={onGenerate}
-            variant="contained"
-            color="primary"
+            sx={{ maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}
           >
-            GENERATE
-          </Button>
-          <Button onClick={handleCreate} variant="contained" color="primary" disabled={!text.trim()}>
+            Generate with AI
+          </CardModalPrimaryButton>
+          <CardModalPrimaryButton onClick={handleCreate} disabled={!text.trim()}>
             Create
-          </Button>
+          </CardModalPrimaryButton>
         </Box>
-      </Box>
-    </Modal>
+      }
+    >
+      <CardTypography variant="projectDescription" style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.35, marginBottom: 8 }}>
+        Paste an existing script or write one from scratch. You can also generate a draft using AI.
+      </CardTypography>
+      <CardModalTextarea
+        label={undefined}
+        value={text}
+        onChange={setText}
+        placeholder="Paste a script, or type your own..."
+        minRows={12}
+        helperText="Tip: keep one idea per paragraph for cleaner segmenting."
+      />
+    </CardStyleModal>
   );
 };
 

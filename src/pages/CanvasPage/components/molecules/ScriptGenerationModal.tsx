@@ -1,36 +1,25 @@
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
-import Modal from "@mui/material/Modal";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
+import CardTypography from "./CardTypography";
 import { useGenerateScriptAI } from "../../../../hooks/useGenerateScriptAI";
+import ScriptIcon from "../../../../assets/script-icon.svg";
+import CardStyleModal from "./CardStyleModal";
+import { CardModalLinkButton, CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
+import { CardModalTextInput, CardModalTextarea } from "./CardModalInputs";
 
 interface ScriptGenerationModalProps {
   open: boolean;
   onClose: () => void;
   onCreate: (title: string, text: string) => void;
+  /** Optional: allow going back to the manual-create modal. */
+  onBackToCreate?: () => void;
 }
-
-const style = {
-  position: "absolute" as const,
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 340,
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
-};
 
 const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
   open,
   onClose,
   onCreate,
+  onBackToCreate,
 }) => {
   const [brief, setBrief] = useState("");
   const [branding, setBranding] = useState("");
@@ -64,69 +53,85 @@ const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Script Generation
-        </Typography>
-        <TextField
-          type="text"
+    <CardStyleModal
+      open={open}
+      onClose={onClose}
+      title="Script Generation"
+      titleIcon={
+        <img
+          src={ScriptIcon}
+          alt="Script"
+          style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
+        />
+      }
+      footer={
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+            {onBackToCreate ? (
+              <CardModalLinkButton onClick={onBackToCreate} disabled={loading}>
+                Back to manual input
+              </CardModalLinkButton>
+            ) : null}
+          </Box>
+
+          <CardModalSecondaryButton onClick={onClose} disabled={loading}>
+            Cancel
+          </CardModalSecondaryButton>
+          <CardModalPrimaryButton onClick={handleGenerate} disabled={!canGenerate || loading}>
+            {loading ? "Generating…" : "Generate"}
+          </CardModalPrimaryButton>
+        </Box>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <CardTypography variant="projectDescription" style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
+          Provide a quick brief, your brand voice, and desired duration. We’ll generate a first draft you can refine.
+        </CardTypography>
+        <CardModalTextInput
           label="Project Brief"
           value={brief}
-          onChange={e => setBrief(e.target.value)}
-          fullWidth
-          required
-          sx={{ mb: 2 }}
+          onChange={setBrief}
+          placeholder="What is this project about? Who is it for?"
         />
-        <TextField
-          type="text"
+
+        <CardModalTextInput
           label="Branding"
           value={branding}
-          onChange={e => setBranding(e.target.value)}
-          fullWidth
-          required
-          sx={{ mb: 2 }}
+          onChange={setBranding}
+          placeholder="Voice / tone / style guidelines"
         />
-        <TextField
-          type="text"
+
+        <CardModalTextInput
           label="Duration"
           value={duration}
-          onChange={e => setDuration(e.target.value)}
-          fullWidth
-          required
-          sx={{ mb: 2 }}
+          onChange={setDuration}
+          placeholder="e.g. 30s, 60s, 2 minutes"
         />
+
         {error && (
-          <Box sx={{ mt: 1, px: 2 }}>
+          <Box sx={{ mt: 0.5 }}>
             <span style={{ color: "#d32f2f", fontSize: 13 }}>{error}</span>
           </Box>
         )}
-        {generatedScript && (
-          <TextField
-            label="Generated Script"
+
+        {generatedScript ? (
+          <CardModalTextarea
+            label={undefined}
             value={generatedScript}
-            multiline
-            minRows={4}
-            fullWidth
-            sx={{ mt: 2 }}
-            InputProps={{ readOnly: true }}
+            onChange={setGeneratedScript}
+            readOnly
+            minRows={10}
+            helperText="Review the generated draft. When you click Generate again, it will re-generate from the prompts above."
           />
+        ) : (
+          <Box sx={{ mt: 0.5 }}>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>
+              Fill out the prompts above and click <strong>Generate</strong>.
+            </span>
+          </Box>
         )}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-          <Button onClick={onClose} variant="outlined" color="secondary" disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleGenerate}
-            variant="contained"
-            color="primary"
-            disabled={!canGenerate || loading}
-          >
-            {loading ? "GENERATING..." : "GENERATE"}
-          </Button>
-        </Box>
       </Box>
-    </Modal>
+    </CardStyleModal>
   );
 };
 
