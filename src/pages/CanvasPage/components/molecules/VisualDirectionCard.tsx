@@ -7,6 +7,7 @@ import Box from "@mui/material/Box";
 import RadialAddButton from "@components/RadialAddButton";
 import CardFooter from "@components/CardFooter";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 interface VisualDirection {
   id?: string;
@@ -116,14 +117,18 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
                 overflowY: isFullHeight ? "visible" : "auto",
               }}
             >
-              <VisualDirectionCardBody
-                visuals={visuals}
-                editable={editable && !isSaving && !deleting}
-                isSaving={isSaving}
-                deleting={deleting}
-                error={error}
-                onVisualChange={onVisualChange}
-              />
+              {generating ? (
+                <LoadingSpinner label="Generating Visual Directions..." size={28} minHeight={FIXED_HEIGHT - 50} />
+              ) : (
+                <VisualDirectionCardBody
+                  visuals={visuals}
+                  editable={editable && !isSaving && !deleting}
+                  isSaving={isSaving}
+                  deleting={deleting}
+                  error={error}
+                  onVisualChange={onVisualChange}
+                />
+              )}
             </Box>
 
             {/* Keep original footer + AI icon for continuity, but it does nothing now. */}

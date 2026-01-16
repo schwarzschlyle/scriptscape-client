@@ -8,6 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 interface StoryboardSketch {
   id?: string;
@@ -102,7 +103,11 @@ const StoryboardSketchCard: React.FC<StoryboardSketchCardProps> = ({
                 overflowX: "hidden",
               }}
             >
-              <StoryboardSketchCardBody sketches={sketches} isSaving={isSaving} deleting={deleting} error={error} compact={!expanded} />
+              {generating ? (
+                <LoadingSpinner label="Generating Sketches..." size={28} minHeight={FIXED_HEIGHT - 50} />
+              ) : (
+                <StoryboardSketchCardBody sketches={sketches} isSaving={isSaving} deleting={deleting} error={error} compact={!expanded} />
+              )}
             </Box>
 
             <CardFooter

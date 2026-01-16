@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import RadialAddButton from "@components/RadialAddButton";
 import CardFooter from "@components/CardFooter";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
+import LoadingSpinner from "@components/LoadingSpinner";
 
 interface Segment {
   id?: string;
@@ -108,14 +109,18 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
                 overflowY: isFullHeight ? "visible" : "auto",
               }}
             >
-              <SegmentCollectionCardBody
-                segments={segments}
-                editable={editable && !isSaving && !deleting}
-                isSaving={isSaving}
-                deleting={deleting}
-                error={error}
-                onSegmentChange={onSegmentChange}
-              />
+              {generating ? (
+                <LoadingSpinner label="Generating Segments..." size={28} minHeight={FIXED_HEIGHT - 50} />
+              ) : (
+                <SegmentCollectionCardBody
+                  segments={segments}
+                  editable={editable && !isSaving && !deleting}
+                  isSaving={isSaving}
+                  deleting={deleting}
+                  error={error}
+                  onSegmentChange={onSegmentChange}
+                />
+              )}
             </Box>
 
             {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
