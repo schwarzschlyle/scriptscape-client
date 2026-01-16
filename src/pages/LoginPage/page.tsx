@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { AuthPrimaryButton } from "@pages/Auth/components/AuthButtons";
 import CustomForm from "@components/CustomForm";
-import Typography from "@mui/material/Typography";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useLogin } from "@api";
 import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
@@ -73,11 +72,22 @@ export default function LoginPage() {
 
   return (
     <DarkPage>
-      <AuthShell title="Login" subtitle="Sign in to continue">
+      <AuthShell
+        title="Continue Storyboarding"
+        subtitle="Your scripts, beats, and visual explorations are ready. Log in to continue refining your best ideas"
+        footer={
+          <>
+            New to ScriptScape?{" "}
+            <Link component={RouterLink} to={ROUTES.REGISTER || "/register"} underline="hover">
+              Start storyboarding
+            </Link>
+          </>
+        }
+      >
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2 }}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2, mt: 2}}>
           <Stack spacing={1.5}>
             {error ? <Alert severity="error">{error}</Alert> : null}
 
@@ -101,18 +111,11 @@ export default function LoginPage() {
             />
           </Stack>
 
-          <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4 }}>
+          <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4, mb: 4 }}>
             {loading ? "Signing in…" : "Sign in"}
           </AuthPrimaryButton>
         </CustomForm>
       )}
-
-      <Typography sx={{ mt: 2 }} align="center" variant="body2" color="text.secondary">
-        Don&apos;t have an account?{" "}
-        <Link component={RouterLink} to={ROUTES.REGISTER || "/register"} underline="hover">
-          Create one
-        </Link>
-      </Typography>
       </AuthShell>
     </DarkPage>
   );

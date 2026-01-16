@@ -5,6 +5,7 @@ import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import CustomCard from "@components/CustomCard";
 import CustomCardHeader from "@components/CustomCardHeader";
+import CardFooter from "@components/CardFooter";
 import CardStatusDot from "@pages/CanvasPage/components/atoms/CardStatusDot";
 import CardTypography from "@pages/CanvasPage/components/molecules/CardTypography";
 
@@ -12,23 +13,28 @@ export function AuthShell({
   title,
   subtitle,
   children,
+  footer,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const theme = useTheme();
 
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        // Use dynamic viewport units so mobile browsers (Safari/Chrome) don't
+        // mis-center due to URL bars changing the visible viewport.
+        minHeight: "100dvh",
         width: "100%",
         display: "flex",
-        alignItems: { xs: "flex-start", sm: "center" },
+        alignItems: "center",
         justifyContent: "center",
         px: 2,
-        py: { xs: 3, sm: 4 },
+        py: { xs: 2, sm: 4 },
+        boxSizing: "border-box",
         overflowY: "auto",
         bgcolor: "background.default",
         // Subtle background texture so auth pages feel more "designed".
@@ -44,6 +50,9 @@ export function AuthShell({
         sx={{
           width: "100%",
           maxWidth: 420,
+          // Ensure the card stays centered while still allowing scroll
+          // if the keyboard shrinks the viewport.
+          my: { xs: 1.5, sm: 0 },
           filter:
             theme.palette.mode === "dark"
               ? "drop-shadow(0 18px 50px rgba(0,0,0,0.55))"
@@ -102,14 +111,28 @@ export function AuthShell({
             />
           }
           body={
-            <Box sx={{ px: 2, pt: 2, pb: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {subtitle ? (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "left" }}>
-                  {subtitle}
-                </Typography>
+            <>
+              <Box sx={{ px: 2, pt: 2, pb: footer ? 1 : 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {subtitle ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: "left" }}>
+                    {subtitle}
+                  </Typography>
+                ) : null}
+                {children}
+              </Box>
+              {footer ? (
+                <CardFooter
+                  left={null}
+                  center={
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+                      {footer}
+                    </Typography>
+                  }
+                  right={null}
+                  height={44}
+                />
               ) : null}
-              {children}
-            </Box>
+            </>
           }
         />
       </Box>

@@ -76,11 +76,22 @@ export default function RegisterPage() {
 
   return (
     <DarkPage>
-      <AuthShell title="Register" subtitle="Create your account">
+      <AuthShell
+        title="Start Storyboarding"
+        subtitle="Turn your script into a living visual map. Branch ideas, test directions, and find the best concept fast"
+        footer={
+          <>
+            Already storyboarding?{" "}
+            <Link component={RouterLink} to={ROUTES.LOGIN} underline="hover">
+              Log in
+            </Link>
+          </>
+        }
+      >
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2 }}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2, mt: 2 }}>
           <Stack spacing={1.5}>
             {error ? <Alert severity="error">{error}</Alert> : null}
 
@@ -129,13 +140,6 @@ export default function RegisterPage() {
           </AuthPrimaryButton>
         </CustomForm>
       )}
-
-      <Typography sx={{ mt: 2 }} align="center" variant="body2" color="text.secondary">
-        Already have an account?{" "}
-        <Link component={RouterLink} to={ROUTES.LOGIN} underline="hover">
-          Sign in
-        </Link>
-      </Typography>
       </AuthShell>
     </DarkPage>
   );
