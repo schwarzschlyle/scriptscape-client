@@ -686,6 +686,10 @@ const getCardCenter = (id: string, type: "script" | "segmentCollection" | "visua
       <ScriptGenerationModal
         open={showScriptGenerationModal}
         onClose={() => setShowScriptGenerationModal(false)}
+        onBackToCreate={() => {
+          setShowScriptGenerationModal(false);
+          setShowAddScriptModal(true);
+        }}
         onCreate={(title, text) => {
           const vw = window.innerWidth;
           const vh = window.innerHeight;

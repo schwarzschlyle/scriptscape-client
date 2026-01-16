@@ -29,26 +29,33 @@ const CustomCard: React.FC<CustomCardProps> = ({
 }) => {
   const theme = useTheme();
 
+  // Allow callers (like modals) to layer additional `sx` while preserving the
+  // base canvas-card styling.
+  const { sx: sxProp, ...restProps } = rest as any;
+
   return (
     <Box sx={{ position: "relative" }} style={style}>
       <Card
         className="canvas-card"
-        sx={{
-          minHeight: height ?? minHeight,
-          height: height ?? "auto",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: 2,
-          outline: active ? `1.5px solid ${theme.palette.card.outlineActive}` : "none",
-          outlineOffset: "0px",
-          borderRadius: 2,
-          transition: "outline 0.15s",
-          backgroundColor: theme.palette.card.background,
-          overflow: "hidden",
-          p: 0,
-        }}
+        sx={[
+          {
+            minHeight: height ?? minHeight,
+            height: height ?? "auto",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: 2,
+            outline: active ? `1.5px solid ${theme.palette.card.outlineActive}` : "none",
+            outlineOffset: "0px",
+            borderRadius: 2,
+            transition: "outline 0.15s",
+            backgroundColor: theme.palette.card.background,
+            overflow: "hidden",
+            p: 0,
+          },
+          sxProp,
+        ]}
         onClick={onClick}
-        {...rest}
+        {...restProps}
       >
         {header}
         {header && <Divider sx={{ mb: 0, bgcolor: theme.palette.card.divider, height: 2 }} />}

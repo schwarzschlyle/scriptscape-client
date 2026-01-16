@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
-import Modal from "@mui/material/Modal";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
+import SegmentIcon from "../../../../assets/segment-icon.svg";
+import CardStyleModal from "./CardStyleModal";
+import { CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
+import CardTypography from "./CardTypography";
+import { CardModalTextarea } from "./CardModalInputs";
 
 interface SegmentCollectionAdditionModalProps {
   open: boolean;
@@ -11,27 +12,14 @@ interface SegmentCollectionAdditionModalProps {
   onGenerate: (name: string, numSegments: number) => void;
 }
 
-const style = {
-  position: "absolute" as const,
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 340,
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
-};
-
 const SegmentCollectionAdditionModal: React.FC<SegmentCollectionAdditionModalProps> = ({
   open,
   onClose,
   onGenerate,
 }) => {
-  const [numSegments, setNumSegments] = useState(1);
+  const [numSegmentsText, setNumSegmentsText] = useState("1");
+
+  const numSegments = Math.max(1, parseInt(numSegmentsText, 10) || 1);
 
   const handleGenerate = () => {
     if (numSegments > 0) {
@@ -40,29 +28,45 @@ const SegmentCollectionAdditionModal: React.FC<SegmentCollectionAdditionModalPro
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Create New Segment Collection
-        </Typography>
-        <TextField
-          type="number"
-          label="Number of Segments"
-          value={numSegments}
-          onChange={e => setNumSegments(Math.max(1, parseInt(e.target.value, 10) || 1))}
-          inputProps={{ min: 1, step: 1 }}
-          fullWidth
+    <CardStyleModal
+      open={open}
+      onClose={onClose}
+      title="Create Segment Collection"
+      titleIcon={
+        <img
+          src={SegmentIcon}
+          alt="Segment"
+          style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
         />
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-          <Button onClick={onClose} variant="outlined" color="secondary">
-            Cancel
-          </Button>
-          <Button onClick={handleGenerate} variant="contained" color="primary">
-            Generate
-          </Button>
+      }
+      heightPx={300}
+      footer={
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+          <CardModalSecondaryButton onClick={onClose}>Cancel</CardModalSecondaryButton>
+          <CardModalPrimaryButton onClick={handleGenerate}>Generate</CardModalPrimaryButton>
         </Box>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <CardTypography variant="projectDescription" style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
+          Choose how many segments to start with.
+        </CardTypography>
+
+        <CardModalTextarea
+          label={undefined}
+          value={numSegmentsText}
+          onChange={(v) => setNumSegmentsText(v.replace(/[^0-9]/g, ""))}
+          placeholder="e.g. 8"
+          minRows={1}
+          scrollable={false}
+          helperText={undefined}
+        />
+
+        <CardTypography variant="projectDescription" style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
+          This creates a new collection and prepares {numSegments} segment{numSegments === 1 ? "" : "s"} for editing.
+        </CardTypography>
       </Box>
-    </Modal>
+    </CardStyleModal>
   );
 };
 

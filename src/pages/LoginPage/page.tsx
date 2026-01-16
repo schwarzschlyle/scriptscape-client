@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import CustomButton from "@components/CustomButton";
+import { AuthPrimaryButton } from "@pages/Auth/components/AuthButtons";
 import CustomForm from "@components/CustomForm";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useLogin } from "@api";
@@ -14,6 +13,7 @@ import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import DarkPage from "@theme/DarkPage";
+import { AuthCardTextInput } from "@pages/Auth/components/AuthCardInputs";
 
 export default function LoginPage() {
   React.useEffect(() => {
@@ -77,37 +77,33 @@ export default function LoginPage() {
       {auth.status === "loading" ? (
         <LoadingSpinner label="Restoring session..." />
       ) : (
-        <CustomForm onSubmit={handleSubmit} sx={{ gap: 1.5 }}>
+        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2 }}>
           <Stack spacing={1.5}>
             {error ? <Alert severity="error">{error}</Alert> : null}
 
-            <TextField
+            <AuthCardTextInput
               label="Email"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
+              onChange={setEmail}
               placeholder="you@company.com"
-              // Keep the previous dev convenience, but don’t show a prefilled value to users.
-              inputProps={{
-                "data-default": "musketeer@scriptscape.com",
-              }}
+              autoComplete="email"
+              required
             />
 
-            <TextField
+            <AuthCardTextInput
               label="Password"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
+              onChange={setPassword}
               autoComplete="current-password"
+              required
             />
           </Stack>
 
-          <CustomButton type="submit" disabled={loading}>
+          <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4 }}>
             {loading ? "Signing in…" : "Sign in"}
-          </CustomButton>
+          </AuthPrimaryButton>
         </CustomForm>
       )}
 
