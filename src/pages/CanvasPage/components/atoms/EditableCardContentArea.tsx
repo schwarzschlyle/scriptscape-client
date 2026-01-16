@@ -11,6 +11,11 @@ interface EditableCardContentAreaProps {
   onRequestEdit?: () => void;
   onBlur?: () => void;
   minHeight?: number;
+  /**
+   * Override the rendered height (px). Used to equalize heights across multiple boxes
+   * (e.g. storyboard sketch captions).
+   */
+  fixedHeightPx?: number;
 }
 
 const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
@@ -20,21 +25,44 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
   onRequestEdit,
   onBlur,
   minHeight = 60,
+  fixedHeightPx,
 }) => {
   const theme = useTheme();
+
+  // Prevent collapsing when toggling edit mode:
+  // lock the height to whatever was rendered just before switching to editable.
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const [lockedHeightPx, setLockedHeightPx] = React.useState<number | null>(null);
+
+  // Keep track of the maximum height we've ever rendered for this field.
+  // This prevents “collapse” when switching view <-> edit, and also preserves
+  // height if the user edits content to be shorter.
+  React.useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const h = Math.ceil(containerRef.current.getBoundingClientRect().height);
+    if (!h || !isFinite(h)) return;
+    setLockedHeightPx((prev) => {
+      const prevVal = prev ?? 0;
+      return Math.max(prevVal, h);
+    });
+  }, [value, editable]);
+
+  const effectiveMinHeight = Math.max(minHeight, lockedHeightPx ?? 0, fixedHeightPx ?? 0);
+
   return (
     <CustomCardBody
+      ref={containerRef}
       onDoubleClick={() => {
         if (!editable && onRequestEdit) onRequestEdit();
       }}
-      style={{ minHeight }}
+      style={{ minHeight: effectiveMinHeight, ...(fixedHeightPx ? { height: fixedHeightPx } : null) }}
     >
       {editable && onChange ? (
         <Box
           sx={{
             width: "100%",
             height: "100%",
-            minHeight,
+            minHeight: effectiveMinHeight,
             display: "block",
           }}
         >
@@ -44,13 +72,14 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
             onBlur={onBlur}
             style={{
               width: "100%",
-              minHeight,
+              minHeight: effectiveMinHeight,
               height: "100%",
               background: "transparent",
               color: theme.palette.text.primary,
               border: "none",
               outline: "none",
-              resize: "vertical",
+              // Keeping this from resizing helps preserve equalized heights and avoids jitter.
+              resize: "none",
               fontFamily: "monospace",
               fontSize: 12,
               padding: "8px",
@@ -66,8 +95,9 @@ const EditableCardContentArea: React.FC<EditableCardContentAreaProps> = ({
             wordBreak: "break-word",
             width: "100%",
             height: "100%",
-            minHeight,
+            minHeight: effectiveMinHeight,
             textAlign: "justify",
+            ...(fixedHeightPx ? { overflow: "hidden" } : null),
           }}
         >
           <CardTypography variant="cardBody">{value}</CardTypography>

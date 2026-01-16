@@ -10,16 +10,20 @@ export interface CustomCardBodyProps {
   [key: string]: any;
 }
 
-const CustomCardBody: React.FC<CustomCardBodyProps> = ({
-  editable = false,
-  children,
-  className,
-  style,
-  ...rest
-}) => {
+const CustomCardBody = React.forwardRef<HTMLDivElement, CustomCardBodyProps>(function CustomCardBody(
+  {
+    editable = false,
+    children,
+    className,
+    style,
+    ...rest
+  },
+  ref
+) {
   const theme = useTheme();
   return (
     <Box
+      ref={ref}
       sx={{
         width: "100%",
         display: "flex",
@@ -52,6 +56,6 @@ const CustomCardBody: React.FC<CustomCardBodyProps> = ({
       {children}
     </Box>
   );
-};
+});
 
 export default CustomCardBody;

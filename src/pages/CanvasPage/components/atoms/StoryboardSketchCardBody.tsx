@@ -24,9 +24,23 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
 }) => {
   const theme = useTheme();
   const columns = Math.max(1, Math.min(3, sketches.length || 1));
-  const textBoxHeight = 66;
+  const measureRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  const [captionHeightPx, setCaptionHeightPx] = React.useState<number>(66);
 
   const formatIndex = (idx: number) => String(idx + 1).padStart(2, "0");
+
+  // Equalize caption heights across all sketches in this card.
+  // We measure the natural height of each caption (no scrollbars), then apply the max.
+  React.useLayoutEffect(() => {
+    if (compact) return; // captions not shown
+    const els = measureRefs.current.filter(Boolean) as HTMLDivElement[];
+    if (!els.length) return;
+
+    const heights = els.map((el) => Math.ceil(el.getBoundingClientRect().height));
+    const max = Math.max(66, ...heights);
+    if (isFinite(max) && max > 0 && max !== captionHeightPx) setCaptionHeightPx(max);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sketches, compact, columns]);
 
   return (
     <Box sx={{ pt: 2, pb: extraBottomPadding ? 8 : 2, px: 2 }}>
@@ -131,17 +145,40 @@ const StoryboardSketchCardBody: React.FC<StoryboardSketchCardBodyProps> = ({
 
               {!compact && !!segmentText && (
                 <Box sx={{ width: "100%", px: 1, pb: 1, pt: 1 }}>
+                  {/* Hidden measurement node (same width/font) to find the tallest caption. */}
                   <Box
                     sx={{
+                      position: "relative",
                       width: "100%",
-                      height: textBoxHeight,
-                      overflow: "hidden",
                     }}
-                    title={segmentText}
                   >
-                    <div className="canvas-scrollbar" style={{ height: textBoxHeight, overflowY: "auto" }}>
-                      <EditableCardContentArea value={segmentText} editable={false} minHeight={textBoxHeight} />
-                    </div>
+                    <Box
+                      ref={(el: HTMLDivElement | null) => {
+                        measureRefs.current[idx] = el;
+                      }}
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        visibility: "hidden",
+                        pointerEvents: "none",
+                        // This matches the internal padding/typography of EditableCardContentArea.
+                        border: "1px solid transparent",
+                      }}
+                    >
+                      <EditableCardContentArea value={segmentText} editable={false} minHeight={66} />
+                    </Box>
+
+                    {/* Visible caption (equalized height, no scrollbars). */}
+                    <Box title={segmentText} sx={{ width: "100%" }}>
+                      <EditableCardContentArea
+                        value={segmentText}
+                        editable={false}
+                        minHeight={captionHeightPx}
+                        fixedHeightPx={captionHeightPx}
+                      />
+                    </Box>
                   </Box>
                 </Box>
               )}
