@@ -1,9 +1,11 @@
 import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
 import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
+import CustomCard from "@components/CustomCard";
+import CustomCardHeader from "@components/CustomCardHeader";
+import CardStatusDot from "@pages/CanvasPage/components/atoms/CardStatusDot";
+import CardTypography from "@pages/CanvasPage/components/molecules/CardTypography";
 
 export function ProjectsShell({
   title,
@@ -18,7 +20,7 @@ export function ProjectsShell({
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         width: "100%",
         display: "flex",
         justifyContent: "center",
@@ -34,29 +36,45 @@ export function ProjectsShell({
       }}
     >
       <Box sx={{ width: "100%", maxWidth: 980 }}>
-        <Paper
-          elevation={1}
+        <CustomCard
           sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-            border: `1px solid ${theme.palette.divider}`,
+            backgroundImage:
+              theme.palette.mode === "dark"
+                ? "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(255,255,255,0.62) 100%)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            border:
+              theme.palette.mode === "dark"
+                ? "1px solid rgba(255,255,255,0.10)"
+                : "1px solid rgba(17,24,39,0.10)",
           }}
-        >
-          <Box sx={{ p: { xs: 2.5, sm: 3 } }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
-              {title}
-            </Typography>
-            {subtitle ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                {subtitle}
-              </Typography>
-            ) : null}
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 2.5, sm: 3 } }}>{children}</Box>
-        </Paper>
+          header={
+            <CustomCardHeader
+              editable={false}
+              title={
+                <CardTypography variant="cardType" style={{ fontWeight: 750, fontSize: 16 }}>
+                  {title}
+                </CardTypography>
+              }
+              actions={
+                <Box sx={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+                  <CardStatusDot status="active" size={10} />
+                </Box>
+              }
+            />
+          }
+          body={
+            <Box sx={{ px: 2, pt: 2, pb: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {subtitle ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                  {subtitle}
+                </Typography>
+              ) : null}
+              {children}
+            </Box>
+          }
+        />
       </Box>
     </Box>
   );

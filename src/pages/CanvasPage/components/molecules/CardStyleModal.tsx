@@ -33,9 +33,10 @@ const CardStyleModal: React.FC<CardStyleModalProps> = ({
   heightPx = 440,
 }) => {
   const theme = useTheme();
-  // Keep a stable height (so long text never expands the modal), while still
-  // avoiding viewport overflow on small screens.
-  const modalHeight = `min(${heightPx}px, 80vh)`;
+  // Use dynamic viewport units so mobile browsers (Safari/Chrome) don't
+  // mis-center due to URL bars changing the visible viewport.
+  // We keep a stable max height while allowing smaller screens to fit.
+  const modalHeight = `min(${heightPx}px, 80dvh)`;
 
   return (
     <Modal
@@ -56,22 +57,28 @@ const CardStyleModal: React.FC<CardStyleModalProps> = ({
     >
       <Box
         sx={{
-          position: "absolute" as const,
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: "min(92vw, 420px)", sm: width },
-          height: { xs: "min(86vh, 560px)", sm: modalHeight },
+          position: "fixed" as const,
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: { xs: 2, sm: 0 },
           outline: "none",
-          // Subtle extra depth vs canvas cards.
-          filter:
-            theme.palette.mode === "dark"
-              ? "drop-shadow(0 18px 50px rgba(0,0,0,0.55))"
-              : "drop-shadow(0 18px 50px rgba(0,0,0,0.18))",
         }}
       >
-        <CustomCard
+        <Box
           sx={{
+            width: { xs: "min(92vw, 420px)", sm: width },
+            height: { xs: "min(86dvh, 560px)", sm: modalHeight },
+            // Subtle extra depth vs canvas cards.
+            filter:
+              theme.palette.mode === "dark"
+                ? "drop-shadow(0 18px 50px rgba(0,0,0,0.55))"
+                : "drop-shadow(0 18px 50px rgba(0,0,0,0.18))",
+          }}
+        >
+          <CustomCard
+            sx={{
             // Glassy overlay without changing existing palette tokens.
             backgroundImage:
               theme.palette.mode === "dark"
@@ -80,8 +87,8 @@ const CardStyleModal: React.FC<CardStyleModalProps> = ({
             backdropFilter: "blur(18px)",
             WebkitBackdropFilter: "blur(18px)",
             border: theme.palette.mode === "dark" ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(17,24,39,0.10)",
-          }}
-          header={
+            }}
+            header={
             <CustomCardHeader
               // Header should not be editable, expandable, closable, or draggable.
               editable={false}
@@ -145,10 +152,11 @@ const CardStyleModal: React.FC<CardStyleModalProps> = ({
               {/* Footer area should match card styling; content is provided by the modal. */}
               <CardFooter left={null} center={null} right={footer ?? null} height={40} />
             </>
-          }
-          // Card should fill the responsive container.
-          height="100%"
-        />
+            }
+            // Card should fill the responsive container.
+            height="100%"
+          />
+        </Box>
       </Box>
     </Modal>
   );
