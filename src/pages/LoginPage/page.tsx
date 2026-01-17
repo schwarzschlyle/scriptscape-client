@@ -10,6 +10,7 @@ import { AuthShell } from "@pages/Auth/components/AuthShell";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import DarkPage from "@theme/DarkPage";
 import { AuthCardTextInput } from "@pages/Auth/components/AuthCardInputs";
 
@@ -77,12 +78,12 @@ export default function LoginPage() {
         hideHeader
         showHeaderStatusDot
         footer={
-          <>
+          <Box sx={{ textAlign: 'center' }}>
             New to ScriptScape?{" "}
             <Link component={RouterLink} to={ROUTES.REGISTER || "/register"} underline="hover">
               Start storyboarding
             </Link>
-          </>
+          </Box>
         }
       >
         {auth.status === "loading" ? (
