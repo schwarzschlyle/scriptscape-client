@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import CardTypography from "./CardTypography";
 import { useGenerateScriptAI } from "../../../../hooks/useGenerateScriptAI";
-import ScriptIcon from "../../../../assets/script-icon.svg";
+import InputScriptIcon from "../../../../assets/input-script.svg";
 import CardStyleModal from "./CardStyleModal";
 import { CardModalLinkButton, CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
 import { CardModalTextInput, CardModalTextarea } from "./CardModalInputs";
@@ -59,8 +59,8 @@ const ScriptGenerationModal: React.FC<ScriptGenerationModalProps> = ({
       title="Script Generation"
       titleIcon={
         <img
-          src={ScriptIcon}
-          alt="Script"
+          src={InputScriptIcon}
+          alt="Input Script"
           style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
         />
       }

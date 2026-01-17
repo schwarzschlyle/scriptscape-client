@@ -17,6 +17,9 @@ import { useCreateProject } from "@api/projects/mutations";
 import queryClient from "@api/queryClient";
 import { buildRoute } from "@routes/routes.config";
 import { useNavigate } from "react-router-dom";
+import { useQueries } from "@tanstack/react-query";
+import { getCardPositions } from "@api/card_positions/queries";
+import type { CardPosition } from "@api/card_positions/types";
 
 export interface ProjectsListProps {
   organizationId: string;
@@ -30,6 +33,49 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   const projects = projectsRaw.map((p: any) => ({
     ...p,
     description: p.description ?? undefined,
+  }));
+
+  const cardPosQueries = useQueries({
+    queries: projects.map((p: any) => {
+      const projectId = p?.id as string | undefined;
+      return {
+        queryKey: ["card_positions", organizationId, projectId],
+        queryFn: async () => {
+          const positions = await getCardPositions(organizationId, projectId!);
+          return positions;
+        },
+        enabled: !!organizationId && !!projectId,
+        staleTime: 1000 * 60,
+      };
+    }),
+  });
+
+  const computeCounts = (positions?: CardPosition[]) => {
+    const counts = { scripts: 0, segments: 0, visuals: 0, sketches: 0 };
+    for (const p of positions ?? []) {
+      switch (p.cardType) {
+        case "script":
+          counts.scripts += 1;
+          break;
+        case "segmentCollection":
+          counts.segments += 1;
+          break;
+        case "visualDirection":
+          counts.visuals += 1;
+          break;
+        case "storyboard":
+          counts.sketches += 1;
+          break;
+        default:
+          break;
+      }
+    }
+    return counts;
+  };
+
+  const projectsWithCounts = projects.map((p: any, idx: number) => ({
+    ...p,
+    counts: computeCounts(cardPosQueries[idx]?.data as CardPosition[] | undefined),
   }));
 
   // Debug: log orgId and fetched projects
@@ -170,7 +216,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ organizationId }) => {
   return (
     <Box>
       <ProjectGrid
-        projects={projects}
+        projects={projectsWithCounts}
         onProjectClick={handleProjectClick}
         onAddProject={handleAddProject}
       />

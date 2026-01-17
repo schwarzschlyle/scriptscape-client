@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
-import SegmentIcon from "../../../../assets/segment-icon.svg";
+import GenerateSegmentsIcon from "../../../../assets/generate-segments-icon.svg";
 import CardStyleModal from "./CardStyleModal";
 import { CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
 import CardTypography from "./CardTypography";
@@ -31,11 +31,11 @@ const SegmentCollectionAdditionModal: React.FC<SegmentCollectionAdditionModalPro
     <CardStyleModal
       open={open}
       onClose={onClose}
-      title="Create Segment Collection"
+      title="Split to Beats"
       titleIcon={
         <img
-          src={SegmentIcon}
-          alt="Segment"
+          src={GenerateSegmentsIcon}
+          alt="Generate Segments"
           style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
         />
       }
