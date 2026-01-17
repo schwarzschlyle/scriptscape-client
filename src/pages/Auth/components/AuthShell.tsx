@@ -14,11 +14,17 @@ export function AuthShell({
   subtitle,
   children,
   footer,
+  showHeaderStatusDot,
+  hideHeader,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Keep for parity with canvas cards; default true. */
+  showHeaderStatusDot?: boolean;
+  /** If true, card header area is rendered but empty (no icon/title/actions). */
+  hideHeader?: boolean;
 }) {
   const theme = useTheme();
 
@@ -37,13 +43,19 @@ export function AuthShell({
         boxSizing: "border-box",
         overflowY: "auto",
         bgcolor: "background.default",
-        // Subtle background texture so auth pages feel more "designed".
+        // Canvas-like dotted grid background + subtle radial accents.
         backgroundImage:
           theme.palette.mode === "dark"
-            ? `radial-gradient(circle at 15% 10%, ${alpha(theme.palette.success.main, 0.12)} 0%, transparent 35%),
-               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.success.main, 0.10)} 0%, transparent 40%)`
-            : `radial-gradient(circle at 15% 10%, ${alpha(theme.palette.primary.main, 0.06)} 0%, transparent 35%),
-               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 40%)`,
+            ? `radial-gradient(circle, ${alpha(theme.palette.canvas.gridMinorDot, 0.18)} 0.5px, transparent 0.5px),
+               radial-gradient(circle, ${alpha(theme.palette.canvas.gridMajorDot, 0.22)} 1px, transparent 1px),
+               radial-gradient(circle at 15% 10%, ${alpha(theme.palette.success.main, 0.06)} 0%, transparent 40%),
+               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 48%)`
+            : `radial-gradient(circle, ${alpha(theme.palette.canvas.gridMinorDot, 0.22)} 0.5px, transparent 0.5px),
+               radial-gradient(circle, ${alpha(theme.palette.canvas.gridMajorDot, 0.26)} 1px, transparent 1px),
+               radial-gradient(circle at 15% 10%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 40%),
+               radial-gradient(circle at 85% 90%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 48%)`,
+        backgroundSize: "26px 26px, 120px 120px, auto, auto",
+        backgroundPosition: "0 0, 0 0, 0 0, 0 0",
       }}
     >
       <Box
@@ -76,43 +88,36 @@ export function AuthShell({
           header={
             <CustomCardHeader
               editable={false}
-              title={
-                <span style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 2, paddingBottom: 2 }}>
-                  <span
-                    style={{
-                      width: 26,
-                      height: 26,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 8,
-                      background:
-                        theme.palette.mode === "dark"
-                          ? "rgba(255,255,255,0.06)"
-                          : "rgba(17,24,39,0.06)",
-                    }}
-                  >
-                    <img
-                      src="/scriptscape-favicon.svg"
-                      alt="ScriptScape"
-                      style={{ width: 16, height: 16, display: "block" }}
-                    />
-                  </span>
-                  <CardTypography variant="cardType" style={{ fontWeight: 750, fontSize: 16 }}>
-                    {title}
-                  </CardTypography>
-                </span>
-              }
+              title={hideHeader ? "" : title}
               actions={
-                <Box sx={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
-                  <CardStatusDot status="active" size={10} />
-                </Box>
+                // keep status dot even when header is "empty" for auth pages
+                showHeaderStatusDot === false ? null : (
+                  <Box sx={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+                    <CardStatusDot status="active" size={10} />
+                  </Box>
+                )
               }
             />
           }
           body={
             <>
               <Box sx={{ px: 2, pt: 2, pb: footer ? 1 : 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {/* If header is hidden, render the auth logo + title here instead. */}
+                {hideHeader ? (
+                  <>
+                    <img
+                      src="/scriptscape-favicon.svg"
+                      alt="ScriptScape"
+                      style={{ width: 36, height: 36, display: "block", marginLeft: "auto", marginRight: "auto" }}
+                    />
+                    <CardTypography
+                      variant="cardType"
+                      style={{ fontWeight: 850, fontSize: 18, textAlign: "center", marginTop: 10 }}
+                    >
+                      {title}
+                    </CardTypography>
+                  </>
+                ) : null}
                 {subtitle ? (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: "left" }}>
                     {subtitle}

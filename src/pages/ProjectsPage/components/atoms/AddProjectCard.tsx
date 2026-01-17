@@ -23,13 +23,19 @@ const AddProjectCard: React.FC<AddProjectCardProps> = ({ onClick }) => {
         transition: "transform 140ms ease, outline 140ms ease",
         "&:hover": { transform: "translateY(-2px)" },
         // Dashed look, but keep the rest consistent with canvas cards.
-        border: `1.5px dashed ${alpha(theme.palette.text.primary, 0.18)}`,
+        border: `1.5px dashed ${alpha(theme.palette.success.main, 0.35)}`,
+        backgroundImage:
+          theme.palette.mode === "dark"
+            ? "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)"
+            : "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.50) 100%)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
       }}
       header={
         <CustomCardHeader
           editable={false}
           title={
-            <CardTypography variant="cardType" style={{ fontWeight: 750, fontSize: 15 }}>
+            <CardTypography variant="cardType" style={{ fontWeight: 650, fontSize: 14 }}>
               New project
             </CardTypography>
           }
@@ -59,7 +65,7 @@ const AddProjectCard: React.FC<AddProjectCardProps> = ({ onClick }) => {
               >
                 <AddIcon sx={{ fontSize: 22, color: theme.palette.success.main }} />
               </Box>
-              <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 12, lineHeight: 1.55 }}>
                 Create a canvas workspace
               </Typography>
             </Box>

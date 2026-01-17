@@ -31,7 +31,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ name, description, onClick })
         <CustomCardHeader
           editable={false}
           title={
-            <CardTypography variant="cardType" style={{ fontWeight: 750, fontSize: 15 }}>
+            <CardTypography variant="cardType" style={{ fontWeight: 650, fontSize: 14 }}>
               {name}
             </CardTypography>
           }
@@ -43,12 +43,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ name, description, onClick })
         />
       }
       body={
-        <Box sx={{ px: 2, pt: 2, pb: 2 }}>
+        <Box sx={{ px: 2, pt: 1.5, pb: 2 }}>
           <CustomCardBody editable={false} style={{ cursor: "pointer" }}>
             <Typography
               variant="body2"
               sx={{
                 color: theme.palette.text.secondary,
+                fontSize: 12,
+                lineHeight: 1.55,
                 display: "-webkit-box",
                 WebkitLineClamp: 4,
                 WebkitBoxOrient: "vertical",

@@ -3,7 +3,6 @@ import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import CardFooter from "@components/CardFooter";
-import CardStatusDot from "@pages/CanvasPage/components/atoms/CardStatusDot";
 import CardTypography from "@pages/CanvasPage/components/molecules/CardTypography";
 
 export function ProjectsShell({
@@ -26,12 +25,19 @@ export function ProjectsShell({
         px: 2,
         py: 4,
         bgcolor: "background.default",
+        // Canvas-like dotted grid background + subtle radial accents.
         backgroundImage:
           theme.palette.mode === "dark"
-            ? `radial-gradient(circle at 20% 15%, ${alpha(theme.palette.success.main, 0.08)} 0%, transparent 40%),
-               radial-gradient(circle at 80% 85%, ${alpha(theme.palette.success.main, 0.06)} 0%, transparent 45%)`
-            : `radial-gradient(circle at 20% 15%, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 40%),
-               radial-gradient(circle at 80% 85%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 45%)`,
+            ? `radial-gradient(circle, ${alpha(theme.palette.canvas.gridMinorDot, 0.18)} 0.5px, transparent 0.5px),
+               radial-gradient(circle, ${alpha(theme.palette.canvas.gridMajorDot, 0.22)} 1px, transparent 1px),
+               radial-gradient(circle at 20% 15%, ${alpha(theme.palette.success.main, 0.06)} 0%, transparent 42%),
+               radial-gradient(circle at 80% 85%, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 48%)`
+            : `radial-gradient(circle, ${alpha(theme.palette.canvas.gridMinorDot, 0.22)} 0.5px, transparent 0.5px),
+               radial-gradient(circle, ${alpha(theme.palette.canvas.gridMajorDot, 0.26)} 1px, transparent 1px),
+               radial-gradient(circle at 20% 15%, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 42%),
+               radial-gradient(circle at 80% 85%, ${alpha(theme.palette.primary.main, 0.03)} 0%, transparent 48%)`,
+        backgroundSize: "26px 26px, 120px 120px, auto, auto",
+        backgroundPosition: "0 0, 0 0, 0 0, 0 0",
       }}
     >
       <Box sx={{ width: "100%", maxWidth: 980 }}>
@@ -75,7 +81,6 @@ export function ProjectsShell({
                 </Typography>
               ) : null}
             </Box>
-            <CardStatusDot status="active" size={10} />
           </Box>
 
           <Box sx={{ px: 2, pt: 2, pb: 2 }}>{children}</Box>
