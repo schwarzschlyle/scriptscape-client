@@ -5,7 +5,6 @@ import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import CustomCard from "@components/CustomCard";
 import CustomCardHeader from "@components/CustomCardHeader";
-import CardFooter from "@components/CardFooter";
 import CardStatusDot from "@pages/CanvasPage/components/atoms/CardStatusDot";
 import CardTypography from "@pages/CanvasPage/components/molecules/CardTypography";
 
@@ -126,16 +125,20 @@ export function AuthShell({
                 {children}
               </Box>
               {footer ? (
-                <CardFooter
-                  left={null}
-                  center={
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-                      {footer}
-                    </Typography>
-                  }
-                  right={null}
-                  height={44}
-                />
+                <Box
+                  sx={{
+                    height: 44,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    px: 2,
+                    borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+                    {footer}
+                  </Typography>
+                </Box>
               ) : null}
             </>
           }

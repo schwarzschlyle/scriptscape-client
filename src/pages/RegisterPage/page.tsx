@@ -11,6 +11,7 @@ import { AuthShell } from "@pages/Auth/components/AuthShell";
 import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
+import Box from "@mui/material/Box";
 import DarkPage from "@theme/DarkPage";
 import { AuthCardTextInput } from "@pages/Auth/components/AuthCardInputs";
 
@@ -82,12 +83,12 @@ export default function RegisterPage() {
         hideHeader
         showHeaderStatusDot
         footer={
-          <>
+          <Box sx={{ textAlign: 'center' }}>
             Already storyboarding?{" "}
             <Link component={RouterLink} to={ROUTES.LOGIN} underline="hover">
               Log in
             </Link>
-          </>
+          </Box>
         }
       >
         {auth.status === "loading" ? (
