@@ -134,7 +134,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
             <CardFooter
               left={
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                  Click the (+) buttons on the edges to generate visuals
+                 Click (+) on edges to generate visuals
                 </Typography>
               }
               center={null}

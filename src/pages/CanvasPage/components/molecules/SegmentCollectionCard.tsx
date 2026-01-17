@@ -126,7 +126,7 @@ const SegmentCollectionCard: React.FC<SegmentCollectionCardProps> = ({
             <CardFooter
               left={
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                  Click the (+) buttons on the edges to generate visual idea variations
+                  Click (+) on edges to generate visual idea variations
                 </Typography>
               }
               center={null}

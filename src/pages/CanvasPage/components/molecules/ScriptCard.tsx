@@ -155,7 +155,7 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
             <CardFooter
               left={
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                  Click the (+) buttons on the edges to generate segment variations
+                  Click (+) on edges to generate segment variations
                 </Typography>
               }
               center={null}

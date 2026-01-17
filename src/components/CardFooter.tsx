@@ -41,16 +41,29 @@ const CardFooter: React.FC<CardFooterProps> = ({
         WebkitBackdropFilter: "blur(12px)",
       }}
     >
-      <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>{left}</Box>
+      <Box
+        sx={{
+          flex: "1 1 auto",
+          minWidth: 0,
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          textOverflow: "ellipsis",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        {left}
+      </Box>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{center}</Box>
       <Box
         sx={{
-          flex: 1,
+          flex: "0 0 auto",
           minWidth: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
           gap: 0.5,
+          overflow: "hidden",
         }}
       >
         {right}
