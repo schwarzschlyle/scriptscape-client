@@ -9,6 +9,7 @@ import { useTheme } from "@mui/material/styles";
 import RadialAddButton from "@components/RadialAddButton";
 import type { SpawnSide } from "./cardSpawn";
 import CardFooter from "@components/CardFooter";
+import Typography from "@mui/material/Typography";
 import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 
 interface ScriptCardProps {
@@ -151,9 +152,12 @@ const ScriptCard: React.FC<ScriptCardProps> = ({
               )}
             </Box>
 
-            {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
             <CardFooter
-              left={null}
+              left={
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                  Click (+) on edges to generate segment variations
+                </Typography>
+              }
               center={null}
               right={
                 <button

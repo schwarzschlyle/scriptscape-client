@@ -4,8 +4,7 @@ import CustomForm from "@components/CustomForm";
 import LoadingSpinner from "@components/LoadingSpinner";
 import { useLogin } from "@api";
 import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
-import { ROUTES } from "@routes/routes.config";
-import { buildRoute } from "@routes/routes.config";
+import { ROUTES, buildRoute } from "@routes/routes.config";
 import { useAuth } from "@auth/AuthContext";
 import { AuthShell } from "@pages/Auth/components/AuthShell";
 import Link from "@mui/material/Link";
@@ -73,8 +72,10 @@ export default function LoginPage() {
   return (
     <DarkPage>
       <AuthShell
-        title="Continue Storyboarding"
-        subtitle="Your scripts, beats, and visual explorations are ready. Log in to continue refining your best ideas"
+        title="Login to ScriptScape"
+        subtitle={undefined}
+        hideHeader
+        showHeaderStatusDot
         footer={
           <>
             New to ScriptScape?{" "}
@@ -84,38 +85,38 @@ export default function LoginPage() {
           </>
         }
       >
-      {auth.status === "loading" ? (
-        <LoadingSpinner label="Restoring session..." />
-      ) : (
-        <CustomForm onSubmit={handleSubmit} sx={{ gap: 2, mt: 2}}>
-          <Stack spacing={1.5}>
-            {error ? <Alert severity="error">{error}</Alert> : null}
+        {auth.status === "loading" ? (
+          <LoadingSpinner label="Restoring session..." />
+        ) : (
+          <CustomForm onSubmit={handleSubmit} sx={{ gap: 2 }}>
+            <Stack spacing={1.5}>
+              {error ? <Alert severity="error">{error}</Alert> : null}
 
-            <AuthCardTextInput
-              label="Email"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="you@company.com"
-              autoComplete="email"
-              required
-            />
+              <AuthCardTextInput
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@company.com"
+                autoComplete="email"
+                required
+              />
 
-            <AuthCardTextInput
-              label="Password"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              autoComplete="current-password"
-              required
-            />
-          </Stack>
+              <AuthCardTextInput
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                autoComplete="current-password"
+                required
+              />
+            </Stack>
 
-          <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4, mb: 4 }}>
-            {loading ? "Signing in…" : "Sign in"}
-          </AuthPrimaryButton>
-        </CustomForm>
-      )}
+            <AuthPrimaryButton type="submit" disabled={loading} sx={{ mt: 4 }}>
+              {loading ? "Signing in…" : "Sign in"}
+            </AuthPrimaryButton>
+          </CustomForm>
+        )}
       </AuthShell>
     </DarkPage>
   );

@@ -2,7 +2,7 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import VisualIcon from "../../../../assets/segment-icon.svg"; // Use a visual icon if available
+import VisualDirectionIcon from "../../../../assets/visual-direction-icon.svg";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -91,8 +91,8 @@ const VisualDirectionCardHeader: React.FC<VisualDirectionCardHeaderProps> = ({
             : (
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img
-                    src={VisualIcon}
-                    alt="Visual Icon"
+                    src={VisualDirectionIcon}
+                    alt="Visual Direction"
                     style={{
                       width: 16,
                       height: 16,

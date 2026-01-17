@@ -6,8 +6,8 @@ import StoryboardSketchGenerationModal from "./StoryboardSketchGenerationModal";
 import Box from "@mui/material/Box";
 import RadialAddButton from "@components/RadialAddButton";
 import CardFooter from "@components/CardFooter";
-import AiPromptIcon from "../../../../assets/ai-prompt-icon.svg";
 import LoadingSpinner from "@components/LoadingSpinner";
+import Typography from "@mui/material/Typography";
 
 interface VisualDirection {
   id?: string;
@@ -131,32 +131,14 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
               )}
             </Box>
 
-            {/* Keep original footer + AI icon for continuity, but it does nothing now. */}
             <CardFooter
-              left={null}
-              center={null}
-              right={
-                <button
-                  type="button"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "default",
-                    opacity: 0.85,
-                    padding: 0,
-                    margin: 0,
-                    outline: "none",
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="AI (inactive)"
-                >
-                  <img src={AiPromptIcon} alt="AI Prompt" style={{ width: 22, height: 22, display: "block" }} />
-                </button>
+              left={
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                 Click (+) on edges to generate visuals
+                </Typography>
               }
+              center={null}
+              right={null}
             />
           </>
         }
@@ -170,7 +152,7 @@ const VisualDirectionCard: React.FC<VisualDirectionCardProps> = ({
           key={side}
           side={side}
           disabled={disabled && !onGenerateStoryboardSketchesAt}
-          ariaLabel={`Generate Storyboard Sketches (${side})`}
+          ariaLabel={`Generate Styleframes (${side})`}
           onClick={() => {
             if (!onGenerateStoryboardSketchesAt && disabled) return;
             setSpawnSide(side);

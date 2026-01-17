@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
-import ScriptIcon from "../../../../assets/script-icon.svg";
+import InputScriptIcon from "../../../../assets/input-script.svg";
 import CardStyleModal from "./CardStyleModal";
 import { CardModalPrimaryButton, CardModalSecondaryButton } from "./CardModalButtons";
 import { CardModalTextarea } from "./CardModalInputs";
@@ -40,8 +40,8 @@ const ScriptAdditionModal: React.FC<ScriptAdditionModalProps> = ({
       title="Create New Script"
       titleIcon={
         <img
-          src={ScriptIcon}
-          alt="Script"
+          src={InputScriptIcon}
+          alt="Input Script"
           style={{ width: 16, height: 16, marginRight: 4, display: "inline-block", verticalAlign: "middle" }}
         />
       }

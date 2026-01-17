@@ -2,6 +2,7 @@ import React from "react";
 import EditableCardContentArea from "./EditableCardContentArea";
 import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
+import AiCornerButton from "./AiCornerButton";
 
 function formatIndex(idx: number) {
   return String(idx + 1).padStart(2, "0");
@@ -69,28 +70,31 @@ const SegmentCollectionCardBody: React.FC<SegmentCollectionCardBodyProps> = ({
           </Box>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <EditableCardContentArea
-              value={localSegments[idx]}
-              editable={editingIndex === idx && !isSaving && !deleting}
-              minHeight={60}
-              onChange={val => {
-                setLocalSegments(ls => ls.map((t, i) => (i === idx ? val : t)));
-              }}
-              onRequestEdit={() => {
-                if (editable && !isSaving && !deleting) setEditingIndex(idx);
-              }}
-              onBlur={() => {
-                setEditingIndex(null);
-                if (onSegmentChange) {
-                  const segmentId = segment.id || "";
-                  if (segmentId) {
-                    const nextText = localSegments[idx];
-                    const prevText = segment.text || "";
-                    if (nextText !== prevText) onSegmentChange(segmentId, nextText, idx);
+            <Box sx={{ position: "relative" }}>
+              <EditableCardContentArea
+                value={localSegments[idx]}
+                editable={editingIndex === idx && !isSaving && !deleting}
+                minHeight={60}
+                onChange={val => {
+                  setLocalSegments(ls => ls.map((t, i) => (i === idx ? val : t)));
+                }}
+                onRequestEdit={() => {
+                  if (editable && !isSaving && !deleting) setEditingIndex(idx);
+                }}
+                onBlur={() => {
+                  setEditingIndex(null);
+                  if (onSegmentChange) {
+                    const segmentId = segment.id || "";
+                    if (segmentId) {
+                      const nextText = localSegments[idx];
+                      const prevText = segment.text || "";
+                      if (nextText !== prevText) onSegmentChange(segmentId, nextText, idx);
+                    }
                   }
-                }
-              }}
-            />
+                }}
+              />
+              <AiCornerButton ariaLabel="AI (inactive)" />
+            </Box>
           </Box>
           {error && idx === 0 && (
             <Box sx={{ mt: 1, px: 2 }}>

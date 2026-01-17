@@ -1,114 +1,128 @@
 import React from "react";
-import Card from "@mui/material/Card";
-import CardActionArea from "@mui/material/CardActionArea";
-import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
-import { alpha, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
+import CustomCard from "@components/CustomCard";
+import CustomCardHeader from "@components/CustomCardHeader";
+import CustomCardBody from "@components/CustomCardBody";
+import CardFooter from "@components/CardFooter";
+import CardStatusDot from "@pages/CanvasPage/components/atoms/CardStatusDot";
+import CardTypography from "@pages/CanvasPage/components/molecules/CardTypography";
+import ScriptIcon from "../../../../assets/script-icon.svg";
+import SegmentIcon from "../../../../assets/segment-icon.svg";
+import VisualDirectionIcon from "../../../../assets/visual-direction-icon.svg";
+import SketchesIcon from "../../../../assets/sketches-icon.svg";
 
 export interface ProjectCardProps {
   id?: string;
   name: string;
   description?: string;
+  /** Optional aggregated counts for the row below the description. */
+  counts?: {
+    scripts?: number;
+    segments?: number;
+    visuals?: number;
+    sketches?: number;
+  };
   onClick?: () => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ name, description, onClick }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ name, description, counts, onClick }) => {
   const theme = useTheme();
 
   return (
-    <Card
-      elevation={0}
+    <CustomCard
+      onClick={onClick}
       sx={{
-        position: "relative",
-        minHeight: 150,
-        borderRadius: 2,
-        border: `1px solid ${alpha(theme.palette.common.white, 0.10)}`,
-        background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.05)} 0%, ${alpha(
-          theme.palette.common.white,
-          0.02
-        )} 100%)`,
-        overflow: "hidden",
-        transition: "transform 140ms ease, border-color 140ms ease, background 140ms ease",
-        "&:hover": {
-          transform: "translateY(-2px)",
-          borderColor: alpha(theme.palette.success.main, 0.45),
-        },
+        cursor: "pointer",
+        transition: "transform 140ms ease, outline 140ms ease",
+        "&:hover": { transform: "translateY(-2px)" },
+        "&:focus-within": { outline: `1.5px solid ${theme.palette.success.main}` },
       }}
-    >
-      {/* Subtle top accent bar */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: "0 0 auto 0",
-          height: 2,
-          bgcolor: alpha(theme.palette.success.main, 0.35),
-        }}
-      />
-
-      <CardActionArea
-        onClick={onClick}
-        sx={{
-          height: "100%",
-          alignItems: "stretch",
-          p: 0,
-          "&:focus-visible": {
-            outline: `2px solid ${alpha(theme.palette.success.main, 0.9)}`,
-            outlineOffset: "2px",
-            borderRadius: 2,
-          },
-        }}
-      >
-        <CardContent sx={{ p: 2.25 }}>
-          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 800,
-                  letterSpacing: 0.2,
-                  color: theme.palette.text.primary,
-                }}
-                noWrap
-              >
-                {name}
-              </Typography>
-
+      header={
+        <CustomCardHeader
+          editable={false}
+          title={
+            <CardTypography variant="cardType" style={{ fontWeight: 650, fontSize: 14 }}>
+              {name}
+            </CardTypography>
+          }
+          actions={
+            <Box sx={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+              <CardStatusDot status="active" size={10} />
+            </Box>
+          }
+        />
+      }
+      body={
+        <>
+          <Box sx={{ px: 2, pt: 1.5, pb: 1.25 }}>
+            <CustomCardBody editable={false} style={{ cursor: "pointer" }}>
               <Typography
                 variant="body2"
                 sx={{
-                  mt: 0.5,
                   color: theme.palette.text.secondary,
+                  fontSize: 12,
+                  lineHeight: 1.55,
                   display: "-webkit-box",
-                  WebkitLineClamp: 2,
+                  WebkitLineClamp: 4,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                 }}
               >
                 {description && description.trim() !== "" ? description : "No description"}
               </Typography>
-            </Box>
-
-            <Box
-              sx={{
-                flex: "0 0 auto",
-                width: 34,
-                height: 34,
-                borderRadius: 999,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: alpha(theme.palette.success.main, 0.15),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.35)}`,
-              }}
-            >
-              <ArrowForwardRoundedIcon sx={{ fontSize: 18, color: theme.palette.success.main }} />
-            </Box>
+            </CustomCardBody>
           </Box>
-        </CardContent>
-      </CardActionArea>
-    </Card>
+
+          <CardFooter
+            left={
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.25,
+                  flexWrap: "nowrap",
+                  color: theme.palette.text.secondary,
+                  fontSize: 11,
+                }}
+              >
+                {[{
+                  icon: ScriptIcon,
+                  label: "Scripts",
+                  value: counts?.scripts ?? 0,
+                }, {
+                  icon: SegmentIcon,
+                  label: "Segments",
+                  value: counts?.segments ?? 0,
+                }, {
+                  icon: VisualDirectionIcon,
+                  label: "Visuals",
+                  value: counts?.visuals ?? 0,
+                }, {
+                  icon: SketchesIcon,
+                  label: "Sketches",
+                  value: counts?.sketches ?? 0,
+                }].map((item) => (
+                  <Box key={item.label} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      style={{ width: 14, height: 14, display: "block", opacity: 0.9 }}
+                    />
+                    <span>{item.value}</span>
+                  </Box>
+                ))}
+              </Box>
+            }
+            center={null}
+            right={null}
+            height={32}
+          />
+        </>
+      }
+      minHeight={150}
+    />
   );
 };
 

@@ -2,7 +2,7 @@ import React from "react";
 import CustomCardHeader from "../../../../components/CustomCardHeader";
 import { useEditableField } from "../../../../hooks/useEditableField";
 import CardTypography from "../molecules/CardTypography";
-import ScriptIcon from "../../../../assets/script-icon.svg";
+import SketchesIcon from "../../../../assets/sketches-icon.svg";
 import Box from "@mui/material/Box";
 import CardStatusDot from "./CardStatusDot";
 import { useTheme } from "@mui/material/styles";
@@ -78,8 +78,8 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <img
-                src={ScriptIcon}
-                alt="Storyboard Icon"
+                src={SketchesIcon}
+                alt="Styleframes"
                 style={{
                   width: 16,
                   height: 16,
@@ -89,7 +89,7 @@ const StoryboardSketchCardHeader: React.FC<StoryboardSketchCardHeaderProps> = ({
                 }}
               />
               <CardTypography variant="cardType">
-                {localName || "Storyboard Sketches"}
+                {localName || "Styleframes"}
                 {typeof sketchesCount === "number" ? ` (${sketchesCount})` : ""}
               </CardTypography>
             </span>
